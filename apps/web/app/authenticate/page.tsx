@@ -47,6 +47,47 @@ const STEP_LABELS = ['Watch', 'XRF measurement', 'Movement', 'Visual evidence', 
 
 type XrfMode = 'manual' | 'csv' | 'skip';
 
+type StepStatus = 'pass' | 'fail' | 'warn' | 'pending';
+
+const STATUS_STYLE: Record<StepStatus, { color: string; bg: string; border: string; label: string }> = {
+  pass:    { color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.4)',  label: 'Pass' },
+  fail:    { color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.4)',   label: 'Fail' },
+  warn:    { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.4)',  label: 'Check' },
+  pending: { color: '#64748b', bg: 'rgba(100,116,139,0.1)',  border: 'rgba(100,116,139,0.3)', label: 'Pending' },
+};
+
+/** Small flag icon coloured by exam status. Pending shows a faint dash. */
+function StatusFlag({ status, size = 16 }: { status: StepStatus; size?: number }) {
+  const c = STATUS_STYLE[status].color;
+  if (status === 'pending') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" aria-label="pending">
+        <line x1="6" y1="12" x2="18" y2="12" />
+      </svg>
+    );
+  }
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label={STATUS_STYLE[status].label}>
+      <path d="M4 21V4" />
+      <path d="M4 4h11l-1.5 3.5L15 11H4" fill={c} fillOpacity="0.85" />
+    </svg>
+  );
+}
+
+/** Pill badge: coloured flag + label, used in step card headers. */
+function StatusBadge({ status }: { status: StepStatus }) {
+  const s = STATUS_STYLE[status];
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+      style={{ color: s.color, backgroundColor: s.bg, border: `1px solid ${s.border}` }}
+    >
+      <StatusFlag status={status} size={13} />
+      {s.label}
+    </span>
+  );
+}
+
 export default function AuthenticatePage() {
   const [step, setStep] = useState<Step>(0);
 
@@ -127,9 +168,69 @@ export default function AuthenticatePage() {
   const currentBrand = ALL_BRANDS.find((b) => b.id === brandId)!;
   const expectedMovement = useMemo(() => getMovementForModelAcrossBrands(modelId), [modelId]);
   const livePreview = useMemo(
-    () => (step === 2 ? checkMovementCaliber(modelId, observedCaliber) : null),
-    [step, modelId, observedCaliber],
+    () => checkMovementCaliber(modelId, observedCaliber),
+    [modelId, observedCaliber],
   );
+
+  // ===== Live exam results (recomputed as the user fills each step) =====
+  const liveXrf = useMemo<MatchResult | null>(() => {
+    if (xrfMode === 'skip') return null;
+    if (xrfMode === 'manual') {
+      const er: ElementReading[] = Object.entries(readings)
+        .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseFloat(raw) }))
+        .filter((r) => Number.isFinite(r.pct) && r.pct > 0);
+      if (er.length === 0) return null;
+      return bestProfileMatch(
+        { id: 'live', partMeasured: 'case-back', measuredAt: '', instrument: 'niton-xl', readings: er },
+        candidateProfiles,
+      );
+    }
+    if (!csvText.trim()) return null;
+    const parsed = parseNitonCsv(csvText);
+    if (parsed.rows.length === 0) return null;
+    return bestProfileMatch(rowToMeasurement(parsed.rows[0]!), candidateProfiles);
+  }, [xrfMode, readings, csvText, candidateProfiles]);
+
+  // Status flag per step: 'pass' (green) | 'fail' (red) | 'warn' (amber) | 'pending' (grey)
+  const stepStatuses = useMemo<StepStatus[]>(() => {
+    const s: StepStatus[] = ['pending', 'pending', 'pending', 'pending', 'pending'];
+
+    // Step 1 — watch identification: complete once a model + year are chosen
+    s[0] = modelId && year ? 'pass' : 'pending';
+
+    // Step 2 — XRF: verdict-driven
+    if (xrfMode !== 'skip' && liveXrf) {
+      s[1] = liveXrf.verdict === 'likely-authentic'
+        ? 'pass'
+        : liveXrf.verdict === 'inconclusive'
+          ? 'warn'
+          : 'fail';
+    }
+
+    // Step 3 — Movement: only meaningful once a caliber is typed
+    if (observedCaliber.trim()) {
+      s[2] = livePreview.status === 'match'
+        ? 'pass'
+        : livePreview.status === 'mismatch'
+          ? 'fail'
+          : 'pending';
+    }
+
+    // Step 4 — Visual: no automatic exam yet; mark captured if both photos present
+    s[3] = examined && reference ? 'pass' : 'pending';
+
+    // Step 5 — Combined verdict: worst of the evaluated exams
+    const evaluated = [s[1], s[2]].filter((x) => x !== 'pending');
+    s[4] = evaluated.includes('fail')
+      ? 'fail'
+      : evaluated.includes('warn')
+        ? 'warn'
+        : evaluated.length > 0
+          ? 'pass'
+          : 'pending';
+
+    return s;
+  }, [modelId, year, xrfMode, liveXrf, observedCaliber, livePreview, examined, reference]);
 
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -251,10 +352,10 @@ export default function AuthenticatePage() {
         </p>
       </section>
 
-      <StepHeader step={step} onJump={(s) => setStep(s)} />
+      <StepHeader step={step} statuses={stepStatuses} onJump={(s) => setStep(s)} />
 
       {step === 0 && (
-        <StepCard title="1. Watch identification" subtitle="Tell the app which piece you are inspecting.">
+        <StepCard title="1. Watch identification" subtitle="Tell the app which piece you are inspecting." status={stepStatuses[0]}>
           <div className="mb-4 space-y-3">
             <div>
               <span className="block text-xs uppercase tracking-wide text-dim mb-2">Brand</span>
@@ -337,7 +438,7 @@ export default function AuthenticatePage() {
       )}
 
       {step === 1 && (
-        <StepCard title="2. XRF measurement" subtitle="Pick how you want to feed the composition into the app.">
+        <StepCard title="2. XRF measurement" subtitle="Pick how you want to feed the composition into the app." status={stepStatuses[1]}>
           <div className="flex flex-wrap gap-2 mb-5">
             {(['manual','csv','skip'] as XrfMode[]).map((m) => (
               <button
@@ -401,6 +502,7 @@ export default function AuthenticatePage() {
         <StepCard
           title="3. Movement caliber check"
           subtitle="Cross-check the caliber engraved on the movement against what Rolex should have used in this reference."
+          status={stepStatuses[2]}
         >
           {expectedMovement ? (
             <>
@@ -483,7 +585,7 @@ export default function AuthenticatePage() {
       )}
 
       {step === 3 && (
-        <StepCard title="4. Visual evidence (optional)" subtitle="Capture the examined watch and an authentic reference for the same part.">
+        <StepCard title="4. Visual evidence (optional)" subtitle="Capture the examined watch and an authentic reference for the same part." status={stepStatuses[3]}>
           <div className="text-xs uppercase tracking-wide text-dim mb-2">Watch part</div>
           <div className="flex flex-wrap gap-2 mb-5">
             {PARTS.map((p) => (
@@ -519,7 +621,7 @@ export default function AuthenticatePage() {
       )}
 
       {step === 4 && (
-        <StepCard title="5. Combined verdict" subtitle={`Result for ${currentModel.name} (ref. ${currentModel.reference}), declared year ${year}.`}>
+        <StepCard title="5. Combined verdict" subtitle={`Result for ${currentModel.name} (ref. ${currentModel.reference}), declared year ${year}.`} status={stepStatuses[4]}>
           <div className="space-y-6">
             <SummaryBlock title="Identification">
               <div className="grid md:grid-cols-2 gap-2 text-sm">
@@ -647,30 +749,38 @@ export default function AuthenticatePage() {
   );
 }
 
-function StepHeader({ step, onJump }: { step: Step; onJump: (s: Step) => void }) {
+function StepHeader({ step, statuses, onJump }: { step: Step; statuses: StepStatus[]; onJump: (s: Step) => void }) {
   return (
     <div className="card p-4">
-      {/* Mobile: compact numbered circles in a row + current step label below */}
+      {/* Mobile: compact numbered circles with a status flag badge in the corner */}
       <div className="md:hidden">
         <div className="flex items-center justify-between gap-1">
           {STEP_LABELS.map((label, i) => {
-            const done = i < step;
             const active = i === step;
+            const st = statuses[i] ?? 'pending';
             return (
               <button
                 key={label}
                 onClick={() => onJump(i as Step)}
-                aria-label={label}
+                aria-label={`${label} — ${STATUS_STYLE[st].label}`}
                 className="flex items-center flex-1 last:flex-none"
               >
-                <span
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${
-                    done ? 'bg-accent text-white border-transparent'
-                      : active ? 'bg-accent-soft text-accent-bright border-accent'
-                        : 'bg-card text-dim border-soft'
-                  }`}
-                >
-                  {done ? '✓' : i + 1}
+                <span className="relative shrink-0">
+                  <span
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${
+                      active ? 'bg-accent-soft text-accent-bright border-accent' : 'bg-card text-dim border-soft'
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  {st !== 'pending' && (
+                    <span
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: STATUS_STYLE[st].bg, border: `1px solid ${STATUS_STYLE[st].border}` }}
+                    >
+                      <StatusFlag status={st} size={10} />
+                    </span>
+                  )}
                 </span>
                 {i < STEP_LABELS.length - 1 && (
                   <span className={`h-px flex-1 mx-1 ${i < step ? 'bg-accent' : 'bg-soft'}`} />
@@ -679,31 +789,44 @@ function StepHeader({ step, onJump }: { step: Step; onJump: (s: Step) => void })
             );
           })}
         </div>
-        <div className="mt-3 text-center">
-          <span className="text-xs text-dim">Step {step + 1} of {STEP_LABELS.length}</span>
-          <div className="text-accent-bright font-semibold">{STEP_LABELS[step]}</div>
+        <div className="mt-3 text-center flex items-center justify-center gap-2">
+          <div>
+            <span className="text-xs text-dim">Step {step + 1} of {STEP_LABELS.length}</span>
+            <div className="text-accent-bright font-semibold">{STEP_LABELS[step]}</div>
+          </div>
         </div>
       </div>
 
-      {/* Desktop: full labels inline */}
+      {/* Desktop: full labels inline with a flag before each one */}
       <div className="hidden md:flex items-center justify-between gap-2 flex-wrap">
         {STEP_LABELS.map((label, i) => {
-          const done = i < step;
           const active = i === step;
+          const done = i < step;
+          const st = statuses[i] ?? 'pending';
           return (
             <button
               key={label}
               onClick={() => onJump(i as Step)}
               className="flex items-center gap-2 text-sm group"
             >
-              <span
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border ${
-                  done ? 'bg-accent text-white border-transparent'
-                    : active ? 'bg-accent-soft text-accent-bright border-accent'
-                      : 'bg-card text-dim border-soft'
-                }`}
-              >
-                {done ? '✓' : i + 1}
+              <span className="relative">
+                <span
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border ${
+                    active ? 'bg-accent-soft text-accent-bright border-accent'
+                      : done ? 'bg-accent/30 text-foreground border-transparent'
+                        : 'bg-card text-dim border-soft'
+                  }`}
+                >
+                  {i + 1}
+                </span>
+                {st !== 'pending' && (
+                  <span
+                    className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: STATUS_STYLE[st].bg, border: `1px solid ${STATUS_STYLE[st].border}` }}
+                  >
+                    <StatusFlag status={st} size={10} />
+                  </span>
+                )}
               </span>
               <span className={active ? 'text-accent-bright font-semibold' : done ? 'text-foreground' : 'text-dim'}>
                 {label}
@@ -719,12 +842,25 @@ function StepHeader({ step, onJump }: { step: Step; onJump: (s: Step) => void })
   );
 }
 
-function StepCard({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+function StepCard({
+  title,
+  subtitle,
+  status,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  status?: StepStatus | undefined;
+  children: React.ReactNode;
+}) {
   return (
     <section className="card p-6 space-y-5 fade-in">
-      <header>
-        <h2 className="text-xl font-semibold">{title}</h2>
-        <p className="text-sm text-muted mt-1">{subtitle}</p>
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">{title}</h2>
+          <p className="text-sm text-muted mt-1">{subtitle}</p>
+        </div>
+        {status && <div className="shrink-0 pt-0.5"><StatusBadge status={status} /></div>}
       </header>
       {children}
     </section>
