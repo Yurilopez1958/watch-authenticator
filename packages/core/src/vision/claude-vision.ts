@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { WatchPart } from '../types/index';
+import { resolveVisionModel } from './model-resolver';
 
 export type ReferencePhoto = {
   part: WatchPart;
@@ -114,8 +115,9 @@ export async function analyzeWatchPart(
   options: { apiKey: string; model?: string } = { apiKey: '' },
 ): Promise<VisionAnalysisResult> {
   const client = new Anthropic({ apiKey: options.apiKey });
+  const model = await resolveVisionModel(client, options.model);
   const message = await client.messages.create({
-    model: options.model ?? 'claude-3-5-sonnet-20241022',
+    model,
     max_tokens: 1024,
     system: SYSTEM_PROMPT,
     messages: [buildUserMessage(input)],

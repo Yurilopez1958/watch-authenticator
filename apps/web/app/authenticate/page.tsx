@@ -20,6 +20,21 @@ import {
   type WatchPart,
   type XRFMeasurement,
 } from '@watch-auth/core';
+import { getPhotos, type RefPhoto } from '@/lib/photo-store';
+
+type VisionFinding = { severity: 'low' | 'medium' | 'high'; area: string; description: string };
+type VisionResult = {
+  verdict: 'consistent' | 'suspicious' | 'inconclusive';
+  confidence: number;
+  summary: string;
+  findings: VisionFinding[];
+};
+
+function dataUrlParts(dataUrl: string): { base64: string; mediaType: 'image/jpeg' | 'image/png' | 'image/webp' } {
+  const comma = dataUrl.indexOf(',');
+  const mt = (dataUrl.slice(5, comma).split(';')[0] || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/webp';
+  return { base64: dataUrl.slice(comma + 1), mediaType: mt };
+}
 
 const ELEMENTS_OF_INTEREST: ElementSymbol[] = [
   'Fe', 'Cr', 'Ni', 'Mo', 'Mn', 'Cu', 'Si',
@@ -216,6 +231,12 @@ export default function AuthenticatePage() {
   const [liveSide, setLiveSide] = useState<'examined' | 'reference' | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // Reference photos from the user's gallery for the current model + part
+  const [galleryPhotos, setGalleryPhotos] = useState<RefPhoto[]>([]);
+  // AI visual analysis
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiResult, setAiResult] = useState<VisionResult | null>(null);
 
   // Step 5 — results
   const [xrfResult, setXrfResult] = useState<MatchResult | null>(null);
@@ -372,6 +393,58 @@ export default function AuthenticatePage() {
       else setReference(data);
     };
     reader.readAsDataURL(file);
+  };
+
+  // Load reference photos from the gallery for the current model + part
+  useEffect(() => {
+    let alive = true;
+    getPhotos(brandId, modelId, examinedPart)
+      .then((rows) => { if (alive) setGalleryPhotos(rows); })
+      .catch(() => { if (alive) setGalleryPhotos([]); });
+    setAiResult(null);
+    setAiError(null);
+    return () => { alive = false; };
+  }, [brandId, modelId, examinedPart]);
+
+  // Run Claude Vision: compare the examined photo against gallery references
+  const runAiAnalysis = async () => {
+    if (!examined) { setAiError('Capture or upload a photo of the examined watch first.'); return; }
+    setAiBusy(true);
+    setAiError(null);
+    setAiResult(null);
+    try {
+      const ex = dataUrlParts(examined);
+      // Use gallery photos as references; fall back to the manually-added reference
+      const refs = galleryPhotos.length > 0
+        ? galleryPhotos.slice(0, 4).map((p) => {
+            const r = dataUrlParts(p.dataUrl);
+            return { part: examinedPart, imageData: r.base64, mediaType: r.mediaType };
+          })
+        : reference
+          ? [{ part: examinedPart, ...((d) => ({ imageData: d.base64, mediaType: d.mediaType }))(dataUrlParts(reference)) }]
+          : [];
+
+      const res = await fetch('/api/analyze-part', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandName: currentBrand.name,
+          modelName: currentModel.name,
+          modelReference: currentModel.reference,
+          yearOfManufacture: year,
+          part: examinedPart,
+          examined: { imageData: ex.base64, mediaType: ex.mediaType },
+          references: refs,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setAiError(json.error ?? 'AI analysis failed.'); return; }
+      setAiResult(json as VisionResult);
+    } catch (err) {
+      setAiError((err as Error).message);
+    } finally {
+      setAiBusy(false);
+    }
   };
 
   // Read a photo of the Niton screen with AI and fill in the readings
@@ -846,6 +919,69 @@ export default function AuthenticatePage() {
             />
             <input ref={examinedRef} type="file" accept="image/*" onChange={onFile('examined')} className="hidden" />
             <input ref={referenceRef} type="file" accept="image/*" onChange={onFile('reference')} className="hidden" />
+          </div>
+
+          {/* Gallery reference photos for this model + part */}
+          {galleryPhotos.length > 0 && (
+            <div className="mt-5">
+              <div className="text-xs uppercase tracking-wide text-dim mb-2">
+                Your reference photos · {currentModel.name} · {PARTS.find((p) => p.id === examinedPart)?.label}
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                {galleryPhotos.slice(0, 6).map((p) => (
+                  <img key={p.id} src={p.dataUrl} alt="reference" className="w-full aspect-square object-cover rounded-lg border border-soft" />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* AI visual analysis */}
+          <div className="mt-6 rounded-lg border border-soft bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-bright">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /><circle cx="12" cy="12" r="3" />
+                </svg>
+                <h3 className="font-semibold">AI visual analysis</h3>
+              </div>
+              <button onClick={() => void runAiAnalysis()} disabled={aiBusy || !examined} className="btn-primary text-sm">
+                {aiBusy ? 'Analyzing…' : 'Analyze with AI'}
+              </button>
+            </div>
+            <p className="text-xs text-muted">
+              Claude Vision compares the examined {PARTS.find((p) => p.id === examinedPart)?.label.toLowerCase()} photo against your
+              {galleryPhotos.length > 0 ? ` ${Math.min(galleryPhotos.length, 4)} gallery reference(s)` : ' reference photo'} and flags visual inconsistencies.
+              {galleryPhotos.length === 0 && !reference && ' Add reference photos in the Reference gallery, or capture one above, for a stronger comparison.'}
+            </p>
+
+            {aiError && <div className="text-xs text-red-300 border-t border-red-500/30 pt-2">{aiError}</div>}
+
+            {aiResult && (
+              <div className="fade-in space-y-2 border-t border-soft pt-3">
+                <div className="flex items-baseline justify-between flex-wrap gap-2">
+                  <span className={`text-lg font-bold ${
+                    aiResult.verdict === 'consistent' ? 'text-emerald-300' :
+                    aiResult.verdict === 'suspicious' ? 'text-red-300' : 'text-amber-300'
+                  }`}>
+                    {aiResult.verdict === 'consistent' ? 'Consistent with authentic' :
+                     aiResult.verdict === 'suspicious' ? 'Suspicious — review' : 'Inconclusive'}
+                  </span>
+                  <span className="text-xs text-dim">confidence {Math.round((aiResult.confidence ?? 0) * 100)}%</span>
+                </div>
+                {aiResult.summary && <p className="text-sm text-neutral-200">{aiResult.summary}</p>}
+                {aiResult.findings?.length > 0 && (
+                  <ul className="space-y-1.5 text-sm">
+                    {aiResult.findings.map((f, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className={`shrink-0 ${f.severity === 'high' ? 'text-red-400' : f.severity === 'medium' ? 'text-amber-400' : 'text-dim'}`}>▸</span>
+                        <span><span className="text-muted">{f.area}:</span> {f.description}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="text-[0.7rem] text-dim pt-1">AI guidance only — final authentication requires physical inspection in hand.</p>
+              </div>
+            )}
           </div>
 
           {/* Authentication guide (Rolex) */}

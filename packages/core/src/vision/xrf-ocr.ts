@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { ElementReading, ElementSymbol } from '../types/index';
+import { resolveVisionModel } from './model-resolver';
 
 const KNOWN_ELEMENTS: ReadonlySet<string> = new Set<ElementSymbol>([
   'Fe', 'Cr', 'Ni', 'Mo', 'Mn', 'Cu', 'Si', 'C', 'S', 'P', 'N',
@@ -67,24 +68,6 @@ function parse(text: string): { readings: ElementReading[]; notes: string } {
 }
 
 /**
- * Resolves a usable vision-capable model for this account. If an explicit model
- * is given, use it. Otherwise ask the API which models are available and pick a
- * sensible one (prefer Sonnet for speed/cost, then Opus, then anything). This
- * keeps the feature working even as Anthropic renames or retires models.
- */
-async function resolveModel(client: Anthropic, preferred?: string): Promise<string> {
-  if (preferred) return preferred;
-  const list = await client.models.list({ limit: 50 });
-  const ids = list.data.map((m) => m.id);
-  // All Claude 3+ models are vision-capable. Prefer a recent Sonnet.
-  const sonnet = ids.find((id) => id.includes('sonnet'));
-  const opus = ids.find((id) => id.includes('opus'));
-  const chosen = sonnet ?? opus ?? ids[0];
-  if (!chosen) throw new Error('No models available for this API key.');
-  return chosen;
-}
-
-/**
  * Reads a photo of the Niton XL screen with Claude Vision and extracts the
  * elemental composition as structured readings.
  */
@@ -94,7 +77,7 @@ export async function extractXrfFromImage(
   options: { apiKey: string; model?: string },
 ): Promise<XrfOcrResult> {
   const client = new Anthropic({ apiKey: options.apiKey });
-  const model = await resolveModel(client, options.model);
+  const model = await resolveVisionModel(client, options.model);
   const message = await client.messages.create({
     model,
     max_tokens: 1024,
