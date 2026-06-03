@@ -5,9 +5,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ALL_BRANDS,
   ALL_MODELS,
-  ROLEX_AUTH_CHECKPOINTS,
   bestProfileMatch,
   checkMovementCaliber,
+  getBrandCheckpoints,
   getMovementCheckpoints,
   getMovementForModelAcrossBrands,
   getReferenceProfilesForBrand,
@@ -984,8 +984,8 @@ export default function AuthenticatePage() {
             )}
           </div>
 
-          {/* Authentication guide (Rolex) */}
-          {brandId === 'rolex' && (
+          {/* Authentication guide (per brand) */}
+          {getBrandCheckpoints(brandId).length > 0 && (
             <div className="mt-6 space-y-4">
               <div className="flex items-center gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent-bright">
@@ -994,8 +994,8 @@ export default function AuthenticatePage() {
                 <h3 className="font-semibold">Authentication checklist — what to compare</h3>
               </div>
               <p className="text-xs text-muted">
-                Textual reference guide for Rolex. Compare each point against your own verified
-                authentic piece. Photos here are yours to capture; this guide tells you what to look for.
+                Textual reference guide for {currentBrand.name}. Compare each point against your own
+                verified authentic piece — this guide tells you what to look for.
               </p>
 
               {/* Movement-specific points when the movement part is selected */}
@@ -1014,7 +1014,7 @@ export default function AuthenticatePage() {
 
               {/* General brand checkpoints */}
               <div className="grid md:grid-cols-2 gap-3">
-                {ROLEX_AUTH_CHECKPOINTS.map((cp) => (
+                {getBrandCheckpoints(brandId).map((cp) => (
                   <div key={cp.id} className="rounded-lg border border-soft bg-card p-4">
                     <div className="text-sm font-semibold mb-2">{cp.label}</div>
                     <ul className="space-y-1.5 text-xs text-muted">
@@ -1025,13 +1025,6 @@ export default function AuthenticatePage() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {brandId !== 'rolex' && (
-            <div className="mt-6 rounded-lg border border-soft bg-card p-4 text-sm text-muted">
-              A detailed visual authentication guide is currently available for Rolex.
-              Guides for {currentBrand.name} can be added next.
             </div>
           )}
         </StepCard>

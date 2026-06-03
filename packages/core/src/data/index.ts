@@ -6,6 +6,7 @@ export {
   getMovementCheckpoints,
 } from './rolex-auth-checkpoints';
 export type { AuthCheckpoint } from './rolex-auth-checkpoints';
+export { getBrandCheckpoints, BRAND_CHECKPOINTS } from './brand-auth-checkpoints';
 export {
   ROLEX_MOVEMENTS,
   ROLEX_MODEL_TO_CALIBER,
