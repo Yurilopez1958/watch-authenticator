@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ALL_BRANDS,
@@ -45,7 +46,7 @@ const PARTS: readonly { id: WatchPart; label: string }[] = [
 type Step = 0 | 1 | 2 | 3 | 4;
 const STEP_LABELS = ['Watch', 'XRF measurement', 'Movement', 'Visual evidence', 'Verdict'] as const;
 
-type XrfMode = 'manual' | 'csv' | 'skip';
+type XrfMode = 'manual' | 'connected' | 'photo' | 'skip';
 
 type StepStatus = 'pass' | 'fail' | 'warn' | 'pending';
 
@@ -71,6 +72,42 @@ function StatusFlag({ status, size = 16 }: { status: StepStatus; size?: number }
       <path d="M4 21V4" />
       <path d="M4 4h11l-1.5 3.5L15 11H4" fill={c} fillOpacity="0.85" />
     </svg>
+  );
+}
+
+/** Large selectable card-button for picking an XRF input method. */
+function XrfModeButton({
+  mode,
+  current,
+  onClick,
+  label,
+  desc,
+  icon,
+}: {
+  mode: XrfMode;
+  current: XrfMode;
+  onClick: (m: XrfMode) => void;
+  label: string;
+  desc: string;
+  icon: React.ReactNode;
+}) {
+  const active = current === mode;
+  return (
+    <button
+      onClick={() => onClick(mode)}
+      className={`flex flex-col items-start gap-1.5 rounded-lg border p-3 text-left transition-colors ${
+        active ? 'border-accent bg-accent-soft' : 'border-soft bg-card hover:border-neutral-600'
+      }`}
+    >
+      <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${active ? 'text-accent-bright' : 'text-muted'}`}
+        style={{ backgroundColor: active ? 'rgba(59,130,246,0.12)' : 'rgba(100,116,139,0.1)' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {icon}
+        </svg>
+      </span>
+      <span className={`text-sm font-semibold ${active ? 'text-accent-bright' : 'text-foreground'}`}>{label}</span>
+      <span className="text-[0.7rem] text-dim leading-tight">{desc}</span>
+    </button>
   );
 }
 
@@ -136,6 +173,12 @@ export default function AuthenticatePage() {
   const [xrfMode, setXrfMode] = useState<XrfMode>('manual');
   const [readings, setReadings] = useState<Record<string, string>>({});
   const [csvText, setCsvText] = useState('');
+  // Photo-of-screen OCR
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [photoNotes, setPhotoNotes] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const screenPhotoRef = useRef<HTMLInputElement | null>(null);
 
   // Step 3 — Movement
   const [observedCaliber, setObservedCaliber] = useState('');
@@ -175,7 +218,8 @@ export default function AuthenticatePage() {
   // ===== Live exam results (recomputed as the user fills each step) =====
   const liveXrf = useMemo<MatchResult | null>(() => {
     if (xrfMode === 'skip') return null;
-    if (xrfMode === 'manual') {
+    // Manual entry and photo OCR both populate `readings`
+    if (xrfMode === 'manual' || xrfMode === 'photo') {
       const er: ElementReading[] = Object.entries(readings)
         .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseFloat(raw) }))
         .filter((r) => Number.isFinite(r.pct) && r.pct > 0);
@@ -185,6 +229,7 @@ export default function AuthenticatePage() {
         candidateProfiles,
       );
     }
+    // Connected mode: parse the CSV exported by / streamed from the machine
     if (!csvText.trim()) return null;
     const parsed = parseNitonCsv(csvText);
     if (parsed.rows.length === 0) return null;
@@ -286,9 +331,54 @@ export default function AuthenticatePage() {
     reader.readAsDataURL(file);
   };
 
+  // Read a photo of the Niton screen with AI and fill in the readings
+  const handleScreenPhoto = async (file: File) => {
+    setPhotoBusy(true);
+    setPhotoError(null);
+    setPhotoNotes(null);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Could not read the file.'));
+        reader.readAsDataURL(file);
+      });
+      setPhotoPreview(dataUrl);
+      const commaIdx = dataUrl.indexOf(',');
+      const base64 = dataUrl.slice(commaIdx + 1);
+      const mediaType = (dataUrl.slice(5, commaIdx).split(';')[0] || 'image/jpeg') as
+        'image/jpeg' | 'image/png' | 'image/webp';
+
+      const res = await fetch('/api/extract-xrf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mediaType }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setPhotoError(json.error ?? 'Could not read the screen.');
+        return;
+      }
+      const next: Record<string, string> = {};
+      for (const r of json.readings as { element: string; pct: number }[]) {
+        next[r.element] = String(r.pct);
+      }
+      if (Object.keys(next).length === 0) {
+        setPhotoError('No elements could be read from this photo. Try a sharper, straight-on shot of the screen.');
+        return;
+      }
+      setReadings(next);
+      setPhotoNotes(json.notes || 'Values extracted. Review and edit any that look wrong before continuing.');
+    } catch (err) {
+      setPhotoError((err as Error).message);
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
   const runAnalysis = () => {
     // XRF
-    if (xrfMode === 'manual') {
+    if (xrfMode === 'manual' || xrfMode === 'photo') {
       const elementReadings: ElementReading[] = Object.entries(readings)
         .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseFloat(raw) }))
         .filter((r) => Number.isFinite(r.pct) && r.pct > 0);
@@ -306,7 +396,7 @@ export default function AuthenticatePage() {
         setXrfResult(null);
         setXrfRowCount(0);
       }
-    } else if (xrfMode === 'csv') {
+    } else if (xrfMode === 'connected') {
       if (!csvText.trim()) { setXrfResult(null); setXrfRowCount(0); }
       else {
         const parsed = parseNitonCsv(csvText);
@@ -334,8 +424,8 @@ export default function AuthenticatePage() {
     if (step === 0) return !!modelId && !!year;
     if (step === 1) {
       if (xrfMode === 'skip') return true;
-      if (xrfMode === 'manual') return Object.values(readings).some((v) => parseFloat(v) > 0);
-      return csvText.trim().length > 0;
+      if (xrfMode === 'manual' || xrfMode === 'photo') return Object.values(readings).some((v) => parseFloat(v) > 0);
+      return csvText.trim().length > 0; // connected
     }
     if (step === 2) return true; // movement step is optional
     if (step === 3) return true;
@@ -438,42 +528,100 @@ export default function AuthenticatePage() {
       )}
 
       {step === 1 && (
-        <StepCard title="2. XRF measurement" subtitle="Pick how you want to feed the composition into the app." status={stepStatuses[1]}>
-          <div className="flex flex-wrap gap-2 mb-5">
-            {(['manual','csv','skip'] as XrfMode[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => setXrfMode(m)}
-                className={`chip cursor-pointer ${xrfMode === m ? '!bg-accent !text-white !border-transparent' : ''}`}
-              >
-                {m === 'manual' ? 'Manual entry' : m === 'csv' ? 'Niton CSV' : 'Skip XRF'}
-              </button>
-            ))}
+        <StepCard title="2. XRF measurement" subtitle="Choose how you want to feed the Niton XL composition into the app." status={stepStatuses[1]}>
+          {/* Three input methods + skip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
+            <XrfModeButton mode="manual" current={xrfMode} onClick={setXrfMode} label="Type it in" desc="Enter the % by hand" icon={
+              <path d="M4 7h16M4 12h16M4 17h10" />
+            } />
+            <XrfModeButton mode="connected" current={xrfMode} onClick={setXrfMode} label="Connected" desc="From the machine" icon={
+              <><path d="M5 12h14" /><path d="M12 5v14" /><circle cx="12" cy="12" r="9" /></>
+            } />
+            <XrfModeButton mode="photo" current={xrfMode} onClick={setXrfMode} label="Photo of screen" desc="AI reads it" icon={
+              <><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></>
+            } />
+            <XrfModeButton mode="skip" current={xrfMode} onClick={setXrfMode} label="Skip XRF" desc="No metal reading" icon={
+              <><circle cx="12" cy="12" r="9" /><path d="M8 12h8" /></>
+            } />
           </div>
 
-          {xrfMode === 'manual' && (
-            <div>
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-                {ELEMENTS_OF_INTEREST.map((el) => (
-                  <label key={el} className="block">
-                    <span className="block text-[0.7rem] font-mono text-dim mb-1">{el}</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={readings[el] ?? ''}
-                      onChange={(e) => setReadings({ ...readings, [el]: e.target.value })}
-                      className="field text-sm py-1.5"
-                    />
-                  </label>
-                ))}
+          {/* Manual + photo both edit the same readings grid */}
+          {(xrfMode === 'manual' || xrfMode === 'photo') && (
+            <div className="space-y-4">
+              {xrfMode === 'photo' && (
+                <div className="rounded-lg border border-soft bg-card p-4 space-y-3">
+                  <div className="text-sm font-semibold">Photograph the Niton screen</div>
+                  <p className="text-xs text-muted">
+                    Take a clear, straight-on photo of the analyzer screen showing the element percentages.
+                    The AI transcribes them into the fields below for you to review.
+                  </p>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <button
+                      onClick={() => screenPhotoRef.current?.click()}
+                      disabled={photoBusy}
+                      className="btn-primary text-sm"
+                    >
+                      {photoBusy ? 'Reading…' : photoPreview ? 'Retake / choose another' : 'Take or upload photo'}
+                    </button>
+                    {photoPreview && !photoBusy && (
+                      <span className="text-xs text-emerald-300">✓ Values filled below — review them</span>
+                    )}
+                  </div>
+                  <input
+                    ref={screenPhotoRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void handleScreenPhoto(f);
+                    }}
+                  />
+                  {photoPreview && (
+                    <img src={photoPreview} alt="Niton screen" className="rounded-lg border border-soft max-h-40 object-contain" />
+                  )}
+                  {photoNotes && <div className="text-xs text-emerald-200/80 border-t border-soft pt-2">{photoNotes}</div>}
+                  {photoError && (
+                    <div className="text-xs text-red-300 border-t border-red-500/30 pt-2">{photoError}</div>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <div className="text-xs uppercase tracking-wide text-dim mb-2">
+                  {xrfMode === 'photo' ? 'Extracted composition — edit if needed (%)' : 'Composition (%)'}
+                </div>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                  {ELEMENTS_OF_INTEREST.map((el) => (
+                    <label key={el} className="block">
+                      <span className="block text-[0.7rem] font-mono text-dim mb-1">{el}</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={readings[el] ?? ''}
+                        onChange={(e) => setReadings({ ...readings, [el]: e.target.value })}
+                        className="field text-sm py-1.5"
+                      />
+                    </label>
+                  ))}
+                </div>
+                <div className="text-xs text-dim mt-3">Enter at least one element &gt; 0 to advance.</div>
               </div>
-              <div className="text-xs text-dim mt-3">Enter at least one element &gt; 0 to advance.</div>
             </div>
           )}
 
-          {xrfMode === 'csv' && (
-            <div className="space-y-3">
+          {xrfMode === 'connected' && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-soft bg-card p-4 space-y-2 text-sm">
+                <div className="font-semibold">Direct from the machine</div>
+                <p className="text-xs text-muted leading-relaxed">
+                  The Niton XL exports each reading as a CSV (enable &quot;Also Save CSV&quot; in NDT / NitonConnect).
+                  Upload that file or paste its contents below. For automatic capture over Bluetooth or a
+                  watched folder, set it up on the <Link href="/connect" className="text-accent-bright hover:underline">Connect Niton</Link> page.
+                </p>
+              </div>
               <input type="file" accept=".csv,text/csv" onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;

@@ -13,3 +13,5 @@ export {
   normalize,
 } from './clip-embeddings';
 export type { Embedding, ImageEmbedder, ScoredReference } from './clip-embeddings';
+export { extractXrfFromImage } from './xrf-ocr';
+export type { XrfOcrResult } from './xrf-ocr';
