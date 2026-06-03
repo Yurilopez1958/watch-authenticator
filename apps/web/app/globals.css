@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Custom breakpoint: xs = 400px, for very small phones */
+@theme {
+  --breakpoint-xs: 400px;
+}
+
 :root {
   --background:        #0a0f1f;
   --background-elev:   #111a2e;

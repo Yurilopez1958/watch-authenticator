@@ -650,7 +650,43 @@ export default function AuthenticatePage() {
 function StepHeader({ step, onJump }: { step: Step; onJump: (s: Step) => void }) {
   return (
     <div className="card p-4">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
+      {/* Mobile: compact numbered circles in a row + current step label below */}
+      <div className="md:hidden">
+        <div className="flex items-center justify-between gap-1">
+          {STEP_LABELS.map((label, i) => {
+            const done = i < step;
+            const active = i === step;
+            return (
+              <button
+                key={label}
+                onClick={() => onJump(i as Step)}
+                aria-label={label}
+                className="flex items-center flex-1 last:flex-none"
+              >
+                <span
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${
+                    done ? 'bg-accent text-white border-transparent'
+                      : active ? 'bg-accent-soft text-accent-bright border-accent'
+                        : 'bg-card text-dim border-soft'
+                  }`}
+                >
+                  {done ? '✓' : i + 1}
+                </span>
+                {i < STEP_LABELS.length - 1 && (
+                  <span className={`h-px flex-1 mx-1 ${i < step ? 'bg-accent' : 'bg-soft'}`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-3 text-center">
+          <span className="text-xs text-dim">Step {step + 1} of {STEP_LABELS.length}</span>
+          <div className="text-accent-bright font-semibold">{STEP_LABELS[step]}</div>
+        </div>
+      </div>
+
+      {/* Desktop: full labels inline */}
+      <div className="hidden md:flex items-center justify-between gap-2 flex-wrap">
         {STEP_LABELS.map((label, i) => {
           const done = i < step;
           const active = i === step;

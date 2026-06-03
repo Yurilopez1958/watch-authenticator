@@ -81,28 +81,28 @@ const cards: Card[] = [
 
 export default function HomePage() {
   return (
-    <div className="space-y-16">
-      <section className="text-center space-y-5">
+    <div className="space-y-10 sm:space-y-16">
+      <section className="text-center space-y-4 sm:space-y-5">
         <div className="inline-flex chip pulse-glow">
           <span className="w-1.5 h-1.5 rounded-full bg-accent-bright" />
           XRF + AI · multi-platform MVP
         </div>
-        <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight">
           Watch authentication<br />
           <span className="text-gradient">by composition</span>
         </h1>
-        <p className="text-muted text-base max-w-2xl mx-auto leading-relaxed">
+        <p className="text-muted text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
           Compare metal composition measured with your Thermo Scientific Niton XL against a
           reference database by brand, model, and year. Reinforced with a gallery of authentic
           photos and AI vision analysis.
         </p>
-        <div className="flex justify-center gap-3 pt-3">
+        <div className="flex flex-col xs:flex-row justify-center gap-3 pt-2 sm:pt-3">
           <Link href="/verify" className="btn-primary">Verify a watch</Link>
           <Link href="/connect" className="btn-ghost">Connect Niton</Link>
         </div>
       </section>
 
-      <section className="grid md:grid-cols-3 gap-5">
+      <section className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
         {cards.map((c) => {
           const inner = (
             <>
