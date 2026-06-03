@@ -18,7 +18,10 @@ export function SiteHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-30 backdrop-blur-md bg-[rgba(10,15,31,0.8)] border-b border-soft">
+    <header
+      className="sticky top-0 z-30 backdrop-blur-md bg-[rgba(10,15,31,0.8)] border-b border-soft"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
         {/* Logo */}
         <Link
