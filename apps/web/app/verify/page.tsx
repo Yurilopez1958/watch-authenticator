@@ -1,0 +1,274 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import {
+  ALL_BRANDS,
+  ALL_MODELS,
+  bestProfileMatch,
+  getReferenceProfilesForBrand,
+  type ElementReading,
+  type ElementSymbol,
+  type MatchResult,
+  type XRFMeasurement,
+} from '@watch-auth/core';
+
+const ELEMENTS_OF_INTEREST: ElementSymbol[] = [
+  'Fe', 'Cr', 'Ni', 'Mo', 'Mn', 'Cu', 'Si',
+  'Au', 'Ag', 'Pt', 'Pd', 'Ru',
+];
+
+const YEAR_OPTIONS = ((): number[] => {
+  const current = new Date().getFullYear();
+  const years: number[] = [];
+  for (let y = current; y >= 1950; y--) years.push(y);
+  return years;
+})();
+
+const verdictLabel: Record<MatchResult['verdict'], { text: string; color: string; ring: string }> = {
+  'likely-authentic': { text: 'Likely authentic', color: 'text-emerald-300', ring: 'ring-emerald-500/30 bg-emerald-500/10' },
+  'inconclusive':     { text: 'Inconclusive',     color: 'text-amber-300',   ring: 'ring-amber-500/30 bg-amber-500/10' },
+  'likely-fake':      { text: 'Likely fake',      color: 'text-red-300',     ring: 'ring-red-500/30 bg-red-500/10' },
+};
+
+export default function VerifyPage() {
+  const [brandId, setBrandId] = useState<string>(ALL_BRANDS[0]!.id);
+  const [audience, setAudience] = useState<'all' | 'men' | 'women' | 'unisex'>('all');
+  const [modelSearch, setModelSearch] = useState('');
+  const [modelId, setModelId] = useState<string>(ALL_MODELS[0]!.id);
+  const [year, setYear] = useState<number>(new Date().getFullYear() - 1);
+  const [readings, setReadings] = useState<Record<string, string>>({});
+  const [result, setResult] = useState<MatchResult | null>(null);
+
+  const brandModels = useMemo(() => ALL_MODELS.filter((m) => m.brandId === brandId), [brandId]);
+  const filteredModels = useMemo(() => {
+    const q = modelSearch.trim().toLowerCase().replace(/\s+/g, '');
+    return brandModels.filter((m) => {
+      if (audience !== 'all' && m.audience !== audience) return false;
+      if (!q) return true;
+      return (
+        m.reference.toLowerCase().replace(/\s+/g, '').includes(q) ||
+        m.name.toLowerCase().includes(q) ||
+        m.collection.toLowerCase().includes(q)
+      );
+    });
+  }, [brandModels, audience, modelSearch]);
+  const groupedModels = useMemo(() => {
+    const groups = new Map<string, typeof ALL_MODELS[number][]>();
+    for (const m of filteredModels) {
+      const arr = groups.get(m.collection) ?? [];
+      arr.push(m);
+      groups.set(m.collection, arr);
+    }
+    return Array.from(groups.entries());
+  }, [filteredModels]);
+  const currentBrand = ALL_BRANDS.find((b) => b.id === brandId)!;
+
+  const brandProfiles = useMemo(() => getReferenceProfilesForBrand(brandId), [brandId]);
+  const candidateProfiles = useMemo(
+    () =>
+      brandProfiles.filter(
+        (p) => year >= p.yearStart && (p.yearEnd == null || year <= p.yearEnd),
+      ),
+    [brandProfiles, year],
+  );
+
+  // Reset model when brand changes if current is no longer valid
+  useMemo(() => {
+    if (!brandModels.some((m) => m.id === modelId) && brandModels.length > 0) {
+      setModelId(brandModels[0]!.id);
+    }
+  }, [brandModels, modelId]);
+
+  const onAnalyze = () => {
+    const elementReadings: ElementReading[] = Object.entries(readings)
+      .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseFloat(raw) }))
+      .filter((r) => Number.isFinite(r.pct) && r.pct > 0);
+
+    if (elementReadings.length === 0) {
+      setResult(null);
+      return;
+    }
+
+    const measurement: XRFMeasurement = {
+      id: crypto.randomUUID(),
+      partMeasured: 'case-back',
+      measuredAt: new Date().toISOString(),
+      instrument: 'niton-xl',
+      readings: elementReadings,
+    };
+
+    setResult(bestProfileMatch(measurement, candidateProfiles));
+  };
+
+  return (
+    <div className="space-y-8">
+      <section>
+        <h1 className="text-3xl font-bold mb-2">Verify watch</h1>
+        <p className="text-muted text-sm">
+          Select a model, year, and enter the percentages measured by the Niton XL.
+          The app finds the closest reference profile and issues a verdict.
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">Brand</span>
+          <div className="flex flex-wrap gap-2">
+            {ALL_BRANDS.map((b) => (
+              <button
+                key={b.id}
+                onClick={() => setBrandId(b.id)}
+                className={`chip cursor-pointer ${brandId === b.id ? '!bg-accent !text-white !border-transparent' : ''}`}
+              >
+                {b.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        <label className="block">
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">Search by reference, model or collection</span>
+          <input
+            value={modelSearch}
+            onChange={(e) => setModelSearch(e.target.value)}
+            className="field font-mono"
+            placeholder='e.g. "126610LN", "Nautilus", "Royal Oak", "Pepsi"...'
+          />
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {(['all', 'men', 'women', 'unisex'] as const).map((a) => (
+            <button
+              key={a}
+              onClick={() => setAudience(a)}
+              className={`chip cursor-pointer ${audience === a ? '!bg-accent !text-white !border-transparent' : ''}`}
+            >
+              {a === 'all' ? 'All' : a === 'men' ? "Men's" : a === 'women' ? "Women's" : 'Unisex'}
+            </button>
+          ))}
+          <span className="text-xs text-dim self-center ml-2">{filteredModels.length} of {brandModels.length} models · {currentBrand.name}</span>
+          {(modelSearch || audience !== 'all') && (
+            <button
+              onClick={() => { setModelSearch(''); setAudience('all'); }}
+              className="text-xs text-accent-bright hover:underline self-center ml-2"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      </section>
+
+      <section className="grid md:grid-cols-2 gap-4">
+        <label className="block">
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">Model</span>
+          <select value={modelId} onChange={(e) => setModelId(e.target.value)} className="field" disabled={filteredModels.length === 0}>
+            {filteredModels.length === 0 && <option>No matches</option>}
+            {groupedModels.map(([collection, models]) => (
+              <optgroup key={collection} label={collection}>
+                {models.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name} — {m.reference}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">Year of manufacture</span>
+          <select value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))} className="field">
+            {YEAR_OPTIONS.map((y) => (<option key={y} value={y}>{y}</option>))}
+          </select>
+        </label>
+      </section>
+
+      <section className="card p-6">
+        <h2 className="text-lg font-semibold mb-1">Measured XRF composition</h2>
+        <p className="text-xs text-dim mb-4">Enter the percentage for each element reported by the Niton XL.</p>
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          {ELEMENTS_OF_INTEREST.map((el) => (
+            <label key={el} className="block">
+              <span className="block text-[0.7rem] text-dim font-mono mb-1">{el}</span>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={readings[el] ?? ''}
+                onChange={(e) => setReadings({ ...readings, [el]: e.target.value })}
+                className="field text-sm py-1.5"
+              />
+            </label>
+          ))}
+        </div>
+        <button onClick={onAnalyze} className="btn-primary mt-5">
+          Analyze
+        </button>
+      </section>
+
+      {result && (
+        <section className={`card p-6 space-y-5 fade-in ring-1 ${verdictLabel[result.verdict].ring}`}>
+          <div className="flex items-baseline justify-between flex-wrap gap-3">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-dim">Verdict</div>
+              <div className={`text-3xl font-bold ${verdictLabel[result.verdict].color}`}>
+                {verdictLabel[result.verdict].text}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs uppercase tracking-wide text-dim">Score</div>
+              <div className="text-4xl font-mono font-semibold">{result.overallScore}<span className="text-dim text-2xl">/100</span></div>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs uppercase tracking-wide text-dim mb-1">Closest profile</div>
+            <div className="font-mono text-sm">{result.materialName}</div>
+          </div>
+
+          {result.flags.length > 0 && (
+            <div>
+              <div className="text-xs uppercase tracking-wide text-dim mb-2">Flags</div>
+              <ul className="space-y-1.5 text-sm text-neutral-200">
+                {result.flags.map((f, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-accent-bright">▸</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {result.elementMatches.length > 0 && (
+            <div>
+              <div className="text-xs uppercase tracking-wide text-dim mb-2">Per-element detail</div>
+              <table className="w-full text-sm">
+                <thead className="text-[0.7rem] text-dim uppercase tracking-wider">
+                  <tr>
+                    <th className="text-left py-2">Element</th>
+                    <th className="text-left py-2">Measured</th>
+                    <th className="text-left py-2">Expected</th>
+                    <th className="text-left py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.elementMatches.map((em) => (
+                    <tr key={em.element} className="border-t border-soft">
+                      <td className="py-2 font-mono">{em.element}{em.isCritical && <span className="text-accent-bright">*</span>}</td>
+                      <td className="py-2">{em.measured.toFixed(2)}%</td>
+                      <td className="py-2 text-dim">{em.expectedMin}–{em.expectedMax}%</td>
+                      <td className={`py-2 ${
+                        em.status === 'in-range' ? 'text-emerald-300' :
+                        em.status === 'borderline' ? 'text-amber-300' : 'text-red-300'
+                      }`}>
+                        {em.status === 'in-range' ? 'in range' :
+                         em.status === 'borderline' ? 'borderline' : 'out of range'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="text-xs text-dim mt-2">* critical element</div>
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  );
+}
