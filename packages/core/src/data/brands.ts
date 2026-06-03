@@ -73,11 +73,37 @@ export function getModelsByBrand(brandId: string): readonly Model[] {
   return ALL_MODELS.filter((m) => m.brandId === brandId);
 }
 
-/** Returns reference profiles applicable to a brand (brand-specific + common fallback). */
+/** Maps a reference profile to the material "kind" it describes (steel/gold/platinum/…). */
+function profileKind(p: ReferenceProfile): string | undefined {
+  return ALL_MATERIALS.find((m) => m.id === p.materialId)?.kind;
+}
+
+/**
+ * Returns reference profiles applicable to a brand.
+ *
+ * A brand uses its OWN profiles, plus the generic `common` profiles **only for
+ * material kinds it does not already cover itself**. This prevents the generic
+ * fallback from masking a brand-specific signature: e.g. Rolex has its own steel
+ * profiles (904L Oystersteel, and 316L valid only up to 2003), so a modern Rolex
+ * measured as generic 316L must NOT pass via the always-valid `common-316l`
+ * profile — it should be compared only against Rolex's own steel references and
+ * flagged as a mismatch. Omega, which has its own gold alloys but no steel
+ * profile, still gets `common-316l` for its steel watches.
+ */
 export function getReferenceProfilesForBrand(brandId: string): readonly ReferenceProfile[] {
-  return ALL_REFERENCE_PROFILES.filter(
-    (p) => p.brandId === brandId || p.brandId === 'common',
-  );
+  const own = ALL_REFERENCE_PROFILES.filter((p) => p.brandId === brandId);
+  const ownKinds = new Set<string>();
+  for (const p of own) {
+    const k = profileKind(p);
+    if (k) ownKinds.add(k);
+  }
+  const common = ALL_REFERENCE_PROFILES.filter((p) => {
+    if (p.brandId !== 'common') return false;
+    const k = profileKind(p);
+    // Skip the generic profile if the brand already covers this material kind
+    return k ? !ownKinds.has(k) : true;
+  });
+  return [...own, ...common];
 }
 
 /**
