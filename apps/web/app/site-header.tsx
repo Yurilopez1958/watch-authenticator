@@ -10,7 +10,7 @@ const LINKS: readonly NavLink[] = [
   { href: '/authenticate', label: 'Authenticate', primary: true },
   { href: '/connect', label: 'Connect Niton' },
   { href: '/verify', label: 'Quick verify' },
-  { href: '/photos', label: 'Photos' },
+  { href: '/gallery', label: 'Reference gallery' },
   { href: '/import', label: 'Import CSV' },
   { href: '/catalog', label: 'Catalog' },
 ];
