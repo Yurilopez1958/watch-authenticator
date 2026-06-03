@@ -2,7 +2,7 @@
  * Local reference-photo store backed by IndexedDB.
  *
  * Stores the user's own photos of verified-authentic watches, keyed by
- * brand + caliber + part. IndexedDB handles hundreds of images (far more than
+ * brand + model + part. IndexedDB handles hundreds of images (far more than
  * localStorage). Everything stays on this device/browser; migrating to Supabase
  * later would sync across devices.
  */
@@ -10,7 +10,11 @@
 export type RefPhoto = {
   id: string;
   brandId: string;
+  modelId: string;
+  /** Caliber derived from the model+year, stored for context. */
   caliber: string;
+  /** Year of the reference piece, for context. */
+  year?: number;
   part: string;
   dataUrl: string;
   label?: string;
@@ -19,7 +23,7 @@ export type RefPhoto = {
 
 const DB_NAME = 'watch-auth-gallery';
 const STORE = 'reference-photos';
-const VERSION = 1;
+const VERSION = 2;
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -30,11 +34,11 @@ function openDB(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        const store = db.createObjectStore(STORE, { keyPath: 'id' });
-        store.createIndex('by_brand_caliber', ['brandId', 'caliber'], { unique: false });
-        store.createIndex('by_key', ['brandId', 'caliber', 'part'], { unique: false });
-      }
+      // Recreate the store with model-based indexes
+      if (db.objectStoreNames.contains(STORE)) db.deleteObjectStore(STORE);
+      const store = db.createObjectStore(STORE, { keyPath: 'id' });
+      store.createIndex('by_model', ['brandId', 'modelId'], { unique: false });
+      store.createIndex('by_model_part', ['brandId', 'modelId', 'part'], { unique: false });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -61,17 +65,17 @@ export function deletePhoto(id: string): Promise<undefined> {
   return tx('readwrite', (store) => store.delete(id) as IDBRequest<undefined>);
 }
 
-/** All photos for a brand + caliber + part. */
-export function getPhotos(brandId: string, caliber: string, part: string): Promise<RefPhoto[]> {
+/** All photos for a brand + model + part. */
+export function getPhotos(brandId: string, modelId: string, part: string): Promise<RefPhoto[]> {
   return tx<RefPhoto[]>('readonly', (store) =>
-    store.index('by_key').getAll([brandId, caliber, part]),
+    store.index('by_model_part').getAll([brandId, modelId, part]),
   ).then((rows) => rows.sort((a, b) => b.createdAt - a.createdAt));
 }
 
-/** Count of photos stored for a brand + caliber (across all parts). */
-export function countByCaliber(brandId: string, caliber: string): Promise<number> {
+/** Count of photos stored for a brand + model (across all parts). */
+export function countByModel(brandId: string, modelId: string): Promise<number> {
   return tx<number>('readonly', (store) =>
-    store.index('by_brand_caliber').count(IDBKeyRange.only([brandId, caliber])),
+    store.index('by_model').count(IDBKeyRange.only([brandId, modelId])),
   );
 }
 
