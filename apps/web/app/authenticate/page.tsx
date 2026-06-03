@@ -5,8 +5,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ALL_BRANDS,
   ALL_MODELS,
+  ROLEX_AUTH_CHECKPOINTS,
   bestProfileMatch,
   checkMovementCaliber,
+  getMovementCheckpoints,
   getMovementForModelAcrossBrands,
   getReferenceProfilesForBrand,
   parseNitonCsv,
@@ -845,6 +847,57 @@ export default function AuthenticatePage() {
             <input ref={examinedRef} type="file" accept="image/*" onChange={onFile('examined')} className="hidden" />
             <input ref={referenceRef} type="file" accept="image/*" onChange={onFile('reference')} className="hidden" />
           </div>
+
+          {/* Authentication guide (Rolex) */}
+          {brandId === 'rolex' && (
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent-bright">
+                  <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+                <h3 className="font-semibold">Authentication checklist — what to compare</h3>
+              </div>
+              <p className="text-xs text-muted">
+                Textual reference guide for Rolex. Compare each point against your own verified
+                authentic piece. Photos here are yours to capture; this guide tells you what to look for.
+              </p>
+
+              {/* Movement-specific points when the movement part is selected */}
+              {examinedPart === 'movement' && expectedMovement && getMovementCheckpoints(expectedMovement.caliber).length > 0 && (
+                <div className="rounded-lg border border-accent/40 bg-accent-soft p-4">
+                  <div className="text-sm font-semibold text-accent-bright mb-2">
+                    Movement · Cal. {expectedMovement.caliber}
+                  </div>
+                  <ul className="space-y-1.5 text-sm text-neutral-200">
+                    {getMovementCheckpoints(expectedMovement.caliber).map((pt, i) => (
+                      <li key={i} className="flex gap-2"><span className="text-accent-bright shrink-0">▸</span><span>{pt}</span></li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* General brand checkpoints */}
+              <div className="grid md:grid-cols-2 gap-3">
+                {ROLEX_AUTH_CHECKPOINTS.map((cp) => (
+                  <div key={cp.id} className="rounded-lg border border-soft bg-card p-4">
+                    <div className="text-sm font-semibold mb-2">{cp.label}</div>
+                    <ul className="space-y-1.5 text-xs text-muted">
+                      {cp.points.map((pt, i) => (
+                        <li key={i} className="flex gap-2"><span className="text-accent-bright shrink-0">·</span><span>{pt}</span></li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {brandId !== 'rolex' && (
+            <div className="mt-6 rounded-lg border border-soft bg-card p-4 text-sm text-muted">
+              A detailed visual authentication guide is currently available for Rolex.
+              Guides for {currentBrand.name} can be added next.
+            </div>
+          )}
         </StepCard>
       )}
 

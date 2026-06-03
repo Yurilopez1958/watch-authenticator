@@ -1,6 +1,12 @@
 export { ROLEX_BRAND, ROLEX_MODELS } from './rolex-catalog';
 export { ROLEX_MATERIALS, ROLEX_REFERENCE_PROFILES } from './rolex-materials';
 export {
+  ROLEX_AUTH_CHECKPOINTS,
+  ROLEX_MOVEMENT_CHECKPOINTS,
+  getMovementCheckpoints,
+} from './rolex-auth-checkpoints';
+export type { AuthCheckpoint } from './rolex-auth-checkpoints';
+export {
   ROLEX_MOVEMENTS,
   ROLEX_MODEL_TO_CALIBER,
   getMovementForModel,
