@@ -178,7 +178,8 @@ export default function AuthenticatePage() {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [photoNotes, setPhotoNotes] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const screenPhotoRef = useRef<HTMLInputElement | null>(null);
+  const screenPhotoRef = useRef<HTMLInputElement | null>(null);   // camera (capture)
+  const screenUploadRef = useRef<HTMLInputElement | null>(null);  // gallery / files
 
   // Step 3 — Movement
   const [observedCaliber, setObservedCaliber] = useState('');
@@ -559,19 +560,47 @@ export default function AuthenticatePage() {
                     <button
                       onClick={() => screenPhotoRef.current?.click()}
                       disabled={photoBusy}
-                      className="btn-primary text-sm"
+                      className="btn-primary text-sm inline-flex items-center gap-2"
                     >
-                      {photoBusy ? 'Reading…' : photoPreview ? 'Retake / choose another' : 'Take or upload photo'}
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                      {photoBusy ? 'Reading…' : 'Take photo'}
+                    </button>
+                    <button
+                      onClick={() => screenUploadRef.current?.click()}
+                      disabled={photoBusy}
+                      className="btn-ghost text-sm inline-flex items-center gap-2"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                      Upload from files
                     </button>
                     {photoPreview && !photoBusy && (
                       <span className="text-xs text-emerald-300">✓ Values filled below — review them</span>
                     )}
                   </div>
+                  {/* Camera input (forces rear camera on phones) */}
                   <input
                     ref={screenPhotoRef}
                     type="file"
                     accept="image/*"
                     capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void handleScreenPhoto(f);
+                    }}
+                  />
+                  {/* Gallery / file picker (no capture → lets you pick any saved image) */}
+                  <input
+                    ref={screenUploadRef}
+                    type="file"
+                    accept="image/*"
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
