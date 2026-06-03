@@ -219,10 +219,41 @@ export const PATEK_MOVEMENTS: readonly Movement[] = [
     features: ['chronograph', 'annual-calendar', 'travel-time', 'date', 'flyback'],
     notes: 'Flyback chronograph with annual calendar and travel time. Powers Nautilus 5990 and Annual Chronograph 5905.',
   },
+
+  // ============== VINTAGE ==============
+  {
+    id: 'patek-cal-28-255-c',
+    caliber: '28-255 C',
+    yearStart: 1976,
+    yearEnd: 1990,
+    jewels: 36,
+    powerReserveHours: 42,
+    vph: 19800,
+    escapement: 'lever',
+    cosc: false,
+    features: ['date'],
+    notes: 'Ultra-thin automatic based on the Jaeger-LeCoultre 920 (shared with the AP 2121 and VC 1120). Powered the original "Jumbo" Nautilus 3700/1A (1976). 2.75 Hz (19,800 vph); just 3.05 mm thick.',
+  },
+  {
+    id: 'patek-cal-12-120',
+    caliber: '12-120',
+    yearStart: 1932,
+    yearEnd: 1973,
+    jewels: 18,
+    powerReserveHours: 40,
+    vph: 18000,
+    escapement: 'lever',
+    cosc: false,
+    features: ['small-seconds'],
+    notes: 'Hand-wound caliber of the original Calatrava ref. 96 (1932) — the watch that defined the round Patek dress style. Sub-seconds, Geneva Seal finishing, 18,000 vph.',
+  },
 ];
 
 /** Maps each Patek Philippe model ID to its expected caliber. */
 export const PATEK_MODEL_TO_CALIBER: Readonly<Record<string, string>> = {
+  // Vintage
+  'patek-nautilus-3700-1a':          '28-255 C',
+  'patek-calatrava-96':              '12-120',
   // Calatrava
   'patek-calatrava-5196g':           '215 PS',
   'patek-calatrava-5196r':           '215 PS',

@@ -81,4 +81,8 @@ export const PATEK_MODELS: readonly Model[] = [
   // ============== GONDOLO ==============
   { id: 'patek-gondolo-5124g',            brandId: 'patek-philippe', collection: 'Gondolo',             audience: 'men',     name: 'Gondolo 5124G (white gold, rectangular)',        reference: '5124G',         yearStart: 2006, caliber: 'Cal. 25-21 REC PS',     caseDiameterMm: 32 },
   { id: 'patek-gondolo-5298p',            brandId: 'patek-philippe', collection: 'Gondolo',             audience: 'women',   name: 'Gondolo 5298P (platinum, women)',                reference: '5298P',         yearStart: 2010, caliber: 'Cal. 25-21 REC PS',     caseDiameterMm: 30 },
+
+  // ============== VINTAGE ==============
+  { id: 'patek-nautilus-3700-1a',         brandId: 'patek-philippe', collection: 'Nautilus',            audience: 'men',     name: 'Nautilus 3700/1A (original "Jumbo")',            reference: '3700/1A',       yearStart: 1976, yearEnd: 1990, caliber: 'Cal. 28-255 C',         caseDiameterMm: 42 },
+  { id: 'patek-calatrava-96',             brandId: 'patek-philippe', collection: 'Calatrava',           audience: 'unisex',  name: 'Calatrava 96 (the original, 1932)',              reference: '96',            yearStart: 1932, yearEnd: 1973, caliber: 'Cal. 12-120',           caseDiameterMm: 31 },
 ];
