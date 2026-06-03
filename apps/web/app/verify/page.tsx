@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ALL_BRANDS,
   ALL_MODELS,
@@ -12,17 +12,35 @@ import {
   type XRFMeasurement,
 } from '@watch-auth/core';
 
+/** Year selector restricted to a model's production range. */
+function YearPicker({ years, value, onChange }: { years: number[]; value: number; onChange: (y: number) => void }) {
+  if (years.length === 0) return <div className="text-sm text-dim">No production years on file.</div>;
+  if (years.length > 18) {
+    return (
+      <select value={value} onChange={(e) => onChange(parseInt(e.target.value, 10))} className="field">
+        {years.map((y) => (<option key={y} value={y}>{y}</option>))}
+      </select>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {years.map((y) => (
+        <button
+          key={y}
+          onClick={() => onChange(y)}
+          className={`chip cursor-pointer ${value === y ? '!bg-accent !text-white !border-transparent' : ''}`}
+        >
+          {y}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const ELEMENTS_OF_INTEREST: ElementSymbol[] = [
   'Fe', 'Cr', 'Ni', 'Mo', 'Mn', 'Cu', 'Si',
   'Au', 'Ag', 'Pt', 'Pd', 'Ru',
 ];
-
-const YEAR_OPTIONS = ((): number[] => {
-  const current = new Date().getFullYear();
-  const years: number[] = [];
-  for (let y = current; y >= 1950; y--) years.push(y);
-  return years;
-})();
 
 const verdictLabel: Record<MatchResult['verdict'], { text: string; color: string; ring: string }> = {
   'likely-authentic': { text: 'Likely authentic', color: 'text-emerald-300', ring: 'ring-emerald-500/30 bg-emerald-500/10' },
@@ -62,6 +80,23 @@ export default function VerifyPage() {
     return Array.from(groups.entries());
   }, [filteredModels]);
   const currentBrand = ALL_BRANDS.find((b) => b.id === brandId)!;
+  const currentModel = ALL_MODELS.find((m) => m.id === modelId);
+
+  // Years this model was produced (newest first); keep selected year in range
+  const productionYears = useMemo(() => {
+    const cur = new Date().getFullYear();
+    const m = ALL_MODELS.find((x) => x.id === modelId);
+    if (!m) return [] as number[];
+    const end = Math.min(m.yearEnd ?? cur, cur);
+    const years: number[] = [];
+    for (let y = end; y >= m.yearStart; y--) years.push(y);
+    return years;
+  }, [modelId]);
+  useEffect(() => {
+    if (productionYears.length > 0 && !productionYears.includes(year)) {
+      setYear(productionYears[0]!);
+    }
+  }, [productionYears, year]);
 
   const brandProfiles = useMemo(() => getReferenceProfilesForBrand(brandId), [brandId]);
   const candidateProfiles = useMemo(
@@ -170,12 +205,15 @@ export default function VerifyPage() {
             ))}
           </select>
         </label>
-        <label className="block">
-          <span className="block text-xs uppercase tracking-wide text-dim mb-2">Year of manufacture</span>
-          <select value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))} className="field">
-            {YEAR_OPTIONS.map((y) => (<option key={y} value={y}>{y}</option>))}
-          </select>
-        </label>
+        <div className="block">
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">
+            Year of manufacture
+            {currentModel && (
+              <span className="text-dim/70 normal-case ml-1">· produced {currentModel.yearStart}–{currentModel.yearEnd ?? 'present'}</span>
+            )}
+          </span>
+          <YearPicker years={productionYears} value={year} onChange={setYear} />
+        </div>
       </section>
 
       <section className="card p-6">

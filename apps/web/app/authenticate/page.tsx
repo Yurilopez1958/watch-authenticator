@@ -24,13 +24,6 @@ const ELEMENTS_OF_INTEREST: ElementSymbol[] = [
   'Au', 'Ag', 'Pt', 'Pd', 'Ru',
 ];
 
-const YEAR_OPTIONS = ((): number[] => {
-  const current = new Date().getFullYear();
-  const years: number[] = [];
-  for (let y = current; y >= 1950; y--) years.push(y);
-  return years;
-})();
-
 const PARTS: readonly { id: WatchPart; label: string }[] = [
   { id: 'movement', label: 'Movement' },
   { id: 'hands', label: 'Hands' },
@@ -72,6 +65,34 @@ function StatusFlag({ status, size = 16 }: { status: StepStatus; size?: number }
       <path d="M4 21V4" />
       <path d="M4 4h11l-1.5 3.5L15 11H4" fill={c} fillOpacity="0.85" />
     </svg>
+  );
+}
+
+/** Year selector restricted to a model's production range. Chips for short
+ *  ranges, dropdown for long ones. */
+function YearPicker({ years, value, onChange }: { years: number[]; value: number; onChange: (y: number) => void }) {
+  if (years.length === 0) {
+    return <div className="text-sm text-dim">No production years on file.</div>;
+  }
+  if (years.length > 18) {
+    return (
+      <select value={value} onChange={(e) => onChange(parseInt(e.target.value, 10))} className="field">
+        {years.map((y) => (<option key={y} value={y}>{y}</option>))}
+      </select>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {years.map((y) => (
+        <button
+          key={y}
+          onClick={() => onChange(y)}
+          className={`chip cursor-pointer ${value === y ? '!bg-accent !text-white !border-transparent' : ''}`}
+        >
+          {y}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -214,6 +235,22 @@ export default function AuthenticatePage() {
   const currentModel = ALL_MODELS.find((m) => m.id === modelId)!;
   const currentBrand = ALL_BRANDS.find((b) => b.id === brandId)!;
   const expectedMovement = useMemo(() => getMovementForModelAcrossBrands(modelId), [modelId]);
+
+  // Years this specific model was produced (newest first)
+  const productionYears = useMemo(() => {
+    const current = new Date().getFullYear();
+    const end = Math.min(currentModel.yearEnd ?? current, current);
+    const years: number[] = [];
+    for (let y = end; y >= currentModel.yearStart; y--) years.push(y);
+    return years;
+  }, [currentModel]);
+
+  // Keep the selected year within the model's production range
+  useEffect(() => {
+    if (productionYears.length > 0 && !productionYears.includes(year)) {
+      setYear(productionYears[0]!);
+    }
+  }, [productionYears, year]);
   const livePreview = useMemo(
     () => checkMovementCaliber(modelId, observedCaliber),
     [modelId, observedCaliber],
@@ -519,12 +556,13 @@ export default function AuthenticatePage() {
                 ))}
               </select>
             </label>
-            <label className="block">
-              <span className="block text-xs uppercase tracking-wide text-dim mb-2">Year of manufacture</span>
-              <select value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))} className="field">
-                {YEAR_OPTIONS.map((y) => (<option key={y} value={y}>{y}</option>))}
-              </select>
-            </label>
+            <div className="block">
+              <span className="block text-xs uppercase tracking-wide text-dim mb-2">
+                Year of manufacture
+                <span className="text-dim/70 normal-case ml-1">· produced {currentModel.yearStart}–{currentModel.yearEnd ?? 'present'}</span>
+              </span>
+              <YearPicker years={productionYears} value={year} onChange={setYear} />
+            </div>
             <label className="block">
               <span className="block text-xs uppercase tracking-wide text-dim mb-2">Serial number (optional)</span>
               <input value={serial} onChange={(e) => setSerial(e.target.value)} className="field" placeholder="e.g. M7P8" />
