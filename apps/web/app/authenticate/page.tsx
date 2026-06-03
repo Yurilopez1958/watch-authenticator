@@ -199,6 +199,9 @@ export default function AuthenticatePage() {
   const [xrfRowCount, setXrfRowCount] = useState(0);
   const [movementResult, setMovementResult] = useState<MovementCheck | null>(null);
 
+  // Warning modal when the measured metal clearly does not match the brand
+  const [showMetalWarning, setShowMetalWarning] = useState(false);
+
   const brandProfiles = useMemo(() => getReferenceProfilesForBrand(brandId), [brandId]);
   const candidateProfiles = useMemo(
     () =>
@@ -415,9 +418,19 @@ export default function AuthenticatePage() {
     setMovementResult(checkMovementCaliber(modelId, observedCaliber));
   };
 
-  const goNext = () => {
+  const advance = () => {
     if (step === 3) runAnalysis();
     setStep(((step + 1) % 5) as Step);
+  };
+
+  const goNext = () => {
+    // Leaving the XRF step: if the metal composition clearly does not match the
+    // brand, ask the user whether they really want to keep authenticating.
+    if (step === 1 && xrfMode !== 'skip' && liveXrf?.verdict === 'likely-fake') {
+      setShowMetalWarning(true);
+      return;
+    }
+    advance();
   };
   const goBack = () => setStep((Math.max(0, step - 1)) as Step);
 
@@ -918,6 +931,53 @@ export default function AuthenticatePage() {
             <video ref={videoRef} playsInline muted className="w-full rounded-xl border border-soft bg-black aspect-video object-contain" />
             <div className="flex justify-center">
               <button onClick={snapPhoto} className="btn-primary px-8 py-3">Take photo</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Metal-mismatch warning modal */}
+      {showMetalWarning && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 fade-in" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md card p-6 space-y-4 border-l-4" style={{ borderLeftColor: '#ef4444' }}>
+            <div className="flex items-start gap-3">
+              <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(239,68,68,0.12)' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </span>
+              <div>
+                <h3 className="text-lg font-bold text-red-300">Metal composition does not match</h3>
+                <p className="text-sm text-muted mt-1">
+                  The composition measured on this case does not match {currentBrand.name}
+                  {liveXrf ? ` (closest reference: ${liveXrf.materialName}, ${liveXrf.overallScore}/100).` : '.'}
+                </p>
+              </div>
+            </div>
+
+            {liveXrf && liveXrf.flags.length > 0 && (
+              <ul className="text-xs text-neutral-300 space-y-1 border-t border-soft pt-3">
+                {liveXrf.flags.slice(0, 3).map((f, i) => (
+                  <li key={i} className="flex gap-2"><span className="text-red-400">▸</span><span>{f}</span></li>
+                ))}
+              </ul>
+            )}
+
+            <p className="text-sm text-foreground">Do you want to continue with the authentication anyway?</p>
+
+            <div className="flex gap-3 justify-end pt-1">
+              <button onClick={() => setShowMetalWarning(false)} className="btn-ghost text-sm">
+                Stop here
+              </button>
+              <button
+                onClick={() => { setShowMetalWarning(false); advance(); }}
+                className="btn-primary text-sm"
+                style={{ background: 'linear-gradient(135deg,#ef4444,#b91c1c)' }}
+              >
+                Continue anyway
+              </button>
             </div>
           </div>
         </div>
