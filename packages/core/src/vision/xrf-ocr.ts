@@ -77,7 +77,7 @@ export async function extractXrfFromImage(
 ): Promise<XrfOcrResult> {
   const client = new Anthropic({ apiKey: options.apiKey });
   const message = await client.messages.create({
-    model: options.model ?? 'claude-opus-4-7',
+    model: options.model ?? 'claude-3-5-sonnet-20241022',
     max_tokens: 1024,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: buildContent(imageBase64, mediaType) }],

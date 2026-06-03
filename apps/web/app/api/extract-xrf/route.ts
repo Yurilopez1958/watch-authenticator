@@ -33,8 +33,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing imageBase64 or mediaType.' }, { status: 400 });
   }
 
+  const model = process.env.ANTHROPIC_MODEL;
   try {
-    const result = await extractXrfFromImage(imageBase64, mediaType, { apiKey });
+    const result = await extractXrfFromImage(imageBase64, mediaType, {
+      apiKey,
+      ...(model ? { model } : {}),
+    });
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
