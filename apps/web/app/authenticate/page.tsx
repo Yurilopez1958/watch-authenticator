@@ -36,6 +36,28 @@ function dataUrlParts(dataUrl: string): { base64: string; mediaType: 'image/jpeg
   return { base64: dataUrl.slice(comma + 1), mediaType: mt };
 }
 
+/** POSTs JSON and retries once on a 5xx or network error, which smooths over the
+ *  cold start of a serverless function (the first request after a deploy can
+ *  transiently 500 before the function is warm). */
+async function postJsonWithRetry(url: string, payload: unknown): Promise<Response> {
+  const init: RequestInit = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  };
+  try {
+    const res = await fetch(url, init);
+    if (res.status >= 500) {
+      await new Promise((r) => setTimeout(r, 1500));
+      return await fetch(url, init);
+    }
+    return res;
+  } catch {
+    await new Promise((r) => setTimeout(r, 1500));
+    return await fetch(url, init);
+  }
+}
+
 const ELEMENTS_OF_INTEREST: ElementSymbol[] = [
   'Fe', 'Cr', 'Ni', 'Mo', 'Mn', 'Cu', 'Si',
   'Au', 'Ag', 'Pt', 'Pd', 'Ru',
@@ -443,18 +465,14 @@ export default function AuthenticatePage() {
           ? [{ part: examinedPart, ...((d) => ({ imageData: d.base64, mediaType: d.mediaType }))(dataUrlParts(reference)) }]
           : [];
 
-      const res = await fetch('/api/analyze-part', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brandName: currentBrand.name,
-          modelName: currentModel.name,
-          modelReference: currentModel.reference,
-          yearOfManufacture: year,
-          part: examinedPart,
-          examined: { imageData: ex.base64, mediaType: ex.mediaType },
-          references: refs,
-        }),
+      const res = await postJsonWithRetry('/api/analyze-part', {
+        brandName: currentBrand.name,
+        modelName: currentModel.name,
+        modelReference: currentModel.reference,
+        yearOfManufacture: year,
+        part: examinedPart,
+        examined: { imageData: ex.base64, mediaType: ex.mediaType },
+        references: refs,
       });
       const json = await res.json();
       if (!res.ok) { setAiError(json.error ?? 'AI analysis failed.'); return; }
@@ -484,11 +502,7 @@ export default function AuthenticatePage() {
       const mediaType = (dataUrl.slice(5, commaIdx).split(';')[0] || 'image/jpeg') as
         'image/jpeg' | 'image/png' | 'image/webp';
 
-      const res = await fetch('/api/extract-xrf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64, mediaType }),
-      });
+      const res = await postJsonWithRetry('/api/extract-xrf', { imageBase64: base64, mediaType });
       const json = await res.json();
       if (!res.ok) {
         setPhotoError(json.error ?? 'Could not read the screen.');
