@@ -13,10 +13,19 @@ import {
   deletePhoto,
   getPhotos,
   savePhoto,
-  type RefPhoto,
 } from '@/lib/photo-store';
+import {
+  countCloudByModel,
+  deleteCloudPhoto,
+  listCloudPhotos,
+  uploadCloudPhoto,
+} from '@/lib/gallery-cloud';
+import { useSession } from '@/lib/use-session';
 
 type GalleryPart = { id: string; label: string; checkpointIds: string[] };
+
+/** Unified photo for display, from local cache or the cloud. */
+type DisplayPhoto = { id: string; src: string; storagePath?: string };
 
 const GALLERY_PARTS: readonly GalleryPart[] = [
   { id: 'movement', label: 'Movement', checkpointIds: [] },
@@ -59,9 +68,16 @@ export default function GalleryPage() {
   const [year, setYear] = useState<number>(new Date().getFullYear() - 1);
 
   // Step 2: photos per part
-  const [photosByPart, setPhotosByPart] = useState<Record<string, RefPhoto[]>>({});
+  const [photosByPart, setPhotosByPart] = useState<Record<string, DisplayPhoto[]>>({});
   const [total, setTotal] = useState(0);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Auth / cloud sync
+  const auth = useSession();
+  const cloud = auth.enabled && !!auth.session; // sync mode when signed in
+  const [emailInput, setEmailInput] = useState('');
+  const [authMsg, setAuthMsg] = useState<string | null>(null);
+  const [authBusy, setAuthBusy] = useState(false);
 
   const brandModels = useMemo(() => ALL_MODELS.filter((m) => m.brandId === brandId), [brandId]);
   const filteredModels = useMemo(() => {
@@ -109,38 +125,61 @@ export default function GalleryPage() {
   }, [productionYears, year]);
 
   const loadPhotos = async () => {
-    const next: Record<string, RefPhoto[]> = {};
-    for (const part of GALLERY_PARTS) {
-      next[part.id] = await getPhotos(brandId, modelId, part.id);
+    const next: Record<string, DisplayPhoto[]> = {};
+    if (cloud) {
+      for (const part of GALLERY_PARTS) {
+        const rows = await listCloudPhotos(brandId, modelId, part.id);
+        next[part.id] = rows.map((r) => ({ id: r.id, src: r.url, storagePath: r.storagePath }));
+      }
+      setPhotosByPart(next);
+      setTotal(await countCloudByModel(brandId, modelId));
+    } else {
+      for (const part of GALLERY_PARTS) {
+        const rows = await getPhotos(brandId, modelId, part.id);
+        next[part.id] = rows.map((r) => ({ id: r.id, src: r.dataUrl }));
+      }
+      setPhotosByPart(next);
+      setTotal(await countByModel(brandId, modelId));
     }
-    setPhotosByPart(next);
-    setTotal(await countByModel(brandId, modelId));
   };
 
   useEffect(() => {
     if (started) void loadPhotos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [started, modelId]);
+  }, [started, modelId, cloud]);
 
   const onUpload = (partId: string) => async (file: File) => {
     const dataUrl = await fileToDataUrl(file);
-    const photo: RefPhoto = {
-      id: `${brandId}-${modelId}-${partId}-${Math.round(performance.now())}-${Math.floor(Math.random() * 1e6)}`,
-      brandId,
-      modelId,
-      caliber,
-      year,
-      part: partId,
-      dataUrl,
-      createdAt: Date.now(),
-    };
-    await savePhoto(photo);
+    if (cloud && auth.session) {
+      await uploadCloudPhoto({
+        userId: auth.session.user.id,
+        brandId, modelId, caliber, year, part: partId, dataUrl,
+      });
+    } else {
+      await savePhoto({
+        id: `${brandId}-${modelId}-${partId}-${Math.round(performance.now())}-${Math.floor(Math.random() * 1e6)}`,
+        brandId, modelId, caliber, year, part: partId, dataUrl, createdAt: Date.now(),
+      });
+    }
     await loadPhotos();
   };
 
-  const onDelete = async (id: string) => {
-    await deletePhoto(id);
+  const onDelete = async (photo: DisplayPhoto) => {
+    if (cloud && photo.storagePath) {
+      await deleteCloudPhoto(photo.id, photo.storagePath);
+    } else {
+      await deletePhoto(photo.id);
+    }
     await loadPhotos();
+  };
+
+  const sendMagicLink = async () => {
+    if (!emailInput.trim()) return;
+    setAuthBusy(true);
+    setAuthMsg(null);
+    const { error } = await auth.signInWithEmail(emailInput.trim());
+    setAuthBusy(false);
+    setAuthMsg(error ? error : 'Check your email for a sign-in link, then come back here.');
   };
 
   // ---------- Intro / "Create your own gallery" ----------
@@ -182,6 +221,42 @@ export default function GalleryPage() {
         </div>
         <button onClick={() => setStarted(false)} className="btn-ghost text-sm shrink-0">← Back</button>
       </section>
+
+      {/* Cloud sync / auth banner */}
+      {auth.enabled && (
+        <section className={`card p-4 ${cloud ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-accent'}`}>
+          {cloud ? (
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-sm">
+                <span className="text-emerald-300 font-semibold">☁ Synced</span>
+                <span className="text-muted"> — your photos save to the cloud as <span className="text-foreground">{auth.email}</span> and appear on all your devices.</span>
+              </div>
+              <button onClick={() => void auth.signOut()} className="btn-ghost text-sm">Sign out</button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="text-sm font-semibold">Sync across devices (optional)</div>
+              <p className="text-xs text-muted">
+                Sign in with your email to store reference photos in the cloud so they appear on your phone and computer.
+                Without signing in, photos stay only on this device.
+              </p>
+              <div className="flex flex-wrap gap-2 items-center">
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  placeholder="you@email.com"
+                  className="field !w-auto flex-1 min-w-[12rem]"
+                />
+                <button onClick={() => void sendMagicLink()} disabled={authBusy || !emailInput.trim()} className="btn-primary text-sm">
+                  {authBusy ? 'Sending…' : 'Send sign-in link'}
+                </button>
+              </div>
+              {authMsg && <div className="text-xs text-accent-bright">{authMsg}</div>}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Reference watch picker */}
       <section className="card p-5 space-y-4">
@@ -286,8 +361,8 @@ export default function GalleryPage() {
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                   {photos.map((p) => (
                     <div key={p.id} className="relative">
-                      <img src={p.dataUrl} alt={part.label} className="w-full aspect-square object-cover rounded-lg border border-soft" />
-                      <button onClick={() => void onDelete(p.id)} aria-label="Delete photo" className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-red-300 flex items-center justify-center text-sm hover:bg-red-500/30">×</button>
+                      <img src={p.src} alt={part.label} className="w-full aspect-square object-cover rounded-lg border border-soft" />
+                      <button onClick={() => void onDelete(p)} aria-label="Delete photo" className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-red-300 flex items-center justify-center text-sm hover:bg-red-500/30">×</button>
                     </div>
                   ))}
                 </div>

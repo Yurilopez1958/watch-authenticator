@@ -1,0 +1,119 @@
+import { getSupabase } from './supabase';
+
+export type CloudPhoto = {
+  id: string;
+  brandId: string;
+  modelId: string;
+  caliber: string | null;
+  year: number | null;
+  part: string;
+  storagePath: string;
+  /** Signed URL to display the image. */
+  url: string;
+};
+
+const BUCKET = 'gallery';
+
+function dataUrlToBlob(dataUrl: string): { blob: Blob; ext: string } {
+  const comma = dataUrl.indexOf(',');
+  const head = dataUrl.slice(5, comma); // e.g. "image/jpeg;base64"
+  const mime = head.split(';')[0] || 'image/jpeg';
+  const ext = mime.split('/')[1] || 'jpg';
+  const bin = atob(dataUrl.slice(comma + 1));
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return { blob: new Blob([arr], { type: mime }), ext };
+}
+
+/** Uploads a photo to Storage + inserts its metadata row. Returns the new row id. */
+export async function uploadCloudPhoto(input: {
+  userId: string;
+  brandId: string;
+  modelId: string;
+  caliber: string;
+  year: number;
+  part: string;
+  dataUrl: string;
+}): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Sync not configured.');
+  const { blob, ext } = dataUrlToBlob(input.dataUrl);
+  const rand = crypto.randomUUID();
+  // Path MUST start with the user id (RLS checks the first folder segment).
+  const storagePath = `${input.userId}/${input.brandId}/${input.modelId}/${input.part}/${rand}.${ext}`;
+
+  const up = await sb.storage.from(BUCKET).upload(storagePath, blob, {
+    contentType: blob.type,
+    upsert: false,
+  });
+  if (up.error) throw up.error;
+
+  const ins = await sb.from('gallery_photos').insert({
+    user_id: input.userId,
+    brand_id: input.brandId,
+    model_id: input.modelId,
+    caliber: input.caliber,
+    year: input.year,
+    part: input.part,
+    storage_path: storagePath,
+  });
+  if (ins.error) {
+    // best-effort cleanup of the orphaned file
+    await sb.storage.from(BUCKET).remove([storagePath]);
+    throw ins.error;
+  }
+}
+
+/** Lists cloud photos for a brand + model + part with signed display URLs. */
+export async function listCloudPhotos(
+  brandId: string,
+  modelId: string,
+  part: string,
+): Promise<CloudPhoto[]> {
+  const sb = getSupabase();
+  if (!sb) return [];
+  const { data, error } = await sb
+    .from('gallery_photos')
+    .select('id, brand_id, model_id, caliber, year, part, storage_path, created_at')
+    .eq('brand_id', brandId)
+    .eq('model_id', modelId)
+    .eq('part', part)
+    .order('created_at', { ascending: false });
+  if (error || !data) return [];
+
+  const out: CloudPhoto[] = [];
+  for (const row of data) {
+    const signed = await sb.storage.from(BUCKET).createSignedUrl(row.storage_path, 3600);
+    out.push({
+      id: row.id,
+      brandId: row.brand_id,
+      modelId: row.model_id,
+      caliber: row.caliber,
+      year: row.year,
+      part: row.part,
+      storagePath: row.storage_path,
+      url: signed.data?.signedUrl ?? '',
+    });
+  }
+  return out;
+}
+
+/** Count of cloud photos for a brand + model (across parts). */
+export async function countCloudByModel(brandId: string, modelId: string): Promise<number> {
+  const sb = getSupabase();
+  if (!sb) return 0;
+  const { count } = await sb
+    .from('gallery_photos')
+    .select('id', { count: 'exact', head: true })
+    .eq('brand_id', brandId)
+    .eq('model_id', modelId);
+  return count ?? 0;
+}
+
+/** Deletes a cloud photo (row + file). */
+export async function deleteCloudPhoto(id: string, storagePath: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+  await sb.from('gallery_photos').delete().eq('id', id);
+  await sb.storage.from(BUCKET).remove([storagePath]);
+}
