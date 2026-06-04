@@ -22,11 +22,19 @@ export function useSession(): SessionState {
     const sb = getSupabase();
     if (!sb) { setLoading(false); return; }
     let alive = true;
+    // An auth event (e.g. SIGNED_IN from the magic-link redirect) may fire before
+    // the initial getSession() promise resolves. Track that so the late
+    // getSession() result never overwrites a fresher session from the listener.
+    let gotEvent = false;
     sb.auth.getSession().then(({ data }) => {
-      if (alive) { setSession(data.session); setLoading(false); }
+      if (alive && !gotEvent) setSession(data.session);
+      if (alive) setLoading(false);
     });
     const { data: sub } = sb.auth.onAuthStateChange((_event, s) => {
-      if (alive) setSession(s);
+      if (!alive) return;
+      gotEvent = true;
+      setSession(s);
+      setLoading(false);
     });
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, []);

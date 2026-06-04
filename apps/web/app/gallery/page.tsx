@@ -124,29 +124,42 @@ export default function GalleryPage() {
     if (productionYears.length > 0 && !productionYears.includes(year)) setYear(productionYears[0]!);
   }, [productionYears, year]);
 
-  const loadPhotos = async () => {
+  // `alive` lets the caller cancel a stale load: if the user switches model
+  // mid-fetch, the previous request must not overwrite the new model's photos.
+  const loadPhotos = async (alive: () => boolean = () => true) => {
     const next: Record<string, DisplayPhoto[]> = {};
     if (cloud) {
       for (const part of GALLERY_PARTS) {
         const rows = await listCloudPhotos(brandId, modelId, part.id);
         next[part.id] = rows.map((r) => ({ id: r.id, src: r.url, storagePath: r.storagePath }));
       }
+      const cnt = await countCloudByModel(brandId, modelId);
+      if (!alive()) return;
       setPhotosByPart(next);
-      setTotal(await countCloudByModel(brandId, modelId));
+      setTotal(cnt);
     } else {
       for (const part of GALLERY_PARTS) {
         const rows = await getPhotos(brandId, modelId, part.id);
         next[part.id] = rows.map((r) => ({ id: r.id, src: r.dataUrl }));
       }
+      const cnt = await countByModel(brandId, modelId);
+      if (!alive()) return;
       setPhotosByPart(next);
-      setTotal(await countByModel(brandId, modelId));
+      setTotal(cnt);
     }
   };
 
   useEffect(() => {
-    if (started) void loadPhotos();
+    if (!started) return;
+    let alive = true;
+    // Clear the previous model's photos immediately so they don't flash while
+    // the new model's photos load.
+    setPhotosByPart({});
+    setTotal(0);
+    void loadPhotos(() => alive);
+    return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [started, modelId, cloud]);
+  }, [started, brandId, modelId, cloud]);
 
   const onUpload = (partId: string) => async (file: File) => {
     const dataUrl = await fileToDataUrl(file);

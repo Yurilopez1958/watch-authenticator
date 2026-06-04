@@ -98,21 +98,24 @@ export default function VerifyPage() {
     }
   }, [productionYears, year]);
 
-  const brandProfiles = useMemo(() => getReferenceProfilesForBrand(brandId), [brandId]);
   const candidateProfiles = useMemo(
-    () =>
-      brandProfiles.filter(
-        (p) => year >= p.yearStart && (p.yearEnd == null || year <= p.yearEnd),
-      ),
-    [brandProfiles, year],
+    () => getReferenceProfilesForBrand(brandId, year),
+    [brandId, year],
   );
 
-  // Reset model when brand changes if current is no longer valid
-  useMemo(() => {
+  // Reset model when brand changes if current is no longer valid.
+  // (An effect, not a memo — memos must be pure and must not call setState.)
+  useEffect(() => {
     if (!brandModels.some((m) => m.id === modelId) && brandModels.length > 0) {
       setModelId(brandModels[0]!.id);
     }
   }, [brandModels, modelId]);
+
+  // Clear a stale verdict whenever the watch under test changes, so the result
+  // panel never shows last watch's verdict against a newly-selected one.
+  useEffect(() => {
+    setResult(null);
+  }, [brandId, modelId, year]);
 
   const onAnalyze = () => {
     const elementReadings: ElementReading[] = Object.entries(readings)

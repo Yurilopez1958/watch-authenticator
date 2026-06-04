@@ -102,8 +102,32 @@ function parseResponse(text: string): VisionAnalysisResult {
     throw new Error(`Response contains no JSON: ${trimmed.slice(0, 200)}`);
   }
   const json = trimmed.slice(jsonStart, jsonEnd + 1);
-  const parsed = JSON.parse(json) as VisionAnalysisResult;
-  return parsed;
+  const raw = JSON.parse(json) as Partial<VisionAnalysisResult>;
+
+  // Normalize: never trust the model's shape. Coerce each field to a safe value
+  // so the UI (which maps over findings, reads confidence, etc.) cannot crash.
+  const verdict: VisionAnalysisResult['verdict'] =
+    raw.verdict === 'consistent' || raw.verdict === 'suspicious' ? raw.verdict : 'inconclusive';
+
+  const confidenceNum = typeof raw.confidence === 'number' ? raw.confidence : Number(raw.confidence);
+  const confidence = Number.isFinite(confidenceNum) ? Math.max(0, Math.min(1, confidenceNum)) : 0;
+
+  const findings: DiscrepancyFinding[] = Array.isArray(raw.findings)
+    ? raw.findings
+        .filter((f): f is DiscrepancyFinding => !!f && typeof f === 'object')
+        .map((f) => ({
+          severity: f.severity === 'high' || f.severity === 'medium' ? f.severity : 'low',
+          area: typeof f.area === 'string' ? f.area : '',
+          description: typeof f.description === 'string' ? f.description : '',
+        }))
+    : [];
+
+  return {
+    verdict,
+    confidence,
+    summary: typeof raw.summary === 'string' ? raw.summary : '',
+    findings,
+  };
 }
 
 /**
@@ -118,7 +142,7 @@ export async function analyzeWatchPart(
   const model = await resolveVisionModel(client, options.model);
   const message = await client.messages.create({
     model,
-    max_tokens: 1024,
+    max_tokens: 2048,
     system: SYSTEM_PROMPT,
     messages: [buildUserMessage(input)],
   });
@@ -126,6 +150,9 @@ export async function analyzeWatchPart(
   const textBlock = message.content.find((b) => b.type === 'text');
   if (!textBlock || textBlock.type !== 'text') {
     throw new Error('Claude response has no text block.');
+  }
+  if (message.stop_reason === 'max_tokens') {
+    throw new Error('The AI analysis was cut off (too long). Please try again.');
   }
   return parseResponse(textBlock.text);
 }

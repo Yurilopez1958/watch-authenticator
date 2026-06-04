@@ -61,7 +61,9 @@ function parse(text: string): { readings: ElementReading[]; notes: string } {
     const el = (r.element ?? '').trim();
     if (!KNOWN_ELEMENTS.has(el)) continue;
     const pct = typeof r.pct === 'number' ? r.pct : parseFloat(String(r.pct));
-    if (!Number.isFinite(pct) || pct <= 0) continue;
+    // Keep only physically plausible concentrations (0–100%). This catches a
+    // model that forgot to convert ppm → % (e.g. reporting 1500 for 0.15%).
+    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) continue;
     readings.push({ element: el as ElementSymbol, pct });
   }
   return { readings, notes: parsed.notes ?? '' };
@@ -80,13 +82,16 @@ export async function extractXrfFromImage(
   const model = await resolveVisionModel(client, options.model);
   const message = await client.messages.create({
     model,
-    max_tokens: 1024,
+    max_tokens: 1536,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: buildContent(imageBase64, mediaType) }],
   });
   const textBlock = message.content.find((b) => b.type === 'text');
   if (!textBlock || textBlock.type !== 'text') {
     throw new Error('Claude response has no text block.');
+  }
+  if (message.stop_reason === 'max_tokens') {
+    throw new Error('The screen read was cut off (too many elements). Try a clearer, closer photo.');
   }
   const { readings, notes } = parse(textBlock.text);
   return { readings, notes, raw: textBlock.text };

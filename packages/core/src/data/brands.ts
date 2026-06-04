@@ -79,28 +79,48 @@ function profileKind(p: ReferenceProfile): string | undefined {
 }
 
 /**
- * Returns reference profiles applicable to a brand.
+ * Returns reference profiles applicable to a brand, optionally restricted to a
+ * given year of manufacture.
  *
  * A brand uses its OWN profiles, plus the generic `common` profiles **only for
- * material kinds it does not already cover itself**. This prevents the generic
- * fallback from masking a brand-specific signature: e.g. Rolex has its own steel
- * profiles (904L Oystersteel, and 316L valid only up to 2003), so a modern Rolex
- * measured as generic 316L must NOT pass via the always-valid `common-316l`
- * profile — it should be compared only against Rolex's own steel references and
- * flagged as a mismatch. Omega, which has its own gold alloys but no steel
- * profile, still gets `common-316l` for its steel watches.
+ * material kinds it does not already cover itself in that era**. This prevents
+ * the generic fallback from masking a brand-specific signature: e.g. Rolex has
+ * its own steel profiles (904L Oystersteel, and 316L valid only up to 2003), so
+ * a modern Rolex measured as generic 316L must NOT pass via the always-valid
+ * `common-316l` profile — it is compared only against Rolex's own steel
+ * references and flagged as a mismatch.
+ *
+ * The exclusion is **year-aware**: a generic profile of kind K is suppressed
+ * only when the brand has an OWN profile of kind K valid in the selected year.
+ * This is essential for proprietary alloys introduced recently — e.g. Omega's
+ * Sedna/Moonshine/Canopus gold (2013+). Without the year guard, a genuine
+ * pre-2013 gold Omega would have its generic gold reference stripped and be
+ * matched against the wrong modern alloy, then falsely flagged as fake. With it,
+ * a vintage gold Omega still gets the generic 18k gold reference.
+ *
+ * When `year` is omitted the function returns every applicable profile (no year
+ * filtering), preserving the original behaviour for callers that filter later.
  */
-export function getReferenceProfilesForBrand(brandId: string): readonly ReferenceProfile[] {
-  const own = ALL_REFERENCE_PROFILES.filter((p) => p.brandId === brandId);
+export function getReferenceProfilesForBrand(
+  brandId: string,
+  year?: number,
+): readonly ReferenceProfile[] {
+  const validAtYear = (p: ReferenceProfile): boolean =>
+    year == null || (year >= p.yearStart && (p.yearEnd == null || year <= p.yearEnd));
+
+  const own = ALL_REFERENCE_PROFILES.filter((p) => p.brandId === brandId && validAtYear(p));
+
+  // Material kinds the brand already covers with its OWN profiles in this era.
   const ownKinds = new Set<string>();
   for (const p of own) {
     const k = profileKind(p);
     if (k) ownKinds.add(k);
   }
+
   const common = ALL_REFERENCE_PROFILES.filter((p) => {
-    if (p.brandId !== 'common') return false;
+    if (p.brandId !== 'common' || !validAtYear(p)) return false;
     const k = profileKind(p);
-    // Skip the generic profile if the brand already covers this material kind
+    // Skip the generic profile only if the brand covers this kind itself this year.
     return k ? !ownKinds.has(k) : true;
   });
   return [...own, ...common];

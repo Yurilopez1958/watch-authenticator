@@ -246,13 +246,31 @@ export default function AuthenticatePage() {
   // Warning modal when the measured metal clearly does not match the brand
   const [showMetalWarning, setShowMetalWarning] = useState(false);
 
-  const brandProfiles = useMemo(() => getReferenceProfilesForBrand(brandId), [brandId]);
+  // When the watch identity changes (brand or model), clear every downstream
+  // exam input/result so a verdict is never computed from one watch's readings
+  // against another watch's reference profiles. Year changes are intentionally
+  // NOT reset (same piece, just refining the date).
+  const identityKey = `${brandId}/${modelId}`;
+  const prevIdentity = useRef(identityKey);
+  useEffect(() => {
+    if (prevIdentity.current === identityKey) return;
+    prevIdentity.current = identityKey;
+    setReadings({});
+    setCsvText('');
+    setObservedCaliber('');
+    setExamined(null);
+    setReference(null);
+    setXrfResult(null);
+    setXrfRowCount(0);
+    setMovementResult(null);
+    setPhotoPreview(null);
+    setPhotoNotes(null);
+    setPhotoError(null);
+  }, [identityKey]);
+
   const candidateProfiles = useMemo(
-    () =>
-      brandProfiles.filter(
-        (p) => year >= p.yearStart && (p.yearEnd == null || year <= p.yearEnd),
-      ),
-    [brandProfiles, year],
+    () => getReferenceProfilesForBrand(brandId, year),
+    [brandId, year],
   );
 
   const currentModel = ALL_MODELS.find((m) => m.id === modelId)!;
@@ -385,6 +403,7 @@ export default function AuthenticatePage() {
 
   const onFile = (side: 'examined' | 'reference') => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file after a reset
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
@@ -649,7 +668,7 @@ export default function AuthenticatePage() {
           </div>
           <div className="text-xs text-dim mt-4">
             {candidateProfiles.length} reference profile(s) match this year.{' '}
-            {candidateProfiles.length === 0 && 'Pick a different year — no Rolex reference covers this period yet.'}
+            {candidateProfiles.length === 0 && `Pick a different year — no ${currentBrand.name} reference covers this period yet.`}
           </div>
         </StepCard>
       )}
@@ -719,6 +738,7 @@ export default function AuthenticatePage() {
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
+                      e.target.value = ''; // allow re-picking the same screenshot
                       if (f) void handleScreenPhoto(f);
                     }}
                   />
@@ -730,6 +750,7 @@ export default function AuthenticatePage() {
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
+                      e.target.value = ''; // allow re-picking the same screenshot
                       if (f) void handleScreenPhoto(f);
                     }}
                   />

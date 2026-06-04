@@ -1,9 +1,13 @@
 import type { MovementCheck } from '../types/index';
 import { getMovementForModelAcrossBrands } from '../data/brands';
 
-/** Normalizes a user-provided caliber string by stripping "Cal." and spaces. */
+/** Normalizes a user-provided caliber string by stripping a leading
+ *  "Cal."/"Caliber"/"Calibre" label and all whitespace. */
 function normalizeCaliber(raw: string): string {
-  return raw.trim().replace(/^cal\.?\s*/i, '').replace(/\s+/g, '');
+  return raw
+    .trim()
+    .replace(/^(cal(\.|iber|ibre)?)\s*/i, '')
+    .replace(/\s+/g, '');
 }
 
 /**
