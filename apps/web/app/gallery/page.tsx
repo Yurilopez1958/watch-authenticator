@@ -21,6 +21,7 @@ import {
   uploadCloudPhoto,
 } from '@/lib/gallery-cloud';
 import { useSession } from '@/lib/use-session';
+import { fetchTestImages } from '@/lib/test-images';
 
 type GalleryPart = { id: string; label: string; checkpointIds: string[] };
 
@@ -71,6 +72,10 @@ export default function GalleryPage() {
   const [photosByPart, setPhotosByPart] = useState<Record<string, DisplayPhoto[]>>({});
   const [total, setTotal] = useState(0);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  // Per-part upload progress + error for multi-file uploads
+  const [busyPart, setBusyPart] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Auth / cloud sync
   const auth = useSession();
@@ -161,8 +166,8 @@ export default function GalleryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started, brandId, modelId, cloud]);
 
-  const onUpload = (partId: string) => async (file: File) => {
-    const dataUrl = await fileToDataUrl(file);
+  // Shared persistence path used by both manual uploads and the test importer.
+  const persistPhoto = async (partId: string, dataUrl: string) => {
     if (cloud && auth.session) {
       await uploadCloudPhoto({
         userId: auth.session.user.id,
@@ -170,10 +175,61 @@ export default function GalleryPage() {
       });
     } else {
       await savePhoto({
-        id: `${brandId}-${modelId}-${partId}-${Math.round(performance.now())}-${Math.floor(Math.random() * 1e6)}`,
+        id: crypto.randomUUID(),
         brandId, modelId, caliber, year, part: partId, dataUrl, createdAt: Date.now(),
       });
     }
+  };
+
+  const onUploadFiles = (partId: string) => async (files: FileList | File[]) => {
+    const list = Array.from(files);
+    if (list.length === 0) return;
+    setBusyPart(partId);
+    setUploadError(null);
+    setUploadProgress({ done: 0, total: list.length });
+    let failed = 0;
+    for (let i = 0; i < list.length; i++) {
+      try {
+        const dataUrl = await fileToDataUrl(list[i]!);
+        await persistPhoto(partId, dataUrl);
+      } catch {
+        failed++;
+      }
+      setUploadProgress({ done: i + 1, total: list.length });
+    }
+    if (failed > 0) {
+      setUploadError(`${failed} of ${list.length} photo(s) could not be uploaded. Check your connection and try again.`);
+    }
+    setBusyPart(null);
+    setUploadProgress(null);
+    await loadPhotos();
+  };
+
+  // Test-only: fill the current model's parts with openly-licensed sample images
+  // from Wikimedia Commons so the app's flows can be exercised quickly.
+  const loadTestPhotos = async (perPart: number) => {
+    setBusyPart('__test__');
+    setUploadError(null);
+    setUploadProgress({ done: 0, total: GALLERY_PARTS.length });
+    let added = 0;
+    for (let i = 0; i < GALLERY_PARTS.length; i++) {
+      const part = GALLERY_PARTS[i]!;
+      try {
+        const imgs = await fetchTestImages(currentBrand.name, part.id, perPart);
+        for (const img of imgs) {
+          await persistPhoto(part.id, img.dataUrl);
+          added++;
+        }
+      } catch {
+        // skip this part
+      }
+      setUploadProgress({ done: i + 1, total: GALLERY_PARTS.length });
+    }
+    if (added === 0) {
+      setUploadError('No sample images could be loaded. Check your connection and try again.');
+    }
+    setBusyPart(null);
+    setUploadProgress(null);
     await loadPhotos();
   };
 
@@ -336,7 +392,13 @@ export default function GalleryPage() {
 
       {/* Parts to check */}
       <section className="space-y-4">
-        <div className="text-sm font-semibold">2. Parts to check — add a reference photo for each</div>
+        <div>
+          <div className="text-sm font-semibold">2. Parts to check — add reference photos for each</div>
+          <p className="text-xs text-dim mt-1">Tip: you can select several photos at once for the same part.</p>
+        </div>
+        {uploadError && (
+          <div className="card p-3 border-l-4 border-l-red-500 text-sm text-red-300">{uploadError}</div>
+        )}
         {GALLERY_PARTS.map((part) => {
           const photos = photosByPart[part.id] ?? [];
           const points = checkpointPoints(part, caliber);
@@ -347,16 +409,22 @@ export default function GalleryPage() {
                   <h3 className="text-lg font-semibold">{part.label}</h3>
                   {photos.length > 0 && <span className="chip text-[0.65rem]">{photos.length}</span>}
                 </div>
-                <button onClick={() => fileRefs.current[part.id]?.click()} className="btn-primary text-sm inline-flex items-center gap-2">
+                <button
+                  onClick={() => fileRefs.current[part.id]?.click()}
+                  disabled={busyPart === part.id}
+                  className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
-                  Add photo
+                  {busyPart === part.id
+                    ? `Uploading ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}…`
+                    : 'Add photos'}
                 </button>
                 <input
                   ref={(el) => { fileRefs.current[part.id] = el; }}
-                  type="file" accept="image/*" className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) void onUpload(part.id)(f); e.target.value = ''; }}
+                  type="file" accept="image/*" multiple className="hidden"
+                  onChange={(e) => { const fs = e.target.files; if (fs && fs.length) void onUploadFiles(part.id)(fs); e.target.value = ''; }}
                 />
               </div>
 
@@ -387,6 +455,39 @@ export default function GalleryPage() {
             </div>
           );
         })}
+      </section>
+
+      {/* Test-only sample-image importer */}
+      <section className="card p-5 border border-dashed border-soft space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-base">🧪</span>
+          <h3 className="font-semibold">Test data (for trying the app)</h3>
+        </div>
+        <p className="text-xs text-muted">
+          Quickly fill this model&apos;s parts with openly-licensed sample photos from
+          Wikimedia Commons so you can test the gallery, cloud sync and AI analysis.
+          These are <span className="text-amber-300">placeholders for testing only</span> —
+          not verified-authentic references. Delete them (× on each photo) before real use.
+        </p>
+        <div className="flex flex-wrap gap-2 items-center">
+          <button
+            onClick={() => void loadTestPhotos(1)}
+            disabled={busyPart !== null}
+            className="btn-ghost text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {busyPart === '__test__'
+              ? `Loading ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}…`
+              : 'Load 1 sample per part'}
+          </button>
+          <button
+            onClick={() => void loadTestPhotos(2)}
+            disabled={busyPart !== null}
+            className="btn-ghost text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Load 2 per part
+          </button>
+          {busyPart === '__test__' && <span className="text-xs text-dim">fetching from Wikimedia Commons…</span>}
+        </div>
       </section>
     </div>
   );
