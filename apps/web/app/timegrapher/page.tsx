@@ -15,6 +15,8 @@ export default function TimegrapherPage() {
   const [sensitivity, setSensitivity] = useState(5);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [modelId, setModelId] = useState<string>('');
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [deviceId, setDeviceId] = useState<string>('');
 
   // Audio graph + detection state (refs so the audio callback stays stable)
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -49,15 +51,54 @@ export default function TimegrapherPage() {
 
   useEffect(() => () => stop(), []);
 
-  const start = async () => {
+  const loadDevices = async () => {
+    try {
+      const list = await navigator.mediaDevices.enumerateDevices();
+      setDevices(list.filter((d) => d.kind === 'audioinput'));
+    } catch { /* noop */ }
+  };
+
+  // Request permission once so device labels become available, then list inputs.
+  const detectMics = async () => {
+    setError(null);
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      s.getTracks().forEach((t) => t.stop());
+      await loadDevices();
+    } catch (err) {
+      const e = err as Error;
+      setError(e.name === 'NotAllowedError' ? 'Microphone permission denied.' : `Mic error: ${e.message}`);
+    }
+  };
+
+  // Refresh the device list when a mic is plugged in / removed.
+  useEffect(() => {
+    const md = navigator.mediaDevices;
+    if (!md?.addEventListener) return;
+    const handler = () => { void loadDevices(); };
+    md.addEventListener('devicechange', handler);
+    return () => md.removeEventListener('devicechange', handler);
+  }, []);
+
+  const onPickDevice = (id: string) => {
+    setDeviceId(id);
+    if (running) { stop(); window.setTimeout(() => void start(id), 200); }
+  };
+
+  const start = async (forceDeviceId?: string) => {
     setError(null);
     setMetrics(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-        video: false,
-      });
+      const useId = forceDeviceId !== undefined ? forceDeviceId : deviceId;
+      const audio: MediaTrackConstraints = {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        ...(useId ? { deviceId: { exact: useId } } : {}),
+      };
+      const stream = await navigator.mediaDevices.getUserMedia({ audio, video: false });
       streamRef.current = stream;
+      void loadDevices(); // labels are available now that we have permission
       const Ctx = window.AudioContext
         || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!Ctx) throw new Error('Web Audio not supported in this browser.');
@@ -206,8 +247,10 @@ export default function TimegrapherPage() {
       <section>
         <h1 className="text-3xl font-bold mb-2">Acoustic chronocomparator</h1>
         <p className="text-muted text-sm max-w-2xl">
-          Time a mechanical watch with your phone&apos;s microphone. Hold the phone&apos;s mic against
-          the case back in a quiet room. Measures rate (s/day), beat error and the detected frequency.
+          Time a mechanical watch through a microphone. For best results plug a{' '}
+          <span className="text-accent-bright">watch contact microphone</span> into the phone and select it below;
+          the built-in mic works in a pinch (hold it to the case back in a quiet room). Measures rate (s/day),
+          beat error and the detected frequency.
         </p>
       </section>
 
@@ -253,6 +296,25 @@ export default function TimegrapherPage() {
         {error && <div className="text-sm text-red-300 border-l-4 border-l-red-500 bg-red-500/10 rounded-lg p-3">{error}</div>}
 
         <div>
+          <div className="text-xs uppercase tracking-wide text-dim mb-2">Microphone input</div>
+          {devices.length > 0 ? (
+            <select value={deviceId} onChange={(e) => onPickDevice(e.target.value)} className="field">
+              <option value="">System default microphone</option>
+              {devices.map((d, i) => (
+                <option key={d.deviceId || i} value={d.deviceId}>{d.label || `Microphone ${i + 1}`}</option>
+              ))}
+            </select>
+          ) : (
+            <button onClick={() => void detectMics()} className="btn-ghost text-sm">Detect microphones</button>
+          )}
+          <p className="text-xs text-dim mt-1.5">
+            Plug your <span className="text-accent-bright">watch contact microphone</span> (timing pickup) into the
+            phone — via a 3.5&nbsp;mm adapter or a USB-C audio interface — then select it here for a clean escapement
+            signal, like a professional timing machine.
+          </p>
+        </div>
+
+        <div>
           <div className="text-xs uppercase tracking-wide text-dim mb-2">Beat frequency (bph)</div>
           <div className="flex flex-wrap gap-2">
             {BPH_PRESETS.map((b) => (
@@ -288,11 +350,12 @@ export default function TimegrapherPage() {
       <section className="card p-5 text-xs text-muted space-y-2 border-l-4 border-l-accent">
         <div className="font-semibold text-neutral-200">Tips & honest limits</div>
         <p className="leading-relaxed">
-          Best in a quiet room with the phone&apos;s microphone pressed to the case back. <strong>Rate</strong> and
-          <strong> beat error</strong> stabilise after ~15–30 seconds. The detected frequency must match the watch — pick
-          the right bph (or a model) above. A phone mic captures through the air, so results are useful for bench checks
-          but not as precise as a Witschi with a contact (piezo) sensor. <strong>Amplitude</strong> needs a contact sensor
-          and is not measured here yet.
+          A <strong>watch contact microphone</strong> (timing pickup clamped to the movement) gives by far the cleanest
+          signal — select it under &ldquo;Microphone input&rdquo;. The phone&apos;s built-in mic also works in a quiet
+          room with the case back pressed to it, just less precisely (it picks up through the air).
+          <strong> Rate</strong> and <strong>beat error</strong> stabilise after ~15–30&nbsp;seconds. The detected
+          frequency must match the watch — pick the right bph (or a model) above. <strong>Amplitude</strong> is not
+          measured yet (it needs the lift-angle plus clean intra-beat sound timing from a contact sensor).
         </p>
       </section>
     </div>
