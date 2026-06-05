@@ -138,12 +138,14 @@ export function matchMeasurementToProfile(
     score -= Math.min(15, extras.length * 5);
   }
 
-  if (evaluatedCount === 0) {
+  const noEvidence = evaluatedCount === 0;
+  if (noEvidence) {
     flags.push('Could not evaluate any element from the profile. Check the measurement.');
   }
 
   const overallScore = Math.max(0, Math.min(100, Math.round(score)));
-  const verdict = decideVerdict(overallScore, hasCriticalFail);
+  // Never assert authenticity without having evaluated any element of the profile.
+  const verdict = noEvidence ? 'inconclusive' : decideVerdict(overallScore, hasCriticalFail);
 
   return {
     profileId: profile.id,

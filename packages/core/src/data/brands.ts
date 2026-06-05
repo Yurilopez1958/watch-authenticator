@@ -126,13 +126,29 @@ export function getReferenceProfilesForBrand(
   return [...own, ...common];
 }
 
+/** Per-brand movement lists, used to disambiguate calibers that two brands
+ *  might share (e.g. generic ETA numbers). Searching the model's own brand
+ *  first prevents returning another brand's movement. */
+const MOVEMENTS_BY_BRAND: Readonly<Record<string, readonly Movement[]>> = {
+  rolex: ROLEX_MOVEMENTS,
+  'patek-philippe': PATEK_MOVEMENTS,
+  'audemars-piguet': AUDEMARS_MOVEMENTS,
+  omega: OMEGA_MOVEMENTS,
+  cartier: CARTIER_MOVEMENTS,
+};
+
 /**
- * Returns the Movement entry for a given model id from ANY brand. The model id
- * carries enough context to identify the right brand (its prefix), so the
- * caller does not need to specify it.
+ * Returns the Movement entry for a given model id. Resolves the caliber from the
+ * model, then searches that model's OWN brand movements first (so two brands
+ * sharing a caliber number never cross-match), falling back to a global search.
  */
 export function getMovementForModelAcrossBrands(modelId: string): Movement | undefined {
   const caliber = ALL_MODEL_TO_CALIBER[modelId];
   if (!caliber) return undefined;
-  return ALL_MOVEMENTS.find((m) => m.caliber === caliber);
+  const model = ALL_MODELS.find((m) => m.id === modelId);
+  const brandMovements = model ? MOVEMENTS_BY_BRAND[model.brandId] : undefined;
+  return (
+    brandMovements?.find((m) => m.caliber === caliber) ??
+    ALL_MOVEMENTS.find((m) => m.caliber === caliber)
+  );
 }

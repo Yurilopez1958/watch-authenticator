@@ -299,6 +299,8 @@ export default function AuthenticatePage() {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<VisionResult | null>(null);
+  // Bumped whenever the analysed context changes, to discard stale AI responses.
+  const aiGenRef = useRef(0);
 
   // Step 5 — results (XRF result kept per measured target)
   const [xrfResultByTarget, setXrfResultByTarget] = useState<Record<XrfTarget, MatchResult | null>>({
@@ -335,8 +337,10 @@ export default function AuthenticatePage() {
     [brandId, year],
   );
 
-  const currentModel = ALL_MODELS.find((m) => m.id === modelId)!;
-  const currentBrand = ALL_BRANDS.find((b) => b.id === brandId)!;
+  // Fall back to the first catalog entry if the id is momentarily out of sync
+  // (e.g. just after a brand change) — never crash the render with a bad `!`.
+  const currentModel = ALL_MODELS.find((m) => m.id === modelId) ?? ALL_MODELS[0]!;
+  const currentBrand = ALL_BRANDS.find((b) => b.id === brandId) ?? ALL_BRANDS[0]!;
   const expectedMovement = useMemo(() => getMovementForModelAcrossBrands(modelId), [modelId]);
 
   // Compliance / conflict-of-interest filter for the selected brand.
@@ -458,6 +462,14 @@ export default function AuthenticatePage() {
   };
   useEffect(() => () => stopStream(), []);
 
+  // Release the camera if the user leaves the visual-evidence step with it open.
+  useEffect(() => {
+    if (step !== 3 && liveSide) {
+      stopStream();
+      setLiveSide(null);
+    }
+  }, [step, liveSide]);
+
   const openCamera = async (side: 'examined' | 'reference') => {
     try {
       stopStream();
@@ -510,6 +522,7 @@ export default function AuthenticatePage() {
   // Load reference photos from the gallery for the current model + part
   useEffect(() => {
     let alive = true;
+    aiGenRef.current++; // invalidate any in-flight AI request for the old context
     getPhotos(brandId, modelId, examinedPart)
       .then((rows) => { if (alive) setGalleryPhotos(rows); })
       .catch(() => { if (alive) setGalleryPhotos([]); });
@@ -521,6 +534,7 @@ export default function AuthenticatePage() {
   // Run Claude Vision: compare the examined photo against gallery references
   const runAiAnalysis = async () => {
     if (!examined) { setAiError('Capture or upload a photo of the examined watch first.'); return; }
+    const gen = aiGenRef.current;
     setAiBusy(true);
     setAiError(null);
     setAiResult(null);
@@ -546,17 +560,19 @@ export default function AuthenticatePage() {
         references: refs,
       });
       const json = await res.json();
+      if (gen !== aiGenRef.current) return; // context changed → discard stale result
       if (!res.ok) { setAiError(json.error ?? 'AI analysis failed.'); return; }
       setAiResult(json as VisionResult);
     } catch (err) {
-      setAiError((err as Error).message);
+      if (gen === aiGenRef.current) setAiError((err as Error).message);
     } finally {
-      setAiBusy(false);
+      if (gen === aiGenRef.current) setAiBusy(false);
     }
   };
 
   // Read a photo of the Niton screen with AI and fill in the readings
   const handleScreenPhoto = async (file: File) => {
+    const target = activeTarget; // pin the part that triggered the capture
     setPhotoBusy(true);
     setPhotoError(null);
     setPhotoNotes(null);
@@ -581,13 +597,13 @@ export default function AuthenticatePage() {
       }
       const next: Record<string, string> = {};
       for (const r of json.readings as { element: string; pct: number }[]) {
-        next[r.element] = String(r.pct);
+        if (Number.isFinite(r.pct)) next[r.element] = String(r.pct);
       }
       if (Object.keys(next).length === 0) {
         setPhotoError('No elements could be read from this photo. Try a sharper, straight-on shot of the screen.');
         return;
       }
-      setReadings(next);
+      setReadingsByTarget((prev) => ({ ...prev, [target]: next }));
       setPhotoNotes(json.notes || 'Values extracted. Review and edit any that look wrong before continuing.');
     } catch (err) {
       setPhotoError((err as Error).message);

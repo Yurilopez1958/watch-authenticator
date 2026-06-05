@@ -110,13 +110,14 @@ export async function countCloudByModel(brandId: string, modelId: string): Promi
   return count ?? 0;
 }
 
-/** Deletes a cloud photo (file + row). Removes the Storage object first so a
- *  failure there does not leave the file orphaned with its metadata row gone. */
+/** Deletes a cloud photo. Removes the metadata row first (the source of truth
+ *  for listings): a file without a row is invisible and reclaimable by a job,
+ *  whereas a row without a file shows as a permanently broken image. */
 export async function deleteCloudPhoto(id: string, storagePath: string): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
-  const rm = await sb.storage.from(BUCKET).remove([storagePath]);
-  if (rm.error) throw rm.error;
   const del = await sb.from('gallery_photos').delete().eq('id', id);
   if (del.error) throw del.error;
+  const rm = await sb.storage.from(BUCKET).remove([storagePath]);
+  if (rm.error) console.warn('Row deleted but file remains:', storagePath, rm.error.message);
 }

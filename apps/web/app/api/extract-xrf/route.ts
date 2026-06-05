@@ -29,8 +29,9 @@ export async function POST(req: Request) {
   }
 
   const { imageBase64, mediaType } = body;
-  if (!imageBase64 || !mediaType) {
-    return NextResponse.json({ error: 'Missing imageBase64 or mediaType.' }, { status: 400 });
+  const ALLOWED_MEDIA = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!imageBase64 || !mediaType || !ALLOWED_MEDIA.includes(mediaType)) {
+    return NextResponse.json({ error: 'Missing or invalid imageBase64/mediaType.' }, { status: 400 });
   }
 
   const model = process.env.ANTHROPIC_MODEL;
@@ -39,11 +40,10 @@ export async function POST(req: Request) {
       apiKey,
       ...(model ? { model } : {}),
     });
-    return NextResponse.json(result);
+    // Do not expose the raw model output to the client.
+    return NextResponse.json({ readings: result.readings, notes: result.notes });
   } catch (err) {
-    return NextResponse.json(
-      { error: `Could not read the screen: ${(err as Error).message}` },
-      { status: 500 },
-    );
+    console.error('extract-xrf failed:', err);
+    return NextResponse.json({ error: 'Could not read the screen. Please try again.' }, { status: 500 });
   }
 }

@@ -188,21 +188,16 @@ const CARTIER_CHECKPOINTS: readonly AuthCheckpoint[] = [
   },
 ];
 
-/** Returns the visual authentication checkpoints for a brand id. */
-export function getBrandCheckpoints(brandId: string): readonly AuthCheckpoint[] {
-  switch (brandId) {
-    case 'rolex': return ROLEX_AUTH_CHECKPOINTS;
-    case 'omega': return OMEGA_CHECKPOINTS;
-    case 'patek-philippe': return PATEK_CHECKPOINTS;
-    case 'audemars-piguet': return AP_CHECKPOINTS;
-    case 'cartier': return CARTIER_CHECKPOINTS;
-    default: return [];
-  }
-}
-
-export const BRAND_CHECKPOINTS = {
+/** Single source of truth — must include every supported brand (incl. Rolex). */
+export const BRAND_CHECKPOINTS: Readonly<Record<string, readonly AuthCheckpoint[]>> = {
+  rolex: ROLEX_AUTH_CHECKPOINTS,
   omega: OMEGA_CHECKPOINTS,
   'patek-philippe': PATEK_CHECKPOINTS,
   'audemars-piguet': AP_CHECKPOINTS,
   cartier: CARTIER_CHECKPOINTS,
-} as const;
+};
+
+/** Returns the visual authentication checkpoints for a brand id (or []). */
+export function getBrandCheckpoints(brandId: string): readonly AuthCheckpoint[] {
+  return BRAND_CHECKPOINTS[brandId] ?? [];
+}

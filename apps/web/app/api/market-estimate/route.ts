@@ -21,8 +21,8 @@ export async function POST(req: Request) {
   }
 
   const { brand, model, reference, year } = body;
-  if (!brand || !model) {
-    return NextResponse.json({ error: 'Missing brand or model.' }, { status: 400 });
+  if (!brand || !model || brand.length > 80 || model.length > 80 || (reference != null && String(reference).length > 60)) {
+    return NextResponse.json({ error: 'Missing or oversized brand/model/reference.' }, { status: 400 });
   }
 
   const overrideModel = process.env.ANTHROPIC_MODEL;
@@ -33,6 +33,7 @@ export async function POST(req: Request) {
     );
     return NextResponse.json(estimate);
   } catch (err) {
-    return NextResponse.json({ error: `Market estimate failed: ${(err as Error).message}` }, { status: 500 });
+    console.error('market-estimate failed:', err);
+    return NextResponse.json({ error: 'Market estimate failed. Please try again.' }, { status: 500 });
   }
 }

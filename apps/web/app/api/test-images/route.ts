@@ -66,7 +66,9 @@ export async function GET(req: Request) {
       if (host !== ALLOWED_IMAGE_HOST) continue;
 
       try {
-        const imgRes = await fetch(thumb, { headers: { 'User-Agent': UA } });
+        // redirect:'error' closes the SSRF residual (a redirect away from the
+        // allowed host can't be followed).
+        const imgRes = await fetch(thumb, { headers: { 'User-Agent': UA }, redirect: 'error' });
         if (!imgRes.ok) continue;
         const mime = (imgRes.headers.get('content-type') ?? '').split(';')[0]!.trim();
         if (!ALLOWED_MIME.includes(mime)) continue;
@@ -85,6 +87,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ images });
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+    console.error('test-images failed:', err);
+    return NextResponse.json({ error: 'Could not load sample images.' }, { status: 500 });
   }
 }

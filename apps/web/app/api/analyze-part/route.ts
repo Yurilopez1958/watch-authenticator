@@ -29,6 +29,13 @@ export async function POST(req: Request) {
   if (!brandName || !modelName || !part || !examined?.imageData) {
     return NextResponse.json({ error: 'Missing required fields (brand, model, part, examined photo).' }, { status: 400 });
   }
+  const ALLOWED_MEDIA = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!examined.mediaType || !ALLOWED_MEDIA.includes(examined.mediaType)) {
+    return NextResponse.json({ error: 'Invalid or missing image mediaType.' }, { status: 400 });
+  }
+  if ((references ?? []).length > 6) {
+    return NextResponse.json({ error: 'Too many reference photos (max 6).' }, { status: 400 });
+  }
 
   const model = process.env.ANTHROPIC_MODEL;
   try {
@@ -46,9 +53,7 @@ export async function POST(req: Request) {
     );
     return NextResponse.json(result);
   } catch (err) {
-    return NextResponse.json(
-      { error: `AI analysis failed: ${(err as Error).message}` },
-      { status: 500 },
-    );
+    console.error('analyze-part failed:', err);
+    return NextResponse.json({ error: 'AI analysis failed. Please try again.' }, { status: 500 });
   }
 }
