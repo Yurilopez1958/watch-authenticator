@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ALL_BRANDS,
   ALL_MODELS,
@@ -46,6 +46,8 @@ export default function MarketPage() {
   const [aiCache, setAiCache] = useState<Record<string, MarketEstimate>>({});
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const fetchSeqRef = useRef(0); // only the latest fetch controls busy/error
+  const [sellEdited, setSellEdited] = useState(false); // user typed their own resale price
 
   // Dealer cost assumptions (persisted, USD)
   const [serviceUsd, setServiceUsd] = useState(500);
@@ -97,16 +99,17 @@ export default function MarketPage() {
   // ----- AI estimate fetch -----
   const fetchEstimate = async (key: string, payload: { brand: string; model: string; reference?: string }, force = false) => {
     if (!force && aiCache[key]) return;
+    const seq = ++fetchSeqRef.current;
     setAiBusy(true); setAiError(null);
     try {
       const res = await fetch('/api/market-estimate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const j = await res.json();
-      if (!res.ok) { setAiError(j.error ?? 'Market estimate failed.'); return; }
-      setAiCache((p) => ({ ...p, [key]: j as MarketEstimate }));
+      if (res.ok) setAiCache((p) => ({ ...p, [key]: j as MarketEstimate })); // cache any valid result
+      if (seq === fetchSeqRef.current && !res.ok) setAiError(j.error ?? 'Market estimate failed.');
     } catch (e) {
-      setAiError((e as Error).message);
+      if (seq === fetchSeqRef.current) setAiError((e as Error).message);
     } finally {
-      setAiBusy(false);
+      if (seq === fetchSeqRef.current) setAiBusy(false);
     }
   };
 
@@ -143,8 +146,13 @@ export default function MarketPage() {
     catch { return `${currency} ${toDisp(usd).toLocaleString()}`; }
   };
 
-  // reset resale to the current valuation
-  useEffect(() => { if (val) setSellUsd(val.retail); }, [val?.retail, mode, modelId, customKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Default the resale price to the current valuation (including a late AI
+  // estimate), but stop overwriting once the user has typed their own.
+  useEffect(() => { setSellEdited(false); }, [modelId, mode, customKey]);
+  useEffect(() => {
+    if (val && !sellEdited) setSellUsd(val.retail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [val?.retail, sellEdited, modelId, mode, customKey]);
 
   const margin = val ? val.retail - val.wholesale : 0;
   const marginPct = val && val.wholesale > 0 ? (margin / val.wholesale) * 100 : 0;
@@ -299,7 +307,7 @@ export default function MarketPage() {
             <p className="text-xs text-muted">Works back from the resale price through your service cost, cost to bring it to market, the sales fee and your target profit (≥&nbsp;15%) to the maximum buy offer.</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Field label={`Sell at (${currency})`} value={toDisp(sellUsd)} onChange={(v) => setSellUsd(toUsd(v))} />
+            <Field label={`Sell at (${currency})`} value={toDisp(sellUsd)} onChange={(v) => { setSellUsd(toUsd(v)); setSellEdited(true); }} />
             <Field label={`Service cost (${currency})`} value={toDisp(serviceUsd)} onChange={(v) => setServiceUsd(toUsd(v))} />
             <Field label={`To market (${currency})`} value={toDisp(listingUsd)} onChange={(v) => setListingUsd(toUsd(v))} />
             <Field label="Sales fee (%)" value={salesFeePct} onChange={setSalesFeePct} step="0.5" />
