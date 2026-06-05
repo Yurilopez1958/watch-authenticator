@@ -3,24 +3,28 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useLang } from '@/lib/i18n';
+import { HelpButton } from './help-button';
+import { LangToggle } from './lang-toggle';
 
-type NavLink = { href: string; label: string; primary?: boolean };
+type NavLink = { href: string; es: string; en: string; primary?: boolean };
 
 const LINKS: readonly NavLink[] = [
-  { href: '/authenticate', label: 'Authenticate', primary: true },
-  { href: '/connect', label: 'Connect Niton' },
-  { href: '/timegrapher', label: 'Timegrapher' },
-  { href: '/verify', label: 'Quick verify' },
-  { href: '/gallery', label: 'Reference gallery' },
-  { href: '/market', label: 'Market' },
-  { href: '/import', label: 'Import CSV' },
-  { href: '/catalog', label: 'Catalog' },
-  { href: '/settings', label: 'Compliance' },
+  { href: '/authenticate', es: 'Autenticar', en: 'Authenticate', primary: true },
+  { href: '/connect', es: 'Conectar Niton', en: 'Connect Niton' },
+  { href: '/timegrapher', es: 'Cronocomparador', en: 'Timegrapher' },
+  { href: '/verify', es: 'Verificación rápida', en: 'Quick verify' },
+  { href: '/gallery', es: 'Galería', en: 'Reference gallery' },
+  { href: '/market', es: 'Mercado', en: 'Market' },
+  { href: '/import', es: 'Importar CSV', en: 'Import CSV' },
+  { href: '/catalog', es: 'Catálogo', en: 'Catalog' },
+  { href: '/settings', es: 'Cumplimiento', en: 'Compliance' },
 ];
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { lang } = useLang();
 
   // Close the mobile menu on Escape for keyboard users.
   useEffect(() => {
@@ -61,32 +65,37 @@ export function SiteHeader() {
               href={l.href}
               className={`nav-link ${l.primary ? 'font-semibold' : ''} ${pathname === l.href ? 'active' : ''}`}
             >
-              {l.label}
+              {l[lang]}
             </Link>
           ))}
         </nav>
 
-        {/* Mobile hamburger button */}
-        <button
-          onClick={() => setOpen((v) => !v)}
-          aria-label={open ? 'Close menu' : 'Open menu'}
-          aria-expanded={open}
-          aria-controls="mobile-nav"
-          className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-soft text-foreground hover:border-accent transition-colors shrink-0"
-        >
-          {open ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          )}
-        </button>
+        {/* Right cluster: language, help (always visible) + hamburger (mobile) */}
+        <div className="flex items-center gap-2 shrink-0">
+          <LangToggle />
+          <HelpButton />
+
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-soft text-foreground hover:border-accent transition-colors shrink-0"
+          >
+            {open ? (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile dropdown menu */}
@@ -105,7 +114,7 @@ export function SiteHeader() {
                     : 'text-muted'
               }`}
             >
-              {l.label}
+              {l[lang]}
             </Link>
           ))}
         </nav>
