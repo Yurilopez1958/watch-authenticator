@@ -1557,8 +1557,8 @@ export default function AuthenticatePage() {
       {/* Metal-mismatch warning modal */}
       {showMetalWarning && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 fade-in" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md card p-6 space-y-4 border-l-4" style={{ borderLeftColor: '#ef4444' }}>
-            <div className="flex items-start gap-3">
+          <div className="w-full max-w-md card p-0 border-l-4 flex flex-col max-h-[85vh]" style={{ borderLeftColor: '#ef4444' }}>
+            <div className="flex items-start gap-3 p-5 pb-3 shrink-0">
               <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(239,68,68,0.12)' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
@@ -1574,7 +1574,7 @@ export default function AuthenticatePage() {
               </div>
             </div>
 
-            <div className="space-y-2 border-t border-soft pt-3">
+            <div className="space-y-2 border-t border-soft px-5 py-3 overflow-y-auto flex-1 min-h-0">
               {XRF_TARGETS
                 .map((t) => ({ t, r: liveXrfByTarget[t.id] }))
                 .filter((x) => x.r?.verdict === 'likely-fake')
@@ -1594,19 +1594,20 @@ export default function AuthenticatePage() {
                 ))}
             </div>
 
-            <p className="text-sm text-foreground">Do you want to continue with the authentication anyway?</p>
-
-            <div className="flex gap-3 justify-end pt-1">
-              <button onClick={() => setShowMetalWarning(false)} className="btn-ghost text-sm">
-                Stop here
-              </button>
-              <button
-                onClick={() => { setShowMetalWarning(false); advance(); }}
-                className="btn-primary text-sm"
-                style={{ background: 'linear-gradient(135deg,#ef4444,#b91c1c)' }}
-              >
-                Continue anyway
-              </button>
+            <div className="p-5 pt-3 shrink-0 border-t border-soft">
+              <p className="text-sm text-foreground mb-3">Do you want to continue with the authentication anyway?</p>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setShowMetalWarning(false)} className="btn-ghost text-sm">
+                  Stop here
+                </button>
+                <button
+                  onClick={() => { setShowMetalWarning(false); advance(); }}
+                  className="btn-primary text-sm"
+                  style={{ background: 'linear-gradient(135deg,#ef4444,#b91c1c)' }}
+                >
+                  Continue anyway
+                </button>
+              </div>
             </div>
           </div>
         </div>
