@@ -34,25 +34,54 @@ function openDB(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      // Recreate the store with model-based indexes
-      if (db.objectStoreNames.contains(STORE)) db.deleteObjectStore(STORE);
-      const store = db.createObjectStore(STORE, { keyPath: 'id' });
-      store.createIndex('by_model', ['brandId', 'modelId'], { unique: false });
-      store.createIndex('by_model_part', ['brandId', 'modelId', 'part'], { unique: false });
+      const upgradeTx = req.transaction!; // the versionchange transaction
+      // Create the store and indexes idempotently — NEVER delete the store
+      // (that would wipe all of the user's reference photos on every migration).
+      const store = db.objectStoreNames.contains(STORE)
+        ? upgradeTx.objectStore(STORE)
+        : db.createObjectStore(STORE, { keyPath: 'id' });
+      if (!store.indexNames.contains('by_model')) {
+        store.createIndex('by_model', ['brandId', 'modelId'], { unique: false });
+      }
+      if (!store.indexNames.contains('by_model_part')) {
+        store.createIndex('by_model_part', ['brandId', 'modelId', 'part'], { unique: false });
+      }
     };
+    req.onblocked = () => reject(new Error('IndexedDB upgrade blocked by another open tab.'));
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
 
+// Cache the connection: reopening on every operation is slow and multiplies the
+// chance of an `onblocked` hang during an upgrade.
+let dbPromise: Promise<IDBDatabase> | null = null;
+function getDB(): Promise<IDBDatabase> {
+  if (!dbPromise) {
+    dbPromise = openDB()
+      .then((db) => {
+        db.onversionchange = () => { db.close(); dbPromise = null; };
+        db.onclose = () => { dbPromise = null; };
+        return db;
+      })
+      .catch((e) => { dbPromise = null; throw e; });
+  }
+  return dbPromise;
+}
+
 function tx<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  return openDB().then(
+  return getDB().then(
     (db) =>
       new Promise<T>((resolve, reject) => {
         const t = db.transaction(STORE, mode);
         const req = run(t.objectStore(STORE));
-        req.onsuccess = () => resolve(req.result);
+        let result: T;
+        req.onsuccess = () => { result = req.result; };
         req.onerror = () => reject(req.error);
+        // Resolve on COMMIT (not just request success) so a write that later
+        // aborts (e.g. QuotaExceededError) rejects instead of reporting success.
+        t.oncomplete = () => resolve(result);
+        t.onabort = () => reject(t.error ?? new Error('IndexedDB transaction aborted.'));
       }),
   );
 }

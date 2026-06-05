@@ -94,7 +94,7 @@ export default function VerifyPage() {
   const currentBrand = ALL_BRANDS.find((b) => b.id === brandId)!;
   const currentModel = ALL_MODELS.find((m) => m.id === modelId);
 
-  const { config: complianceConfig } = useCompliance();
+  const { config: complianceConfig, ready: complianceReady } = useCompliance();
   const brandRule = ruleFor(brandId, complianceConfig);
   const brandBlocked = brandRule === 'block';
 
@@ -134,7 +134,7 @@ export default function VerifyPage() {
   }, [brandId, modelId, year]);
 
   const onAnalyze = () => {
-    if (brandBlocked) return;
+    if (brandBlocked || !complianceReady) return;
     const elementReadings: ElementReading[] = Object.entries(readings)
       .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseFloat(raw) }))
       .filter((r) => Number.isFinite(r.pct) && r.pct > 0);
@@ -257,7 +257,7 @@ export default function VerifyPage() {
             </label>
           ))}
         </div>
-        <button onClick={onAnalyze} disabled={brandBlocked} className="btn-primary mt-5 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button onClick={onAnalyze} disabled={brandBlocked || !complianceReady} className="btn-primary mt-5 disabled:opacity-50 disabled:cursor-not-allowed">
           {brandBlocked ? 'Restricted brand' : 'Analyze'}
         </button>
       </section>

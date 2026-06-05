@@ -43,14 +43,19 @@ export function ruleFor(brandId: string, cfg: ComplianceConfig): BrandRule | nul
   return cfg.rules[brandId] ?? null;
 }
 
-/** React hook: current compliance config + updater, reactive across the tab. */
+/** React hook: current compliance config + updater, reactive across the tab.
+ *  `ready` is false until the stored config has loaded — gate restricted actions
+ *  on it so a "block" rule is enforced even on the first render. */
 export function useCompliance(): {
   config: ComplianceConfig;
+  ready: boolean;
   update: (cfg: ComplianceConfig) => void;
 } {
   const [config, setConfig] = useState<ComplianceConfig>(DEFAULT);
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     setConfig(getCompliance());
+    setReady(true);
     const handler = () => setConfig(getCompliance());
     window.addEventListener(CHANGED_EVENT, handler);
     window.addEventListener('storage', handler);
@@ -63,5 +68,5 @@ export function useCompliance(): {
     saveCompliance(next);
     setConfig(next);
   };
-  return { config, update };
+  return { config, ready, update };
 }

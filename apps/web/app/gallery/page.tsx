@@ -126,7 +126,7 @@ export default function GalleryPage() {
   const currentModel = ALL_MODELS.find((m) => m.id === modelId);
   const currentBrand = ALL_BRANDS.find((b) => b.id === brandId)!;
 
-  const { config: complianceConfig } = useCompliance();
+  const { config: complianceConfig, ready: complianceReady } = useCompliance();
   const brandRule = ruleFor(brandId, complianceConfig);
   const brandBlocked = brandRule === 'block';
   const movement = useMemo(() => getMovementForModelAcrossBrands(modelId), [modelId]);
@@ -197,7 +197,7 @@ export default function GalleryPage() {
   };
 
   const onUploadFiles = (partId: string) => async (files: FileList | File[]) => {
-    if (brandBlocked) return;
+    if (brandBlocked || !complianceReady) return;
     const list = Array.from(files);
     if (list.length === 0) return;
     setBusyPart(partId);
@@ -224,7 +224,7 @@ export default function GalleryPage() {
   // Test-only: fill the current model's parts with openly-licensed sample images
   // from Wikimedia Commons so the app's flows can be exercised quickly.
   const loadTestPhotos = async (perPart: number) => {
-    if (brandBlocked) return;
+    if (brandBlocked || !complianceReady) return;
     setBusyPart('__test__');
     setUploadError(null);
     setUploadProgress({ done: 0, total: GALLERY_PARTS.length });
