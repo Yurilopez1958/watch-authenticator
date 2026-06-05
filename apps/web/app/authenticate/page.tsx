@@ -654,18 +654,25 @@ export default function AuthenticatePage() {
 
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Authentication report — ${esc(currentModel.name)}</title>
 <style>
-  *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:36px;line-height:1.4}
-  h1{font-size:22px;margin:0} h3{font-size:14px;margin:22px 0 8px;border-bottom:1px solid #eee;padding-bottom:4px}
-  .muted{color:#666;font-size:12px} .block{margin:10px 0;font-size:13px}
-  .row{display:flex;align-items:center;gap:8px} ul{margin:6px 0 0 16px;padding:0;font-size:12px;color:#333}
-  .badge{font-size:12px;font-weight:bold;padding:2px 8px;border-radius:6px}
+  *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;line-height:1.3;font-size:12.5px}
+  h1{font-size:18px;margin:0} h3{font-size:12.5px;margin:12px 0 4px;border-bottom:1px solid #eee;padding-bottom:3px}
+  .muted{color:#666;font-size:11px} .block{margin:5px 0;font-size:12px}
+  .row{display:flex;align-items:center;gap:8px} ul{margin:3px 0 0 15px;padding:0;font-size:11px;color:#333} ul li{margin:1px 0}
+  .badge{font-size:11px;font-weight:bold;padding:1px 6px;border-radius:5px}
   .v-auth{background:#e6f7ee;color:#137a4a} .v-incon{background:#fff6e5;color:#9a6700} .v-fake{background:#fdeaea;color:#b42318}
-  .overall{font-size:18px;padding:8px 14px;border-radius:8px;display:inline-block;margin-top:6px}
-  .imgs{display:flex;gap:12px;flex-wrap:wrap} .imgs img{max-width:240px;max-height:240px;border:1px solid #ddd;border-radius:6px}
-  figure{margin:0} figcaption{font-size:11px;color:#666;text-align:center;margin-top:4px}
-  .disclaimer{font-size:10px;color:#888;margin-top:28px;border-top:1px solid #eee;padding-top:8px}
-  @media print{body{margin:16px}}
+  .overall{font-size:15px;padding:4px 11px;border-radius:7px;display:inline-block;margin-top:3px}
+  .imgs{display:flex;gap:10px;flex-wrap:wrap} .imgs img{max-width:150px;max-height:150px;border:1px solid #ddd;border-radius:6px}
+  figure{margin:0} figcaption{font-size:10px;color:#666;text-align:center;margin-top:2px}
+  .disclaimer{font-size:9.5px;color:#888;margin-top:14px;border-top:1px solid #eee;padding-top:6px}
+  .toolbar{position:sticky;top:0;background:#fff;padding:0 0 8px;margin-bottom:6px;border-bottom:1px solid #eee;display:flex;gap:8px}
+  .toolbar button{font:inherit;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #2563eb;background:#2563eb;color:#fff;cursor:pointer}
+  .toolbar button.sec{background:#fff;color:#2563eb}
+  @media print{body{margin:10px}.no-print{display:none!important}}
 </style></head><body>
+  <div class="toolbar no-print">
+    <button onclick="window.print()">Print / Save as PDF</button>
+    <button class="sec" onclick="window.close()">Close</button>
+  </div>
   <h1>Watch Authentication Report</h1>
   <div class="muted">Generated ${esc(dateStr)} &middot; Watch Authenticator</div>
   <div class="block">
