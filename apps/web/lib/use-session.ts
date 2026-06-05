@@ -52,8 +52,14 @@ export function useSession(): SessionState {
 
   const signOut = async () => {
     const sb = getSupabase();
-    if (sb) await sb.auth.signOut();
-    setSession(null);
+    try {
+      if (sb) await sb.auth.signOut();
+    } catch (e) {
+      // A network failure must not strand the user "signed in": clear locally anyway.
+      console.warn('Sign-out request failed; clearing local session:', (e as Error).message);
+    } finally {
+      setSession(null);
+    }
   };
 
   return {

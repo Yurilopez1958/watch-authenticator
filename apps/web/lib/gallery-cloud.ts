@@ -31,7 +31,12 @@ function dataUrlToBlob(dataUrl: string): { blob: Blob; ext: string } {
   return { blob: new Blob([arr], { type: mime }), ext };
 }
 
-/** Uploads a photo to Storage + inserts its metadata row. Returns the new row id. */
+/**
+ * Uploads a photo to Storage and inserts its metadata row. If the row insert
+ * fails, the just-uploaded file is removed so no orphan is left behind. The
+ * storage path is prefixed with the user id because the bucket RLS policy keys
+ * on the first path segment.
+ */
 export async function uploadCloudPhoto(input: {
   userId: string;
   brandId: string;
@@ -65,7 +70,8 @@ export async function uploadCloudPhoto(input: {
   });
   if (ins.error) {
     // best-effort cleanup of the orphaned file
-    await sb.storage.from(BUCKET).remove([storagePath]);
+    const rm = await sb.storage.from(BUCKET).remove([storagePath]);
+    if (rm.error) console.warn('Orphaned file left after failed insert:', storagePath, rm.error.message);
     throw ins.error;
   }
 }

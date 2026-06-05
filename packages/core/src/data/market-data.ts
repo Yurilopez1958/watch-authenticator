@@ -81,8 +81,18 @@ const BRAND_BASE: Readonly<Record<string, number>> = {
   rolex: 10000, 'patek-philippe': 35000, 'audemars-piguet': 35000, omega: 6000, cartier: 7000,
 };
 
-const FAST = new Set(['Daytona', 'Submariner', 'GMT-Master II', 'Nautilus', 'Aquanaut', 'Royal Oak', 'Royal Oak Offshore']);
-const MEDIUM = new Set(['Datejust', 'Sky-Dweller', 'Sea-Dweller', 'Yacht-Master', 'GMT-Master', 'Explorer', 'Explorer II', 'Speedmaster', 'Santos', 'Seamaster', 'Tank']);
+// Liquidity tier keyed by "brandId|collection" so a future brand that reuses a
+// generic collection name (e.g. another "Explorer") doesn't inherit this grade.
+const FAST = new Set([
+  'rolex|Daytona', 'rolex|Submariner', 'rolex|GMT-Master II',
+  'patek-philippe|Nautilus', 'patek-philippe|Aquanaut',
+  'audemars-piguet|Royal Oak', 'audemars-piguet|Royal Oak Offshore',
+]);
+const MEDIUM = new Set([
+  'rolex|Datejust', 'rolex|Sky-Dweller', 'rolex|Sea-Dweller', 'rolex|Yacht-Master',
+  'rolex|GMT-Master', 'rolex|Explorer', 'rolex|Explorer II',
+  'omega|Speedmaster', 'omega|Seamaster', 'cartier|Santos', 'cartier|Tank',
+]);
 
 function materialMultiplier(name: string): number {
   const n = name.toLowerCase();
@@ -112,7 +122,8 @@ function deriveMarketData(model: Model): MarketData {
   const variation = 0.9 + (h % 21) / 100; // ±10% deterministic spread
   const retail = Math.max(1500, Math.round((base * mult * variation) / 100) * 100);
 
-  const grade: CommercializationGrade = FAST.has(model.collection) ? 'fast' : MEDIUM.has(model.collection) ? 'medium' : 'slow';
+  const gradeKey = `${model.brandId}|${model.collection}`;
+  const grade: CommercializationGrade = FAST.has(gradeKey) ? 'fast' : MEDIUM.has(gradeKey) ? 'medium' : 'slow';
   const wholesaleFactor = grade === 'fast' ? 0.88 : grade === 'medium' ? 0.85 : 0.80;
   const wholesale = Math.round((retail * wholesaleFactor) / 100) * 100;
 
