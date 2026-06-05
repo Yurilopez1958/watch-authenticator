@@ -9,6 +9,7 @@ type NavLink = { href: string; label: string; primary?: boolean };
 const LINKS: readonly NavLink[] = [
   { href: '/authenticate', label: 'Authenticate', primary: true },
   { href: '/connect', label: 'Connect Niton' },
+  { href: '/timegrapher', label: 'Timegrapher' },
   { href: '/verify', label: 'Quick verify' },
   { href: '/gallery', label: 'Reference gallery' },
   { href: '/import', label: 'Import CSV' },
