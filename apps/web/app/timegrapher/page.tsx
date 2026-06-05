@@ -12,7 +12,9 @@ export default function TimegrapherPage() {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expectedBph, setExpectedBph] = useState(28800);
-  const [sensitivity, setSensitivity] = useState(5);
+  const [sensitivity, setSensitivity] = useState(6);
+  const [gain, setGain] = useState(8);
+  const [level, setLevel] = useState(0);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [modelId, setModelId] = useState<string>('');
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
@@ -34,9 +36,12 @@ export default function TimegrapherPage() {
   const lastBeatSampleRef = useRef(-1e9);
   const bphRef = useRef(expectedBph);
   const sensRef = useRef(sensitivity);
+  const gainRef = useRef(gain);
+  const levelRef = useRef(0);
 
   useEffect(() => { bphRef.current = expectedBph; }, [expectedBph]);
   useEffect(() => { sensRef.current = sensitivity; }, [sensitivity]);
+  useEffect(() => { gainRef.current = gain; }, [gain]);
 
   const stop = () => {
     try { processorRef.current?.disconnect(); } catch { /* noop */ }
@@ -120,15 +125,18 @@ export default function TimegrapherPage() {
         const sr = ctx.sampleRate;
         const nominalPeriod = 3600 / bphRef.current; // sec per beat
         const refractory = nominalPeriod * 0.45 * sr; // samples between beats
-        const mult = sensRef.current;
+        const g = gainRef.current;                    // input gain (mic level boost)
+        const mult = 12 - sensRef.current;            // higher sensitivity → lower threshold
         let env = envRef.current, nf = noiseFloorRef.current, above = aboveRef.current;
         let last = lastBeatSampleRef.current, gi = sampleIdxRef.current;
+        let peak = levelRef.current;
         const beats = beatsRef.current;
         for (let i = 0; i < input.length; i++) {
-          const a = Math.abs(input[i]!);
+          const a = Math.abs(input[i]!) * g;                    // apply gain
           env += a > env ? (a - env) * 0.4 : (a - env) * 0.005; // envelope follower
+          if (env > peak) peak = env;
           nf += (env - nf) * 0.0003;                            // slow noise floor
-          const thr = Math.max(nf * mult, 0.004);
+          const thr = Math.max(nf * mult, 0.0012);
           if (!above && env > thr && gi - last > refractory) {
             beats.push(gi / sr);
             last = gi;
@@ -140,6 +148,7 @@ export default function TimegrapherPage() {
         }
         envRef.current = env; noiseFloorRef.current = nf; aboveRef.current = above;
         lastBeatSampleRef.current = last; sampleIdxRef.current = gi;
+        levelRef.current = peak;
         const cutoff = gi / sr - 40; // keep last 40s of beats
         while (beats.length && beats[0]! < cutoff) beats.shift();
       };
@@ -162,6 +171,8 @@ export default function TimegrapherPage() {
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(() => {
+      setLevel(Math.min(1, levelRef.current));
+      levelRef.current *= 0.4; // decay so the meter falls back
       const beats = beatsRef.current;
       if (beats.length < 12) { setMetrics(null); return; }
       const nominalPeriod = 3600 / expectedBph;
@@ -273,6 +284,15 @@ export default function TimegrapherPage() {
           <Cell label="Beat error" value={metrics?.beatError != null ? metrics.beatError.toFixed(1) : '—'} unit="ms" color={beColor} />
           <Cell label="Frequency" value={metrics ? Math.round(metrics.detectedBph).toString() : '—'} unit="bph" />
         </div>
+        <div className="px-4 py-2.5 border-b border-blue-500/15 flex items-center gap-2">
+          <span className="text-[0.6rem] uppercase tracking-widest text-blue-300/50 shrink-0">Signal</span>
+          <div className="flex-1 h-2 rounded-full bg-blue-950/70 overflow-hidden">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${Math.min(100, level * 320)}%`, background: 'linear-gradient(90deg,#34d399,#fbbf24,#f87171)', transition: 'width 80ms linear' }}
+            />
+          </div>
+        </div>
         <canvas ref={canvasRef} width={680} height={260} className="w-full block" />
         <div className="flex items-center justify-between px-4 py-2 border-t border-blue-500/15 text-xs gap-2 flex-wrap">
           <span className="inline-flex items-center gap-2 text-blue-200/70">
@@ -337,20 +357,26 @@ export default function TimegrapherPage() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
+        <label className="block">
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">…or match a model (sets the caliber&apos;s frequency)</span>
+          <select value={modelId} onChange={(e) => onPickModel(e.target.value)} className="field">
+            <option value="">— pick a model —</option>
+            {ALL_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>{m.name} — {m.reference}</option>
+            ))}
+          </select>
+        </label>
+
+        <div className="grid sm:grid-cols-2 gap-4">
           <label className="block">
-            <span className="block text-xs uppercase tracking-wide text-dim mb-2">…or match a model (sets the caliber&apos;s frequency)</span>
-            <select value={modelId} onChange={(e) => onPickModel(e.target.value)} className="field">
-              <option value="">— pick a model —</option>
-              {ALL_MODELS.map((m) => (
-                <option key={m.id} value={m.id}>{m.name} — {m.reference}</option>
-              ))}
-            </select>
+            <span className="block text-xs uppercase tracking-wide text-dim mb-2">Mic level / gain ({gain}×)</span>
+            <input type="range" min={1} max={30} step={1} value={gain} onChange={(e) => setGain(parseInt(e.target.value, 10))} className="w-full" />
+            <span className="block text-xs text-dim mt-1">Turn this <strong>up</strong> if the trace stays empty — it boosts a faint watch.</span>
           </label>
           <label className="block">
-            <span className="block text-xs uppercase tracking-wide text-dim mb-2">Mic sensitivity ({sensitivity.toFixed(0)})</span>
-            <input type="range" min={2} max={12} step={1} value={sensitivity} onChange={(e) => setSensitivity(parseInt(e.target.value, 10))} className="w-full" />
-            <span className="block text-xs text-dim mt-1">Lower if it counts noise; higher if it misses beats.</span>
+            <span className="block text-xs uppercase tracking-wide text-dim mb-2">Sensitivity ({sensitivity})</span>
+            <input type="range" min={1} max={10} step={1} value={sensitivity} onChange={(e) => setSensitivity(parseInt(e.target.value, 10))} className="w-full" />
+            <span className="block text-xs text-dim mt-1">Higher = detects fainter ticks. Lower it if it counts background noise.</span>
           </label>
         </div>
       </section>
