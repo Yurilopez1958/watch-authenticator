@@ -121,6 +121,19 @@ export default function MarketPage() {
       {/* Valuation */}
       {data ? (
         <section className="rounded-2xl border border-blue-500/30 p-5 space-y-5" style={{ background: 'linear-gradient(160deg,#0b1b44,#0a1024)' }}>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <span className="text-sm text-blue-100/80 font-semibold">
+              {currentBrand.name} {currentModel?.name} <span className="text-blue-200/50 font-normal">· {currentModel?.reference}</span>
+            </span>
+            <span
+              className="text-[0.65rem] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border"
+              style={data.estimated
+                ? { color: '#fbbf24', borderColor: 'rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.1)' }
+                : { color: '#34d399', borderColor: 'rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.1)' }}
+            >
+              {data.estimated ? 'Estimated' : 'Curated'}
+            </span>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div>
               <div className="text-[0.7rem] uppercase tracking-wide text-blue-200/60">Retail (market)</div>

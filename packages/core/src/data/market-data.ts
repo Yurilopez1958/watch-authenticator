@@ -1,7 +1,12 @@
 // Market intelligence (valuation) — Phase 1.
-// MOCK / orientative figures to demo the feature. Structured so it can later be
-// swapped for a Supabase table or a real market API (Chrono24 / WatchCharts)
-// without changing the UI. Prices in USD; refine with real data.
+// A small set of CURATED orientative figures for popular references, plus a
+// heuristic ESTIMATOR that derives an orientative valuation for ANY other model
+// from its brand / collection / material so the whole catalog has coverage.
+// All figures are orientative (not quotes); structured so the curated layer can
+// later be replaced by a Supabase table or a real market API (Chrono24 / WatchCharts).
+
+import { ALL_MODELS } from './brands';
+import type { Model } from '../types/index';
 
 /** Liquidity / how quickly the model sells on the secondary market. */
 export type CommercializationGrade = 'fast' | 'medium' | 'slow';
@@ -19,15 +24,17 @@ export type MarketData = {
   /** ISO date the figure was last reviewed. */
   updatedAt: string;
   source: string;
+  /** True when the figure is heuristic-estimated rather than curated. */
+  estimated: boolean;
 };
 
-type Entry = Omit<MarketData, 'modelId'>;
+type Entry = Omit<MarketData, 'modelId' | 'estimated'>;
 
 const D = '2025-06-01';
 const SRC = 'Orientative (mock) — refine with real market data';
 
-/** Seed of popular references. Keyed by catalog model id. */
-const MARKET_DATA: Readonly<Record<string, Entry>> = {
+/** Curated seed of popular references. Keyed by catalog model id. */
+const CURATED: Readonly<Record<string, Entry>> = {
   // ---- Rolex ----
   'rolex-submariner-124060':        { retail: 10500, wholesale: 9000,  currency: 'USD', grade: 'fast',   demandScore: 90, updatedAt: D, source: SRC },
   'rolex-submariner-date-126610ln': { retail: 13500, wholesale: 11800, currency: 'USD', grade: 'fast',   demandScore: 88, updatedAt: D, source: SRC },
@@ -55,11 +62,79 @@ const MARKET_DATA: Readonly<Record<string, Entry>> = {
   'cartier-santos-wssa0009':        { retail: 7400,  wholesale: 6100,  currency: 'USD', grade: 'medium', demandScore: 60, updatedAt: D, source: SRC },
 };
 
-/** Returns market data for a model id, or undefined if not on file. */
-export function getMarketData(modelId: string): MarketData | undefined {
-  const e = MARKET_DATA[modelId];
-  return e ? { modelId, ...e } : undefined;
+// ----------------- Heuristic estimator (covers the rest of the catalog) -----------------
+
+/** Orientative base retail (USD) by "brandId|collection"; falls back to brand. */
+const COLLECTION_BASE: Readonly<Record<string, number>> = {
+  'rolex|Submariner': 12000, 'rolex|GMT-Master II': 16000, 'rolex|GMT-Master': 14000,
+  'rolex|Daytona': 30000, 'rolex|Datejust': 8500, 'rolex|Day-Date': 38000,
+  'rolex|Sky-Dweller': 16000, 'rolex|Explorer': 8000, 'rolex|Explorer II': 9500,
+  'rolex|Yacht-Master': 14000, 'rolex|Sea-Dweller': 13000, 'rolex|Air-King': 7500,
+  'rolex|Oyster Perpetual': 6500, 'rolex|Milgauss': 9000, 'rolex|Cellini': 12000,
+  'patek-philippe|Nautilus': 60000, 'patek-philippe|Aquanaut': 45000, 'patek-philippe|Calatrava': 28000,
+  'audemars-piguet|Royal Oak': 38000, 'audemars-piguet|Royal Oak Offshore': 35000,
+  'omega|Speedmaster': 7000, 'omega|Seamaster': 6000, 'omega|Constellation': 5500,
+  'omega|De Ville': 4500, 'omega|Railmaster': 5500,
+  'cartier|Santos': 8000, 'cartier|Tank': 7000, 'cartier|Ballon Bleu': 7500,
+};
+const BRAND_BASE: Readonly<Record<string, number>> = {
+  rolex: 10000, 'patek-philippe': 35000, 'audemars-piguet': 35000, omega: 6000, cartier: 7000,
+};
+
+const FAST = new Set(['Daytona', 'Submariner', 'GMT-Master II', 'Nautilus', 'Aquanaut', 'Royal Oak', 'Royal Oak Offshore']);
+const MEDIUM = new Set(['Datejust', 'Sky-Dweller', 'Sea-Dweller', 'Yacht-Master', 'GMT-Master', 'Explorer', 'Explorer II', 'Speedmaster', 'Santos', 'Seamaster', 'Tank']);
+
+function materialMultiplier(name: string): number {
+  const n = name.toLowerCase();
+  let m = 1;
+  if (/platinum|\b950\b|pt950/.test(n)) m = 3.2;
+  else if (/everose|rose gold|pink gold/.test(n)) m = 2.6;
+  else if (/yellow gold|white gold|moonshine|canopus|sedna|18k|\bgold\b|\bor\b/.test(n)) m = 2.4;
+  else if (/rolesor|two[- ]tone|steel.*gold|gold.*steel/.test(n)) m = 1.5;
+  if (/diamond|pav[ée]|\bgem|\brbr\b|baguette/.test(n)) m *= 1.8;
+  return m;
 }
 
-/** Count of models with market data (for UI hints). */
-export const MARKET_DATA_COUNT = Object.keys(MARKET_DATA).length;
+function hash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function deriveMarketData(model: Model): MarketData {
+  const base = COLLECTION_BASE[`${model.brandId}|${model.collection}`] ?? BRAND_BASE[model.brandId] ?? 6000;
+  const mult = materialMultiplier(model.name);
+  const h = hash(model.id);
+  const variation = 0.9 + (h % 21) / 100; // ±10% deterministic spread
+  const retail = Math.max(1500, Math.round((base * mult * variation) / 100) * 100);
+
+  const grade: CommercializationGrade = FAST.has(model.collection) ? 'fast' : MEDIUM.has(model.collection) ? 'medium' : 'slow';
+  const wholesaleFactor = grade === 'fast' ? 0.88 : grade === 'medium' ? 0.85 : 0.80;
+  const wholesale = Math.round((retail * wholesaleFactor) / 100) * 100;
+
+  const demandBase = grade === 'fast' ? 85 : grade === 'medium' ? 62 : 40;
+  const demandScore = Math.max(15, Math.min(99, demandBase + ((h >> 4) % 11) - 5));
+
+  return {
+    modelId: model.id,
+    retail,
+    wholesale,
+    currency: 'USD',
+    grade,
+    demandScore,
+    updatedAt: D,
+    source: 'Estimated from brand / collection / material — not a quote',
+    estimated: true,
+  };
+}
+
+/** Returns market data for a model id: curated if available, else estimated. */
+export function getMarketData(modelId: string): MarketData | undefined {
+  const e = CURATED[modelId];
+  if (e) return { modelId, estimated: false, ...e };
+  const model = ALL_MODELS.find((m) => m.id === modelId);
+  return model ? deriveMarketData(model) : undefined;
+}
+
+/** Count of curated (hand-set) references. */
+export const MARKET_DATA_COUNT = Object.keys(CURATED).length;
