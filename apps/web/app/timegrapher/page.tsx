@@ -216,11 +216,18 @@ export default function TimegrapherPage() {
     const ctx = cv.getContext('2d');
     if (!ctx) return;
     const W = cv.width, H = cv.height;
-    ctx.fillStyle = '#0a1635';
+    // dark instrument screen
+    ctx.fillStyle = '#070d20';
     ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(96,165,250,0.22)';
+    // graph-paper grid
+    ctx.strokeStyle = 'rgba(59,130,246,0.10)';
     ctx.lineWidth = 1;
+    for (let gx = 0; gx <= W + 1; gx += W / 12) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+    for (let gy = 0; gy <= H + 1; gy += H / 8) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+    // brighter centre line
+    ctx.strokeStyle = 'rgba(96,165,250,0.4)';
     ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+
     const halfMs = (nominalPeriod / 2) * 1000;
     const n = trace.length;
     for (let i = 0; i < n; i++) {
@@ -228,7 +235,10 @@ export default function TimegrapherPage() {
       const x = (i / Math.max(1, n - 1)) * W;
       let y = H / 2 - (p.ms / halfMs) * (H / 2);
       y = ((y % H) + H) % H; // wrap vertically like a timegrapher tape
-      ctx.fillStyle = p.even ? '#60a5fa' : '#bfdbfe';
+      // glow + dot (phosphor green, like a timing machine)
+      ctx.fillStyle = p.even ? 'rgba(52,211,153,0.25)' : 'rgba(167,243,208,0.25)';
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = p.even ? '#34d399' : '#a7f3d0';
       ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
     }
   };
@@ -241,6 +251,8 @@ export default function TimegrapherPage() {
   };
 
   const bphMismatch = metrics && Math.abs(metrics.detectedBph - expectedBph) > expectedBph * 0.06;
+  const rateColor = metrics ? (Math.abs(metrics.rate) <= 10 ? '#34d399' : Math.abs(metrics.rate) <= 30 ? '#fbbf24' : '#f87171') : undefined;
+  const beColor = metrics?.beatError != null ? (metrics.beatError <= 0.5 ? '#34d399' : metrics.beatError <= 1.0 ? '#fbbf24' : '#f87171') : undefined;
 
   return (
     <div className="space-y-8">
@@ -253,23 +265,21 @@ export default function TimegrapherPage() {
         </p>
       </section>
 
-      {/* Trace + readout (blue) */}
-      <section className="rounded-2xl p-5 border border-blue-500/30" style={{ background: 'linear-gradient(160deg,#0b1b44,#0a1024)' }}>
-        <div className="grid sm:grid-cols-3 gap-4 mb-4">
-          <Readout label="Rate" value={metrics ? `${metrics.rate >= 0 ? '+' : ''}${metrics.rate.toFixed(1)}` : '—'} unit="s/day" big />
-          <Readout label="Beat error" value={metrics?.beatError != null ? metrics.beatError.toFixed(1) : '—'} unit="ms" />
-          <Readout label="Detected" value={metrics ? Math.round(metrics.detectedBph).toString() : '—'} unit="bph" />
+      {/* Witschi-style timing instrument */}
+      <section className="rounded-2xl overflow-hidden border border-blue-500/30 shadow-xl shadow-blue-950/40" style={{ background: '#0a1024' }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-blue-500/15 border-b border-blue-500/15">
+          <Cell label="Rate" value={metrics ? `${metrics.rate >= 0 ? '+' : ''}${metrics.rate.toFixed(1)}` : '—'} unit="s / day" color={rateColor} big />
+          <Cell label="Amplitude" value="—" unit="degrees" />
+          <Cell label="Beat error" value={metrics?.beatError != null ? metrics.beatError.toFixed(1) : '—'} unit="ms" color={beColor} />
+          <Cell label="Frequency" value={metrics ? Math.round(metrics.detectedBph).toString() : '—'} unit="bph" />
         </div>
-        <canvas ref={canvasRef} width={640} height={200} className="w-full rounded-lg border border-blue-500/20" />
-        <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
-          <div className="text-xs text-blue-200/70">
-            {running
-              ? metrics ? `Listening · ${metrics.beats} beats analysed` : 'Listening · move the mic closer to the watch…'
-              : 'Idle — press Start and hold the phone against the case back.'}
-          </div>
-          {bphMismatch && (
-            <div className="text-xs text-amber-300">⚠ Detected rate is far from the set frequency — pick the correct bph below.</div>
-          )}
+        <canvas ref={canvasRef} width={680} height={260} className="w-full block" />
+        <div className="flex items-center justify-between px-4 py-2 border-t border-blue-500/15 text-xs gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-2 text-blue-200/70">
+            <span className={`w-2 h-2 rounded-full ${running ? 'bg-emerald-400 animate-pulse' : 'bg-blue-500/40'}`} />
+            {running ? (metrics ? `Measuring · ${metrics.beats} beats` : 'Listening… place the mic on the watch') : 'Idle — press Start'}
+          </span>
+          {bphMismatch && <span className="text-amber-300">⚠ Detected ≠ set frequency — choose the correct bph below.</span>}
         </div>
       </section>
 
@@ -359,12 +369,17 @@ export default function TimegrapherPage() {
   );
 }
 
-function Readout({ label, value, unit, big }: { label: string; value: string; unit: string; big?: boolean }) {
+function Cell({ label, value, unit, color, big }: { label: string; value: string; unit: string; color?: string | undefined; big?: boolean | undefined }) {
   return (
-    <div className="text-center">
-      <div className="text-[0.7rem] uppercase tracking-wide text-blue-200/60">{label}</div>
-      <div className={`font-mono font-bold text-blue-50 ${big ? 'text-4xl' : 'text-2xl'}`}>{value}</div>
-      <div className="text-[0.7rem] text-blue-200/60">{unit}</div>
+    <div className="px-3 py-4 text-center">
+      <div className="text-[0.6rem] uppercase tracking-[0.2em] text-blue-300/50">{label}</div>
+      <div
+        className={`font-mono font-bold tabular-nums leading-tight ${big ? 'text-4xl sm:text-5xl' : 'text-2xl sm:text-3xl'}`}
+        style={{ color: color ?? '#dbeafe' }}
+      >
+        {value}
+      </div>
+      <div className="text-[0.6rem] uppercase tracking-wider text-blue-300/40">{unit}</div>
     </div>
   );
 }
