@@ -388,6 +388,14 @@ export default function AuthenticatePage() {
   }), [xrfMode, readingsByTarget, csvByTarget, candidateProfiles]);
   const liveXrf = liveXrfByTarget[activeTarget];
 
+  // Move the guided XRF flow to a target (clears the transient photo-OCR UI).
+  const goToTarget = (id: XrfTarget) => {
+    setActiveTarget(id);
+    setPhotoPreview(null);
+    setPhotoNotes(null);
+    setPhotoError(null);
+  };
+
   // Status flag per step: 'pass' (green) | 'fail' (red) | 'warn' (amber) | 'pending' (grey)
   const stepStatuses = useMemo<StepStatus[]>(() => {
     const s: StepStatus[] = ['pending', 'pending', 'pending', 'pending', 'pending'];
@@ -895,12 +903,7 @@ export default function AuthenticatePage() {
                   return (
                     <button
                       key={t.id}
-                      onClick={() => {
-                        setActiveTarget(t.id);
-                        setPhotoPreview(null);
-                        setPhotoNotes(null);
-                        setPhotoError(null);
-                      }}
+                      onClick={() => goToTarget(t.id)}
                       className={`chip cursor-pointer inline-flex items-center gap-1.5 ${
                         activeTarget === t.id ? '!bg-accent !text-white !border-transparent' : ''
                       }`}
@@ -1048,6 +1051,54 @@ export default function AuthenticatePage() {
           {xrfMode === 'skip' && (
             <div className="text-sm text-muted">
               You can proceed without XRF data. The verdict will rely on the movement check and visual evidence.
+            </div>
+          )}
+
+          {/* Guided per-part result: show this target's verdict, then move to the next */}
+          {xrfMode !== 'skip' && (
+            <div className="mt-5 border-t border-soft pt-4">
+              {liveXrfByTarget[activeTarget] ? (() => {
+                const r = liveXrfByTarget[activeTarget]!;
+                const idx = XRF_TARGETS.findIndex((t) => t.id === activeTarget);
+                const next = XRF_TARGETS[idx + 1];
+                const label = XRF_TARGETS[idx]!.label;
+                const color = r.verdict === 'likely-authentic' ? 'text-emerald-300'
+                  : r.verdict === 'inconclusive' ? 'text-amber-300' : 'text-red-300';
+                return (
+                  <div className="rounded-lg border border-soft bg-card p-4 fade-in">
+                    <div className="flex justify-between items-baseline flex-wrap gap-2">
+                      <div className="text-sm">
+                        <span className="text-dim uppercase tracking-wide text-xs">{label} result</span>
+                        <span className={`font-bold ml-2 ${color}`}>{verdictText(r.verdict)}</span>
+                      </div>
+                      <div className="font-mono">{r.overallScore}<span className="text-dim text-xs">/100</span></div>
+                    </div>
+                    <div className="text-xs text-dim mt-1">Closest profile: <span className="font-mono">{r.materialName}</span></div>
+                    {r.flags.length > 0 && (
+                      <ul className="text-xs text-neutral-200 space-y-1 mt-2">
+                        {r.flags.slice(0, 3).map((f, i) => (
+                          <li key={i} className="flex gap-2"><span className="text-accent-bright">▸</span><span>{f}</span></li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="mt-3">
+                      {next ? (
+                        <button onClick={() => goToTarget(next.id)} className="btn-primary text-sm inline-flex items-center gap-2">
+                          Next: measure the {next.label}
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+                        </button>
+                      ) : (
+                        <div className="text-sm text-emerald-300">✓ All three parts measured — press &ldquo;Continue →&rdquo; below.</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })() : (
+                <div className="text-xs text-dim">
+                  Measure the <span className="text-foreground font-semibold">{XRF_TARGETS.find((t) => t.id === activeTarget)?.label}</span> with
+                  the gun (type, photo or CSV above). Its result and the next part will appear here.
+                </div>
+              )}
             </div>
           )}
         </StepCard>
