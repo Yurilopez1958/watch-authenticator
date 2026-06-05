@@ -574,6 +574,93 @@ export default function AuthenticatePage() {
     setMovementResult(checkMovementCaliber(modelId, observedCaliber));
   };
 
+  // Build a printable authentication report (client gives "Save as PDF" in print).
+  const downloadReport = () => {
+    const esc = (s: unknown) =>
+      String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] ?? c));
+    const vLabel = (v: MatchResult['verdict']) =>
+      v === 'likely-authentic' ? 'Likely authentic' : v === 'inconclusive' ? 'Inconclusive' : 'Likely fake';
+    const vClass = (v: MatchResult['verdict']) =>
+      v === 'likely-authentic' ? 'v-auth' : v === 'inconclusive' ? 'v-incon' : 'v-fake';
+
+    const xrfResults = XRF_TARGETS.map((t) => ({ t, r: xrfResultByTarget[t.id] })).filter((x) => x.r);
+    const verdicts = xrfResults.map((x) => x.r!.verdict);
+    const anyFake = verdicts.includes('likely-fake') || movementResult?.status === 'mismatch';
+    const anyIncon = verdicts.includes('inconclusive');
+    const hasData = verdicts.length > 0 || movementResult?.status === 'match';
+    const overall = anyFake
+      ? { t: 'Likely fake / inconsistent', c: 'v-fake' }
+      : anyIncon
+        ? { t: 'Inconclusive', c: 'v-incon' }
+        : hasData
+          ? { t: 'Consistent with authentic', c: 'v-auth' }
+          : { t: 'Insufficient data', c: 'v-incon' };
+
+    const dateStr = new Date().toLocaleString();
+
+    const xrfRows = xrfResults.map(({ t, r }) => `
+      <div class="block">
+        <div class="row"><strong>${esc(t.label)}</strong>
+          <span class="badge ${vClass(r!.verdict)}">${vLabel(r!.verdict)}</span>
+          <span class="muted">${r!.overallScore}/100</span></div>
+        <div class="muted">Closest profile: ${esc(r!.materialName)}</div>
+        ${r!.flags.length ? `<ul>${r!.flags.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+      </div>`).join('');
+
+    const movHtml = movementResult ? `
+      <h3>Movement caliber check</h3>
+      <div class="block">
+        <div>${movementResult.status === 'match' ? '&#10003; Caliber matches'
+          : movementResult.status === 'mismatch' ? '&#10007; Caliber mismatch'
+          : movementResult.status === 'not-provided' ? 'Not provided' : 'Unknown model'}</div>
+        ${movementResult.expectedCaliber ? `<div class="muted">Expected Cal. ${esc(movementResult.expectedCaliber)}${movementResult.observedCaliber ? ' &middot; observed ' + esc(movementResult.observedCaliber) : ''}</div>` : ''}
+        ${movementResult.note ? `<div class="muted">${esc(movementResult.note)}</div>` : ''}
+      </div>` : '';
+
+    const imgsHtml = (examined || reference) ? `
+      <h3>Visual evidence</h3>
+      <div class="imgs">
+        ${examined ? `<figure><img src="${examined}" alt="examined"/><figcaption>Examined</figcaption></figure>` : ''}
+        ${reference ? `<figure><img src="${reference}" alt="reference"/><figcaption>Reference</figcaption></figure>` : ''}
+      </div>` : '';
+
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Authentication report — ${esc(currentModel.name)}</title>
+<style>
+  *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:36px;line-height:1.4}
+  h1{font-size:22px;margin:0} h3{font-size:14px;margin:22px 0 8px;border-bottom:1px solid #eee;padding-bottom:4px}
+  .muted{color:#666;font-size:12px} .block{margin:10px 0;font-size:13px}
+  .row{display:flex;align-items:center;gap:8px} ul{margin:6px 0 0 16px;padding:0;font-size:12px;color:#333}
+  .badge{font-size:12px;font-weight:bold;padding:2px 8px;border-radius:6px}
+  .v-auth{background:#e6f7ee;color:#137a4a} .v-incon{background:#fff6e5;color:#9a6700} .v-fake{background:#fdeaea;color:#b42318}
+  .overall{font-size:18px;padding:8px 14px;border-radius:8px;display:inline-block;margin-top:6px}
+  .imgs{display:flex;gap:12px;flex-wrap:wrap} .imgs img{max-width:240px;max-height:240px;border:1px solid #ddd;border-radius:6px}
+  figure{margin:0} figcaption{font-size:11px;color:#666;text-align:center;margin-top:4px}
+  .disclaimer{font-size:10px;color:#888;margin-top:28px;border-top:1px solid #eee;padding-top:8px}
+  @media print{body{margin:16px}}
+</style></head><body>
+  <h1>Watch Authentication Report</h1>
+  <div class="muted">Generated ${esc(dateStr)} &middot; Watch Authenticator</div>
+  <div class="block">
+    <div><strong>${esc(currentBrand.name)} ${esc(currentModel.name)}</strong> (ref. ${esc(currentModel.reference)})</div>
+    <div class="muted">Declared year: ${esc(year)}${serial ? ' &middot; Serial: ' + esc(serial) : ''}</div>
+    ${notes ? `<div class="muted">Notes: ${esc(notes)}</div>` : ''}
+  </div>
+  <div><span class="overall badge ${overall.c}">${esc(overall.t)}</span></div>
+  <h3>XRF composition analysis (per part)</h3>
+  ${xrfRows || '<div class="muted">No XRF readings were entered.</div>'}
+  ${movHtml}
+  ${imgsHtml}
+  <div class="disclaimer">This report is decision-support guidance based on public reference data and the readings provided. It is not a guarantee of authenticity; definitive authentication requires physical inspection by a qualified professional.</div>
+</body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) { alert('Allow pop-ups for this site to generate the report, then try again.'); return; }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { try { w.print(); } catch { /* user can still print manually */ } }, 350);
+  };
+
   const advance = () => {
     if (step === 3) runAnalysis();
     setStep(((step + 1) % 5) as Step);
@@ -1226,7 +1313,13 @@ export default function AuthenticatePage() {
               </div>
             </SummaryBlock>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
+              <button onClick={downloadReport} className="btn-primary text-sm inline-flex items-center gap-2">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><polyline points="9 15 12 18 15 15" />
+                </svg>
+                Download report (PDF)
+              </button>
               <button
                 onClick={() => {
                   setStep(0);
