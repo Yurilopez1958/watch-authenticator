@@ -12,6 +12,7 @@ const LINKS: readonly NavLink[] = [
   { href: '/timegrapher', label: 'Timegrapher' },
   { href: '/verify', label: 'Quick verify' },
   { href: '/gallery', label: 'Reference gallery' },
+  { href: '/market', label: 'Market' },
   { href: '/import', label: 'Import CSV' },
   { href: '/catalog', label: 'Catalog' },
   { href: '/settings', label: 'Compliance' },

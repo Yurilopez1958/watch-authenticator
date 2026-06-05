@@ -28,6 +28,9 @@ export { CARTIER_MOVEMENTS, CARTIER_MODEL_TO_CALIBER } from './cartier-movements
 
 export { COMMON_MATERIALS, COMMON_REFERENCE_PROFILES } from './common-materials';
 
+export { getMarketData, MARKET_DATA_COUNT } from './market-data';
+export type { MarketData, CommercializationGrade } from './market-data';
+
 export {
   ALL_BRANDS,
   ALL_MODELS,
