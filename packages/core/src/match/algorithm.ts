@@ -168,7 +168,23 @@ export function bestProfileMatch(
   let best: MatchResult | null = null;
   for (const profile of candidateProfiles) {
     const result = matchMeasurementToProfile(measurement, profile);
-    if (!best || result.overallScore > best.overallScore) {
+    if (best === null) {
+      best = result;
+      continue;
+    }
+    // A profile where NONE of its elements were present in the measurement (e.g.
+    // matching a steel reading against a platinum profile) carries no real
+    // evidence — its score comes only from "missing element" penalties. It must
+    // never be chosen as the closest profile over one we could actually evaluate,
+    // even if its score happens to be higher. Otherwise the verdict explains the
+    // failure against the wrong material (e.g. "missing Pt/Ru" on a steel watch).
+    const bestHasEvidence = best.elementMatches.length > 0;
+    const resultHasEvidence = result.elementMatches.length > 0;
+    if (resultHasEvidence !== bestHasEvidence) {
+      if (resultHasEvidence) best = result;
+      continue;
+    }
+    if (result.overallScore > best.overallScore) {
       best = result;
     }
   }
