@@ -62,6 +62,10 @@ async function postJsonWithRetry(url: string, payload: unknown): Promise<Respons
   }
 }
 
+function verdictText(v: MatchResult['verdict']): string {
+  return v === 'likely-authentic' ? 'Likely authentic' : v === 'inconclusive' ? 'Inconclusive' : 'Likely fake';
+}
+
 const ELEMENTS_OF_INTEREST: ElementSymbol[] = [
   'Fe', 'Cr', 'Ni', 'Mo', 'Mn', 'Cu', 'Si',
   'Au', 'Ag', 'Pt', 'Pd', 'Ru',
@@ -331,6 +335,10 @@ export default function AuthenticatePage() {
   // Saved chronocomparator reading (shown in the verdict + included in the report).
   const [timing, setTiming] = useState<TimingReading | null>(null);
   useEffect(() => { if (step === 4) setTiming(getTimingReading()); }, [step]);
+
+  // Native share availability (client-only to avoid hydration mismatch).
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => { setCanShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function'); }, []);
 
   // Years this specific model was produced (newest first)
   const productionYears = useMemo(() => {
@@ -672,6 +680,51 @@ export default function AuthenticatePage() {
     w.document.close();
     w.focus();
     setTimeout(() => { try { w.print(); } catch { /* user can still print manually */ } }, 350);
+  };
+
+  // Plain-text summary used for share / email / message.
+  const reportSummaryText = (): string => {
+    const xr = XRF_TARGETS.map((t) => ({ t, r: xrfResultByTarget[t.id] })).filter((x) => x.r);
+    const verdicts = xr.map((x) => x.r!.verdict);
+    const anyFake = verdicts.includes('likely-fake') || movementResult?.status === 'mismatch';
+    const anyIncon = verdicts.includes('inconclusive');
+    const hasData = verdicts.length > 0 || movementResult?.status === 'match';
+    const overall = anyFake ? 'Likely fake / inconsistent'
+      : anyIncon ? 'Inconclusive' : hasData ? 'Consistent with authentic' : 'Insufficient data';
+
+    const lines: string[] = [];
+    lines.push(`Watch authentication — ${currentBrand.name} ${currentModel.name} (ref. ${currentModel.reference})`);
+    lines.push(`Year: ${year}${serial ? ` · Serial: ${serial}` : ''}`);
+    lines.push(`Overall: ${overall}`);
+    for (const { t, r } of xr) lines.push(`XRF ${t.label}: ${verdictText(r!.verdict)} (${r!.overallScore}/100, ${r!.materialName})`);
+    if (movementResult) {
+      const m = movementResult.status === 'match' ? 'caliber matches'
+        : movementResult.status === 'mismatch' ? 'caliber MISMATCH'
+        : movementResult.status === 'not-provided' ? 'not provided' : 'unknown model';
+      lines.push(`Movement: ${m}${movementResult.expectedCaliber ? ` (expected ${movementResult.expectedCaliber}${movementResult.observedCaliber ? `, observed ${movementResult.observedCaliber}` : ''})` : ''}`);
+    }
+    const tr = getTimingReading();
+    if (tr) lines.push(`Timing: ${tr.rate >= 0 ? '+' : ''}${tr.rate.toFixed(1)} s/day${tr.beatError != null ? `, beat error ${tr.beatError.toFixed(1)} ms` : ''}, ${Math.round(tr.detectedBph)} bph`);
+    lines.push(`Generated ${new Date().toLocaleString()} · Watch Authenticator`);
+    return lines.join('\n');
+  };
+
+  const reportTitle = () => `Authentication — ${currentBrand.name} ${currentModel.name} (${currentModel.reference})`;
+
+  const shareReport = async () => {
+    const text = reportSummaryText();
+    try {
+      if (navigator.share) await navigator.share({ title: reportTitle(), text });
+      else window.location.href = `mailto:?subject=${encodeURIComponent(reportTitle())}&body=${encodeURIComponent(text)}`;
+    } catch { /* user cancelled the share sheet */ }
+  };
+
+  const emailReport = () => {
+    window.location.href = `mailto:?subject=${encodeURIComponent(reportTitle())}&body=${encodeURIComponent(reportSummaryText())}`;
+  };
+
+  const whatsappReport = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(reportSummaryText())}`, '_blank');
   };
 
   const advance = () => {
@@ -1338,12 +1391,32 @@ export default function AuthenticatePage() {
               </div>
             </SummaryBlock>
 
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
               <button onClick={downloadReport} className="btn-primary text-sm inline-flex items-center gap-2">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><polyline points="9 15 12 18 15 15" />
+                  <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
                 </svg>
-                Download report (PDF)
+                Print / Save PDF
+              </button>
+              {canShare && (
+                <button onClick={() => void shareReport()} className="btn-ghost text-sm inline-flex items-center gap-2">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </svg>
+                  Share
+                </button>
+              )}
+              <button onClick={emailReport} className="btn-ghost text-sm inline-flex items-center gap-2">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 5L2 7" />
+                </svg>
+                Email
+              </button>
+              <button onClick={whatsappReport} className="btn-ghost text-sm inline-flex items-center gap-2">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                </svg>
+                WhatsApp
               </button>
               <button
                 onClick={() => {
@@ -1356,9 +1429,9 @@ export default function AuthenticatePage() {
                   setXrfResultByTarget({ case: null, bracelet: null, 'case-back': null });
                   setMovementResult(null);
                 }}
-                className="btn-ghost text-sm"
+                className="btn-ghost text-sm ml-auto"
               >
-                Start a new authentication
+                New
               </button>
             </div>
           </div>
