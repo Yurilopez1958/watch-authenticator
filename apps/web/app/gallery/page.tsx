@@ -22,6 +22,8 @@ import {
 } from '@/lib/gallery-cloud';
 import { useSession } from '@/lib/use-session';
 import { fetchTestImages } from '@/lib/test-images';
+import { useCompliance, ruleFor } from '@/lib/compliance';
+import { ComplianceBanner } from '@/app/compliance-banner';
 
 type GalleryPart = { id: string; label: string; checkpointIds: string[] };
 
@@ -114,6 +116,10 @@ export default function GalleryPage() {
 
   const currentModel = ALL_MODELS.find((m) => m.id === modelId);
   const currentBrand = ALL_BRANDS.find((b) => b.id === brandId)!;
+
+  const { config: complianceConfig } = useCompliance();
+  const brandRule = ruleFor(brandId, complianceConfig);
+  const brandBlocked = brandRule === 'block';
   const movement = useMemo(() => getMovementForModelAcrossBrands(modelId), [modelId]);
   const caliber = movement?.caliber ?? '';
 
@@ -182,6 +188,7 @@ export default function GalleryPage() {
   };
 
   const onUploadFiles = (partId: string) => async (files: FileList | File[]) => {
+    if (brandBlocked) return;
     const list = Array.from(files);
     if (list.length === 0) return;
     setBusyPart(partId);
@@ -208,6 +215,7 @@ export default function GalleryPage() {
   // Test-only: fill the current model's parts with openly-licensed sample images
   // from Wikimedia Commons so the app's flows can be exercised quickly.
   const loadTestPhotos = async (perPart: number) => {
+    if (brandBlocked) return;
     setBusyPart('__test__');
     setUploadError(null);
     setUploadProgress({ done: 0, total: GALLERY_PARTS.length });
@@ -290,6 +298,8 @@ export default function GalleryPage() {
         </div>
         <button onClick={() => setStarted(false)} className="btn-ghost text-sm shrink-0">← Back</button>
       </section>
+
+      {brandRule && <ComplianceBanner brandName={currentBrand.name} rule={brandRule} />}
 
       {/* Cloud sync / auth banner */}
       {auth.enabled && (
@@ -411,7 +421,7 @@ export default function GalleryPage() {
                 </div>
                 <button
                   onClick={() => fileRefs.current[part.id]?.click()}
-                  disabled={busyPart === part.id}
+                  disabled={busyPart === part.id || brandBlocked}
                   className="btn-primary text-sm inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -472,7 +482,7 @@ export default function GalleryPage() {
         <div className="flex flex-wrap gap-2 items-center">
           <button
             onClick={() => void loadTestPhotos(1)}
-            disabled={busyPart !== null}
+            disabled={busyPart !== null || brandBlocked}
             className="btn-ghost text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {busyPart === '__test__'
@@ -481,7 +491,7 @@ export default function GalleryPage() {
           </button>
           <button
             onClick={() => void loadTestPhotos(2)}
-            disabled={busyPart !== null}
+            disabled={busyPart !== null || brandBlocked}
             className="btn-ghost text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Load 2 per part

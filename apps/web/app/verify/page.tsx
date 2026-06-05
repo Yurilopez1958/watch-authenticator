@@ -11,6 +11,9 @@ import {
   type MatchResult,
   type XRFMeasurement,
 } from '@watch-auth/core';
+import { useCompliance, ruleFor } from '@/lib/compliance';
+import { ComplianceBanner } from '@/app/compliance-banner';
+import { MetalModeBanner } from '@/app/metal-mode-banner';
 
 /** Year selector restricted to a model's production range. */
 function YearPicker({ years, value, onChange }: { years: number[]; value: number; onChange: (y: number) => void }) {
@@ -82,6 +85,10 @@ export default function VerifyPage() {
   const currentBrand = ALL_BRANDS.find((b) => b.id === brandId)!;
   const currentModel = ALL_MODELS.find((m) => m.id === modelId);
 
+  const { config: complianceConfig } = useCompliance();
+  const brandRule = ruleFor(brandId, complianceConfig);
+  const brandBlocked = brandRule === 'block';
+
   // Years this model was produced (newest first); keep selected year in range
   const productionYears = useMemo(() => {
     const cur = new Date().getFullYear();
@@ -118,6 +125,7 @@ export default function VerifyPage() {
   }, [brandId, modelId, year]);
 
   const onAnalyze = () => {
+    if (brandBlocked) return;
     const elementReadings: ElementReading[] = Object.entries(readings)
       .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseFloat(raw) }))
       .filter((r) => Number.isFinite(r.pct) && r.pct > 0);
@@ -219,6 +227,10 @@ export default function VerifyPage() {
         </div>
       </section>
 
+      {brandRule && <ComplianceBanner brandName={currentBrand.name} rule={brandRule} />}
+
+      <MetalModeBanner />
+
       <section className="card p-6">
         <h2 className="text-lg font-semibold mb-1">Measured XRF composition</h2>
         <p className="text-xs text-dim mb-4">Enter the percentage for each element reported by the Niton XL.</p>
@@ -237,8 +249,8 @@ export default function VerifyPage() {
             </label>
           ))}
         </div>
-        <button onClick={onAnalyze} className="btn-primary mt-5">
-          Analyze
+        <button onClick={onAnalyze} disabled={brandBlocked} className="btn-primary mt-5 disabled:opacity-50 disabled:cursor-not-allowed">
+          {brandBlocked ? 'Restricted brand' : 'Analyze'}
         </button>
       </section>
 

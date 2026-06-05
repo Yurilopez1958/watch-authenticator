@@ -13,6 +13,7 @@ const LINKS: readonly NavLink[] = [
   { href: '/gallery', label: 'Reference gallery' },
   { href: '/import', label: 'Import CSV' },
   { href: '/catalog', label: 'Catalog' },
+  { href: '/settings', label: 'Compliance' },
 ];
 
 export function SiteHeader() {

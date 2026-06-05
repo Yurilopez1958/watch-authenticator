@@ -21,6 +21,9 @@ import {
   type XRFMeasurement,
 } from '@watch-auth/core';
 import { getPhotos, type RefPhoto } from '@/lib/photo-store';
+import { useCompliance, ruleFor } from '@/lib/compliance';
+import { ComplianceBanner } from '@/app/compliance-banner';
+import { MetalModeBanner } from '@/app/metal-mode-banner';
 
 type VisionFinding = { severity: 'low' | 'medium' | 'high'; area: string; description: string };
 type VisionResult = {
@@ -319,6 +322,11 @@ export default function AuthenticatePage() {
   const currentBrand = ALL_BRANDS.find((b) => b.id === brandId)!;
   const expectedMovement = useMemo(() => getMovementForModelAcrossBrands(modelId), [modelId]);
 
+  // Compliance / conflict-of-interest filter for the selected brand.
+  const { config: complianceConfig } = useCompliance();
+  const brandRule = ruleFor(brandId, complianceConfig);
+  const brandBlocked = brandRule === 'block';
+
   // Years this specific model was produced (newest first)
   const productionYears = useMemo(() => {
     const current = new Date().getFullYear();
@@ -583,7 +591,7 @@ export default function AuthenticatePage() {
   const goBack = () => setStep((Math.max(0, step - 1)) as Step);
 
   const canAdvance = (): boolean => {
-    if (step === 0) return !!modelId && !!year;
+    if (step === 0) return !!modelId && !!year && !brandBlocked;
     if (step === 1) {
       if (xrfMode === 'skip') return true;
       if (xrfMode === 'manual' || xrfMode === 'photo')
@@ -605,10 +613,15 @@ export default function AuthenticatePage() {
         </p>
       </section>
 
-      <StepHeader step={step} statuses={stepStatuses} onJump={(s) => setStep(s)} />
+      <StepHeader step={step} statuses={stepStatuses} onJump={(s) => { if (brandBlocked && s > 0) return; setStep(s); }} />
 
       {step === 0 && (
         <StepCard title="1. Watch identification" subtitle="Tell the app which piece you are inspecting." status={stepStatuses[0]}>
+          {brandRule && (
+            <div className="mb-4">
+              <ComplianceBanner brandName={currentBrand.name} rule={brandRule} />
+            </div>
+          )}
           <div className="mb-4 space-y-3">
             <div>
               <span className="block text-xs uppercase tracking-wide text-dim mb-2">Brand</span>
@@ -693,6 +706,9 @@ export default function AuthenticatePage() {
 
       {step === 1 && (
         <StepCard title="2. XRF measurement" subtitle="Choose how you want to feed the Niton XL composition into the app." status={stepStatuses[1]}>
+          <div className="mb-5">
+            <MetalModeBanner />
+          </div>
           {/* Three input methods + skip */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
             <XrfModeButton mode="manual" current={xrfMode} onClick={setXrfMode} label="Type it in" desc="Enter the % by hand" icon={
