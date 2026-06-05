@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ALL_MODELS, getMovementForModelAcrossBrands } from '@watch-auth/core';
+import { saveTimingReading } from '@/lib/timing-store';
 
 type Metrics = { rate: number; beatError: number | null; detectedBph: number; beats: number };
 type TracePoint = { ms: number; even: boolean };
@@ -19,6 +20,7 @@ export default function TimegrapherPage() {
   const [modelId, setModelId] = useState<string>('');
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState<string>('');
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
   // Audio graph + detection state (refs so the audio callback stays stable)
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -90,9 +92,26 @@ export default function TimegrapherPage() {
     if (running) { stop(); window.setTimeout(() => void start(id), 200); }
   };
 
+  const saveForReport = () => {
+    if (!metrics) return;
+    saveTimingReading({
+      rate: metrics.rate,
+      beatError: metrics.beatError,
+      detectedBph: metrics.detectedBph,
+      expectedBph,
+      at: Date.now(),
+    });
+    setSavedMsg('Saved — it will appear in the watch authentication report.');
+  };
+
   const start = async (forceDeviceId?: string) => {
     setError(null);
+    // Clear previous reading when a new one begins
     setMetrics(null);
+    setLevel(0);
+    levelRef.current = 0;
+    setSavedMsg(null);
+    drawTrace([], 3600 / expectedBph);
     try {
       const useId = forceDeviceId !== undefined ? forceDeviceId : deviceId;
       const audio: MediaTrackConstraints = {
@@ -320,8 +339,17 @@ export default function TimegrapherPage() {
             </button>
           )}
           {running && <span className="text-xs text-emerald-300 inline-flex items-center gap-1">● mic active</span>}
+          {metrics && (
+            <button onClick={saveForReport} className="btn-ghost text-sm inline-flex items-center gap-2">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" />
+              </svg>
+              Save reading for report
+            </button>
+          )}
         </div>
 
+        {savedMsg && <div className="text-xs text-emerald-300 border-l-4 border-l-emerald-500 bg-emerald-500/10 rounded-lg p-3">{savedMsg}</div>}
         {error && <div className="text-sm text-red-300 border-l-4 border-l-red-500 bg-red-500/10 rounded-lg p-3">{error}</div>}
 
         <div>

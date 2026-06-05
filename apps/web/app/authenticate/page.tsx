@@ -24,6 +24,7 @@ import { getPhotos, type RefPhoto } from '@/lib/photo-store';
 import { useCompliance, ruleFor } from '@/lib/compliance';
 import { ComplianceBanner } from '@/app/compliance-banner';
 import { MetalModeBanner } from '@/app/metal-mode-banner';
+import { getTimingReading, type TimingReading } from '@/lib/timing-store';
 
 type VisionFinding = { severity: 'low' | 'medium' | 'high'; area: string; description: string };
 type VisionResult = {
@@ -327,6 +328,10 @@ export default function AuthenticatePage() {
   const brandRule = ruleFor(brandId, complianceConfig);
   const brandBlocked = brandRule === 'block';
 
+  // Saved chronocomparator reading (shown in the verdict + included in the report).
+  const [timing, setTiming] = useState<TimingReading | null>(null);
+  useEffect(() => { if (step === 4) setTiming(getTimingReading()); }, [step]);
+
   // Years this specific model was produced (newest first)
   const productionYears = useMemo(() => {
     const current = new Date().getFullYear();
@@ -624,6 +629,13 @@ export default function AuthenticatePage() {
         ${reference ? `<figure><img src="${reference}" alt="reference"/><figcaption>Reference</figcaption></figure>` : ''}
       </div>` : '';
 
+    const tr = getTimingReading();
+    const timingHtml = tr ? `
+      <h3>Timing (chronocomparator)</h3>
+      <div class="block">
+        <div>Rate: <strong>${tr.rate >= 0 ? '+' : ''}${esc(tr.rate.toFixed(1))} s/day</strong>${tr.beatError != null ? ` &middot; Beat error: ${esc(tr.beatError.toFixed(1))} ms` : ''} &middot; ${esc(Math.round(tr.detectedBph))} bph</div>
+      </div>` : '';
+
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Authentication report — ${esc(currentModel.name)}</title>
 <style>
   *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:36px;line-height:1.4}
@@ -649,6 +661,7 @@ export default function AuthenticatePage() {
   <h3>XRF composition analysis (per part)</h3>
   ${xrfRows || '<div class="muted">No XRF readings were entered.</div>'}
   ${movHtml}
+  ${timingHtml}
   ${imgsHtml}
   <div class="disclaimer">This report is decision-support guidance based on public reference data and the readings provided. It is not a guarantee of authenticity; definitive authentication requires physical inspection by a qualified professional.</div>
 </body></html>`;
@@ -1296,6 +1309,18 @@ export default function AuthenticatePage() {
                 </div>
               ) : (
                 <div className="text-sm text-dim">Movement check was skipped.</div>
+              )}
+            </SummaryBlock>
+
+            <SummaryBlock title="Timing (chronocomparator)">
+              {timing ? (
+                <div className="space-y-1 text-sm">
+                  <div><span className="text-dim">Rate:</span> <span className="font-mono">{timing.rate >= 0 ? '+' : ''}{timing.rate.toFixed(1)} s/day</span></div>
+                  {timing.beatError != null && <div><span className="text-dim">Beat error:</span> <span className="font-mono">{timing.beatError.toFixed(1)} ms</span></div>}
+                  <div><span className="text-dim">Frequency:</span> <span className="font-mono">{Math.round(timing.detectedBph)} bph</span></div>
+                </div>
+              ) : (
+                <div className="text-sm text-dim">No timing saved. Measure it in <Link href="/timegrapher" className="text-accent-bright hover:underline">Timegrapher</Link> and tap &ldquo;Save reading for report&rdquo;.</div>
               )}
             </SummaryBlock>
 
