@@ -52,6 +52,43 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+/** Largest accepted source file before reading (guards memory). */
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+/** Longest edge of the stored image; bigger photos are downscaled. */
+const MAX_IMAGE_DIM = 1600;
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Not a decodable image.'));
+    img.src = src;
+  });
+}
+
+/** Downscales + re-encodes a photo to JPEG so we never store a 12 MP original.
+ *  Returns the original data URL unchanged if it is already small or on any
+ *  failure (e.g. an unsupported format). */
+async function compressDataUrl(dataUrl: string): Promise<string> {
+  try {
+    const img = await loadImage(dataUrl);
+    const longest = Math.max(img.naturalWidth, img.naturalHeight);
+    if (!longest) return dataUrl;
+    const scale = Math.min(1, MAX_IMAGE_DIM / longest);
+    if (scale >= 1 && dataUrl.length < 1_500_000) return dataUrl; // already small enough
+    const w = Math.max(1, Math.round(img.naturalWidth * scale));
+    const h = Math.max(1, Math.round(img.naturalHeight * scale));
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d');
+    if (!ctx) return dataUrl;
+    ctx.drawImage(img, 0, 0, w, h);
+    return cv.toDataURL('image/jpeg', 0.82);
+  } catch {
+    return dataUrl;
+  }
+}
+
 function checkpointPoints(part: GalleryPart, caliber: string): string[] {
   if (part.id === 'movement') return [...getMovementCheckpoints(caliber)];
   const pts: string[] = [];
@@ -204,17 +241,29 @@ export default function GalleryPage() {
     setUploadError(null);
     setUploadProgress({ done: 0, total: list.length });
     let failed = 0;
+    let skipped = 0;
     for (let i = 0; i < list.length; i++) {
+      const file = list[i]!;
+      // Skip non-images and oversized files before reading them into memory.
+      if (!file.type.startsWith('image/') || file.size > MAX_UPLOAD_BYTES) {
+        skipped++;
+        setUploadProgress({ done: i + 1, total: list.length });
+        continue;
+      }
       try {
-        const dataUrl = await fileToDataUrl(list[i]!);
-        await persistPhoto(partId, dataUrl);
+        const dataUrl = await fileToDataUrl(file);
+        const compressed = await compressDataUrl(dataUrl);
+        await persistPhoto(partId, compressed);
       } catch {
         failed++;
       }
       setUploadProgress({ done: i + 1, total: list.length });
     }
-    if (failed > 0) {
-      setUploadError(`${failed} of ${list.length} photo(s) could not be uploaded. Check your connection and try again.`);
+    if (failed > 0 || skipped > 0) {
+      const parts: string[] = [];
+      if (failed > 0) parts.push(`${failed} could not be uploaded (check your connection)`);
+      if (skipped > 0) parts.push(`${skipped} skipped (not an image or over 25 MB)`);
+      setUploadError(`${parts.join('; ')}.`);
     }
     setBusyPart(null);
     setUploadProgress(null);

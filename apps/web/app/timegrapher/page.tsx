@@ -245,7 +245,16 @@ export default function TimegrapherPage() {
     if (!cv) return;
     const ctx = cv.getContext('2d');
     if (!ctx) return;
-    const W = cv.width, H = cv.height;
+    // Match the backing store to the displayed size × devicePixelRatio so the
+    // trace stays crisp on high-DPI phones (cap DPR at 2 to bound memory). Draw
+    // in CSS-pixel units. Fall back to the attribute size before first layout.
+    const dpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2);
+    const W = cv.clientWidth || 680;
+    const H = cv.clientHeight || 260;
+    const bw = Math.max(1, Math.round(W * dpr));
+    const bh = Math.max(1, Math.round(H * dpr));
+    if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // dark instrument screen
     ctx.fillStyle = '#070d20';
     ctx.fillRect(0, 0, W, H);
@@ -312,7 +321,7 @@ export default function TimegrapherPage() {
             />
           </div>
         </div>
-        <canvas ref={canvasRef} width={680} height={260} className="w-full block" />
+        <canvas ref={canvasRef} width={680} height={260} className="w-full block" style={{ aspectRatio: '680 / 260' }} />
         <div className="flex items-center justify-between px-4 py-2 border-t border-blue-500/15 text-xs gap-2 flex-wrap">
           <span className="inline-flex items-center gap-2 text-blue-200/70">
             <span className={`w-2 h-2 rounded-full ${running ? 'bg-emerald-400 animate-pulse' : 'bg-blue-500/40'}`} />

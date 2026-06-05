@@ -494,12 +494,17 @@ export default function AuthenticatePage() {
   const snapPhoto = () => {
     const video = videoRef.current;
     if (!video || !liveSide) return;
+    const vw = video.videoWidth, vh = video.videoHeight;
+    // The stream may not have delivered a frame yet — capturing now would write a
+    // blank 0×0 image. Bail and let the user tap again.
+    if (!vw || !vh) return;
+    const scale = Math.min(1, 1600 / Math.max(vw, vh)); // cap the longest edge
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = Math.max(1, Math.round(vw * scale));
+    canvas.height = Math.max(1, Math.round(vh * scale));
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
     if (liveSide === 'examined') setExamined(dataUrl);
     else setReference(dataUrl);
