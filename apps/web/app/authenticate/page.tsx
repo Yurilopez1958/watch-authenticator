@@ -1556,50 +1556,52 @@ export default function AuthenticatePage() {
 
       {/* Metal-mismatch warning modal */}
       {showMetalWarning && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 fade-in" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md card p-0 border-l-4 flex flex-col max-h-[85vh]" style={{ borderLeftColor: '#ef4444' }}>
-            <div className="flex items-start gap-3 p-5 pb-3 shrink-0">
-              <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(239,68,68,0.12)' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              </span>
-              <div>
-                <h3 className="text-lg font-bold text-red-300">Metal composition does not match</h3>
-                <p className="text-sm text-muted mt-1">
-                  One or more measured parts do not match {currentBrand.name}:
-                </p>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto fade-in" role="dialog" aria-modal="true">
+          <div className="flex min-h-full items-start sm:items-center justify-center p-4 pt-20 sm:pt-4">
+            <div className="w-full max-w-md card p-0 border-l-4 flex flex-col max-h-[80dvh]" style={{ borderLeftColor: '#ef4444' }}>
+              <div className="flex items-start gap-3 p-5 pb-3 shrink-0">
+                <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(239,68,68,0.12)' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-red-300">Metal composition does not match</h3>
+                  <p className="text-sm text-muted mt-1">
+                    One or more measured parts do not match {currentBrand.name}:
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-1.5 border-t border-soft px-5 py-3 overflow-y-auto flex-1 min-h-0">
-              {XRF_TARGETS
-                .map((t) => ({ t, r: liveXrfByTarget[t.id] }))
-                .filter((x) => x.r?.verdict === 'likely-fake')
-                .map(({ t, r }) => (
-                  <div key={t.id} className="flex items-baseline justify-between gap-3 text-sm">
-                    <span className="font-semibold text-red-300 shrink-0">{t.label}</span>
-                    <span className="text-xs text-muted font-mono text-right">{r!.materialName} · {r!.overallScore}/100</span>
-                  </div>
-                ))}
-              <p className="text-xs text-dim pt-1">Full element-by-element breakdown is on the verdict screen.</p>
-            </div>
+              <div className="space-y-1.5 border-t border-soft px-5 py-3 overflow-y-auto flex-1 min-h-0">
+                {XRF_TARGETS
+                  .map((t) => ({ t, r: liveXrfByTarget[t.id] }))
+                  .filter((x) => x.r?.verdict === 'likely-fake')
+                  .map(({ t, r }) => (
+                    <div key={t.id} className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="font-semibold text-red-300 shrink-0">{t.label}</span>
+                      <span className="text-xs text-muted font-mono text-right">{r!.materialName} · {r!.overallScore}/100</span>
+                    </div>
+                  ))}
+                <p className="text-xs text-dim pt-1">Full element-by-element breakdown is on the verdict screen.</p>
+              </div>
 
-            <div className="p-5 pt-3 shrink-0 border-t border-soft">
-              <p className="text-sm text-foreground mb-3">Do you want to continue with the authentication anyway?</p>
-              <div className="flex gap-3 justify-end">
-                <button onClick={() => setShowMetalWarning(false)} className="btn-ghost text-sm">
-                  Stop here
-                </button>
-                <button
-                  onClick={() => { setShowMetalWarning(false); advance(); }}
-                  className="btn-primary text-sm"
-                  style={{ background: 'linear-gradient(135deg,#ef4444,#b91c1c)' }}
-                >
-                  Continue anyway
-                </button>
+              <div className="p-5 pt-3 shrink-0 border-t border-soft" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
+                <p className="text-sm text-foreground mb-3">Do you want to continue with the authentication anyway?</p>
+                <div className="flex gap-3 justify-end">
+                  <button onClick={() => setShowMetalWarning(false)} className="btn-ghost text-sm">
+                    Stop here
+                  </button>
+                  <button
+                    onClick={() => { setShowMetalWarning(false); advance(); }}
+                    className="btn-primary text-sm"
+                    style={{ background: 'linear-gradient(135deg,#ef4444,#b91c1c)' }}
+                  >
+                    Continue anyway
+                  </button>
+                </div>
               </div>
             </div>
           </div>
