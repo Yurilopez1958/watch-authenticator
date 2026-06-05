@@ -80,6 +80,14 @@ const STEP_LABELS = ['Watch', 'XRF measurement', 'Movement', 'Visual evidence', 
 
 type XrfMode = 'manual' | 'connected' | 'photo' | 'skip';
 
+/** Independently-measured metal targets on the watch. Each keeps its own reading. */
+type XrfTarget = 'case' | 'bracelet' | 'case-back';
+const XRF_TARGETS: readonly { id: XrfTarget; label: string; hint: string }[] = [
+  { id: 'case', label: 'Case', hint: 'main case body / lugs' },
+  { id: 'bracelet', label: 'Bracelet / strap', hint: 'a bracelet link or the clasp' },
+  { id: 'case-back', label: 'Case back', hint: 'the screw-down back' },
+];
+
 type StepStatus = 'pass' | 'fail' | 'warn' | 'pending';
 
 const STATUS_STYLE: Record<StepStatus, { color: string; bg: string; border: string; label: string }> = {
@@ -229,10 +237,22 @@ export default function AuthenticatePage() {
     }
   }, [filteredModels, modelId]);
 
-  // Step 2 — XRF
+  // Step 2 — XRF (measured independently per target: case / bracelet / case back)
   const [xrfMode, setXrfMode] = useState<XrfMode>('manual');
-  const [readings, setReadings] = useState<Record<string, string>>({});
-  const [csvText, setCsvText] = useState('');
+  const [activeTarget, setActiveTarget] = useState<XrfTarget>('case');
+  const [readingsByTarget, setReadingsByTarget] = useState<Record<XrfTarget, Record<string, string>>>({
+    case: {}, bracelet: {}, 'case-back': {},
+  });
+  const [csvByTarget, setCsvByTarget] = useState<Record<XrfTarget, string>>({
+    case: '', bracelet: '', 'case-back': '',
+  });
+  // Active-target accessors so the existing input UI keeps working unchanged.
+  const readings = readingsByTarget[activeTarget];
+  const setReadings = (val: Record<string, string>) =>
+    setReadingsByTarget((prev) => ({ ...prev, [activeTarget]: val }));
+  const csvText = csvByTarget[activeTarget];
+  const setCsvText = (val: string) =>
+    setCsvByTarget((prev) => ({ ...prev, [activeTarget]: val }));
   // Photo-of-screen OCR
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -260,9 +280,10 @@ export default function AuthenticatePage() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<VisionResult | null>(null);
 
-  // Step 5 — results
-  const [xrfResult, setXrfResult] = useState<MatchResult | null>(null);
-  const [xrfRowCount, setXrfRowCount] = useState(0);
+  // Step 5 — results (XRF result kept per measured target)
+  const [xrfResultByTarget, setXrfResultByTarget] = useState<Record<XrfTarget, MatchResult | null>>({
+    case: null, bracelet: null, 'case-back': null,
+  });
   const [movementResult, setMovementResult] = useState<MovementCheck | null>(null);
 
   // Warning modal when the measured metal clearly does not match the brand
@@ -277,13 +298,12 @@ export default function AuthenticatePage() {
   useEffect(() => {
     if (prevIdentity.current === identityKey) return;
     prevIdentity.current = identityKey;
-    setReadings({});
-    setCsvText('');
+    setReadingsByTarget({ case: {}, bracelet: {}, 'case-back': {} });
+    setCsvByTarget({ case: '', bracelet: '', 'case-back': '' });
     setObservedCaliber('');
     setExamined(null);
     setReference(null);
-    setXrfResult(null);
-    setXrfRowCount(0);
+    setXrfResultByTarget({ case: null, bracelet: null, 'case-back': null });
     setMovementResult(null);
     setPhotoPreview(null);
     setPhotoNotes(null);
@@ -320,11 +340,11 @@ export default function AuthenticatePage() {
   );
 
   // ===== Live exam results (recomputed as the user fills each step) =====
-  const liveXrf = useMemo<MatchResult | null>(() => {
+  // Computes a match result for one target's readings (manual/photo) or CSV (connected).
+  const computeXrf = (tgtReadings: Record<string, string>, tgtCsv: string): MatchResult | null => {
     if (xrfMode === 'skip') return null;
-    // Manual entry and photo OCR both populate `readings`
     if (xrfMode === 'manual' || xrfMode === 'photo') {
-      const er: ElementReading[] = Object.entries(readings)
+      const er: ElementReading[] = Object.entries(tgtReadings)
         .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseFloat(raw) }))
         .filter((r) => Number.isFinite(r.pct) && r.pct > 0);
       if (er.length === 0) return null;
@@ -333,12 +353,19 @@ export default function AuthenticatePage() {
         candidateProfiles,
       );
     }
-    // Connected mode: parse the CSV exported by / streamed from the machine
-    if (!csvText.trim()) return null;
-    const parsed = parseNitonCsv(csvText);
+    if (!tgtCsv.trim()) return null;
+    const parsed = parseNitonCsv(tgtCsv);
     if (parsed.rows.length === 0) return null;
     return bestProfileMatch(rowToMeasurement(parsed.rows[0]!), candidateProfiles);
-  }, [xrfMode, readings, csvText, candidateProfiles]);
+  };
+
+  const liveXrfByTarget = useMemo<Record<XrfTarget, MatchResult | null>>(() => ({
+    case: computeXrf(readingsByTarget.case, csvByTarget.case),
+    bracelet: computeXrf(readingsByTarget.bracelet, csvByTarget.bracelet),
+    'case-back': computeXrf(readingsByTarget['case-back'], csvByTarget['case-back']),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [xrfMode, readingsByTarget, csvByTarget, candidateProfiles]);
+  const liveXrf = liveXrfByTarget[activeTarget];
 
   // Status flag per step: 'pass' (green) | 'fail' (red) | 'warn' (amber) | 'pending' (grey)
   const stepStatuses = useMemo<StepStatus[]>(() => {
@@ -347,13 +374,16 @@ export default function AuthenticatePage() {
     // Step 1 — watch identification: complete once a model + year are chosen
     s[0] = modelId && year ? 'pass' : 'pending';
 
-    // Step 2 — XRF: verdict-driven
-    if (xrfMode !== 'skip' && liveXrf) {
-      s[1] = liveXrf.verdict === 'likely-authentic'
-        ? 'pass'
-        : liveXrf.verdict === 'inconclusive'
-          ? 'warn'
-          : 'fail';
+    // Step 2 — XRF: verdict-driven, worst across all measured targets
+    if (xrfMode !== 'skip') {
+      const measured = Object.values(liveXrfByTarget).filter(Boolean) as MatchResult[];
+      if (measured.length > 0) {
+        s[1] = measured.some((r) => r.verdict === 'likely-fake')
+          ? 'fail'
+          : measured.some((r) => r.verdict === 'inconclusive')
+            ? 'warn'
+            : 'pass';
+      }
     }
 
     // Step 3 — Movement: only meaningful once a caliber is typed
@@ -379,7 +409,7 @@ export default function AuthenticatePage() {
           : 'pending';
 
     return s;
-  }, [modelId, year, xrfMode, liveXrf, observedCaliber, livePreview, examined, reference]);
+  }, [modelId, year, xrfMode, liveXrfByTarget, observedCaliber, livePreview, examined, reference]);
 
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -526,39 +556,12 @@ export default function AuthenticatePage() {
   };
 
   const runAnalysis = () => {
-    // XRF
-    if (xrfMode === 'manual' || xrfMode === 'photo') {
-      const elementReadings: ElementReading[] = Object.entries(readings)
-        .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseFloat(raw) }))
-        .filter((r) => Number.isFinite(r.pct) && r.pct > 0);
-      if (elementReadings.length > 0) {
-        const measurement: XRFMeasurement = {
-          id: crypto.randomUUID(),
-          partMeasured: 'case-back',
-          measuredAt: new Date().toISOString(),
-          instrument: 'niton-xl',
-          readings: elementReadings,
-        };
-        setXrfResult(bestProfileMatch(measurement, candidateProfiles));
-        setXrfRowCount(1);
-      } else {
-        setXrfResult(null);
-        setXrfRowCount(0);
-      }
-    } else if (xrfMode === 'connected') {
-      if (!csvText.trim()) { setXrfResult(null); setXrfRowCount(0); }
-      else {
-        const parsed = parseNitonCsv(csvText);
-        setXrfRowCount(parsed.rows.length);
-        if (parsed.rows.length > 0) {
-          const measurement = rowToMeasurement(parsed.rows[0]!);
-          setXrfResult(bestProfileMatch(measurement, candidateProfiles));
-        } else setXrfResult(null);
-      }
-    } else {
-      setXrfResult(null);
-      setXrfRowCount(0);
-    }
+    // Snapshot the live per-target XRF results as the final verdict.
+    setXrfResultByTarget({
+      case: liveXrfByTarget.case,
+      bracelet: liveXrfByTarget.bracelet,
+      'case-back': liveXrfByTarget['case-back'],
+    });
     // Movement
     setMovementResult(checkMovementCaliber(modelId, observedCaliber));
   };
@@ -571,7 +574,7 @@ export default function AuthenticatePage() {
   const goNext = () => {
     // Leaving the XRF step: if the metal composition clearly does not match the
     // brand, ask the user whether they really want to keep authenticating.
-    if (step === 1 && xrfMode !== 'skip' && liveXrf?.verdict === 'likely-fake') {
+    if (step === 1 && xrfMode !== 'skip' && Object.values(liveXrfByTarget).some((r) => r?.verdict === 'likely-fake')) {
       setShowMetalWarning(true);
       return;
     }
@@ -583,8 +586,9 @@ export default function AuthenticatePage() {
     if (step === 0) return !!modelId && !!year;
     if (step === 1) {
       if (xrfMode === 'skip') return true;
-      if (xrfMode === 'manual' || xrfMode === 'photo') return Object.values(readings).some((v) => parseFloat(v) > 0);
-      return csvText.trim().length > 0; // connected
+      if (xrfMode === 'manual' || xrfMode === 'photo')
+        return XRF_TARGETS.some((t) => Object.values(readingsByTarget[t.id]).some((v) => parseFloat(v) > 0));
+      return XRF_TARGETS.some((t) => csvByTarget[t.id].trim().length > 0); // connected
     }
     if (step === 2) return true; // movement step is optional
     if (step === 3) return true;
@@ -704,6 +708,50 @@ export default function AuthenticatePage() {
               <><circle cx="12" cy="12" r="9" /><path d="M8 12h8" /></>
             } />
           </div>
+
+          {/* Target selector: measure case / bracelet / case back independently */}
+          {xrfMode !== 'skip' && (
+            <div className="mb-5 rounded-lg border border-soft bg-card p-4">
+              <div className="text-xs uppercase tracking-wide text-dim mb-2">Measure each part separately</div>
+              <div className="flex flex-wrap gap-2">
+                {XRF_TARGETS.map((t) => {
+                  const tr = liveXrfByTarget[t.id];
+                  const st: StepStatus = !tr
+                    ? 'pending'
+                    : tr.verdict === 'likely-authentic'
+                      ? 'pass'
+                      : tr.verdict === 'inconclusive'
+                        ? 'warn'
+                        : 'fail';
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setActiveTarget(t.id);
+                        setPhotoPreview(null);
+                        setPhotoNotes(null);
+                        setPhotoError(null);
+                      }}
+                      className={`chip cursor-pointer inline-flex items-center gap-1.5 ${
+                        activeTarget === t.id ? '!bg-accent !text-white !border-transparent' : ''
+                      }`}
+                    >
+                      <StatusFlag status={st} size={12} />
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="text-xs text-dim mt-2">
+                Now measuring:{' '}
+                <span className="text-foreground font-semibold">
+                  {XRF_TARGETS.find((t) => t.id === activeTarget)?.label}
+                </span>{' '}
+                ({XRF_TARGETS.find((t) => t.id === activeTarget)?.hint}). Each part keeps its own reading —
+                scan a part, switch tab, scan the next.
+              </div>
+            </div>
+          )}
 
           {/* Manual + photo both edit the same readings grid */}
           {(xrfMode === 'manual' || xrfMode === 'photo') && (
@@ -1077,27 +1125,43 @@ export default function AuthenticatePage() {
               </div>
             </SummaryBlock>
 
-            <SummaryBlock title="XRF analysis">
-              {xrfResult ? (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-baseline flex-wrap gap-2">
-                    <div className={`text-2xl font-bold ${
-                      xrfResult.verdict === 'likely-authentic' ? 'text-emerald-300' :
-                      xrfResult.verdict === 'inconclusive' ? 'text-amber-300' : 'text-red-300'
-                    }`}>
-                      {xrfResult.verdict === 'likely-authentic' ? 'Likely authentic' :
-                       xrfResult.verdict === 'inconclusive' ? 'Inconclusive' : 'Likely fake'}
-                    </div>
-                    <div className="font-mono text-2xl">{xrfResult.overallScore}<span className="text-dim text-base">/100</span></div>
-                  </div>
-                  <div className="text-xs text-dim">Closest profile: <span className="font-mono">{xrfResult.materialName}</span> · {xrfRowCount > 1 ? `${xrfRowCount} readings parsed, first one shown` : 'single reading'}</div>
-                  {xrfResult.flags.length > 0 && (
-                    <ul className="text-sm text-neutral-200 space-y-1">
-                      {xrfResult.flags.map((f, i) => (
-                        <li key={i} className="flex gap-2"><span className="text-accent-bright">▸</span><span>{f}</span></li>
-                      ))}
-                    </ul>
-                  )}
+            <SummaryBlock title="XRF analysis — per part">
+              {Object.values(xrfResultByTarget).some(Boolean) ? (
+                <div className="space-y-4">
+                  {XRF_TARGETS.map((t) => {
+                    const r = xrfResultByTarget[t.id];
+                    return (
+                      <div key={t.id} className="border-t border-soft pt-3 first:border-t-0 first:pt-0">
+                        {r ? (
+                          <>
+                            <div className="flex justify-between items-baseline flex-wrap gap-2">
+                              <div className="flex items-baseline gap-2 flex-wrap">
+                                <span className="text-xs uppercase tracking-wide text-dim">{t.label}</span>
+                                <span className={`text-lg font-bold ${
+                                  r.verdict === 'likely-authentic' ? 'text-emerald-300' :
+                                  r.verdict === 'inconclusive' ? 'text-amber-300' : 'text-red-300'
+                                }`}>
+                                  {r.verdict === 'likely-authentic' ? 'Likely authentic' :
+                                   r.verdict === 'inconclusive' ? 'Inconclusive' : 'Likely fake'}
+                                </span>
+                              </div>
+                              <div className="font-mono text-lg">{r.overallScore}<span className="text-dim text-sm">/100</span></div>
+                            </div>
+                            <div className="text-xs text-dim mt-0.5">Closest profile: <span className="font-mono">{r.materialName}</span></div>
+                            {r.flags.length > 0 && (
+                              <ul className="text-sm text-neutral-200 space-y-1 mt-1.5">
+                                {r.flags.map((f, i) => (
+                                  <li key={i} className="flex gap-2"><span className="text-accent-bright">▸</span><span>{f}</span></li>
+                                ))}
+                              </ul>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-sm"><span className="text-dim">{t.label}:</span> <span className="text-dim">not measured</span></div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-sm text-dim">XRF was skipped or no readings were entered.</div>
@@ -1150,9 +1214,13 @@ export default function AuthenticatePage() {
               <button
                 onClick={() => {
                   setStep(0);
-                  setReadings({}); setCsvText(''); setExamined(null); setReference(null);
+                  setReadingsByTarget({ case: {}, bracelet: {}, 'case-back': {} });
+                  setCsvByTarget({ case: '', bracelet: '', 'case-back': '' });
+                  setActiveTarget('case');
+                  setExamined(null); setReference(null);
                   setSerial(''); setNotes(''); setObservedCaliber('');
-                  setXrfResult(null); setXrfRowCount(0); setMovementResult(null);
+                  setXrfResultByTarget({ case: null, bracelet: null, 'case-back': null });
+                  setMovementResult(null);
                 }}
                 className="btn-ghost text-sm"
               >
@@ -1206,19 +1274,30 @@ export default function AuthenticatePage() {
               <div>
                 <h3 className="text-lg font-bold text-red-300">Metal composition does not match</h3>
                 <p className="text-sm text-muted mt-1">
-                  The composition measured on this case does not match {currentBrand.name}
-                  {liveXrf ? ` (closest reference: ${liveXrf.materialName}, ${liveXrf.overallScore}/100).` : '.'}
+                  One or more measured parts do not match {currentBrand.name}:
                 </p>
               </div>
             </div>
 
-            {liveXrf && liveXrf.flags.length > 0 && (
-              <ul className="text-xs text-neutral-300 space-y-1 border-t border-soft pt-3">
-                {liveXrf.flags.slice(0, 3).map((f, i) => (
-                  <li key={i} className="flex gap-2"><span className="text-red-400">▸</span><span>{f}</span></li>
+            <div className="space-y-2 border-t border-soft pt-3">
+              {XRF_TARGETS
+                .map((t) => ({ t, r: liveXrfByTarget[t.id] }))
+                .filter((x) => x.r?.verdict === 'likely-fake')
+                .map(({ t, r }) => (
+                  <div key={t.id}>
+                    <div className="text-sm font-semibold text-red-300">
+                      {t.label} — {r!.materialName} ({r!.overallScore}/100)
+                    </div>
+                    {r!.flags.length > 0 && (
+                      <ul className="text-xs text-neutral-300 space-y-1 mt-1">
+                        {r!.flags.slice(0, 2).map((f, i) => (
+                          <li key={i} className="flex gap-2"><span className="text-red-400">▸</span><span>{f}</span></li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 ))}
-              </ul>
-            )}
+            </div>
 
             <p className="text-sm text-foreground">Do you want to continue with the authentication anyway?</p>
 

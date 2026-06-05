@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { SiteHeader } from './site-header';
+import { StartScanFab } from './start-scan-fab';
 
 export const metadata: Metadata = {
   title: 'Watch Authenticator',
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="border-t border-soft mt-16 sm:mt-24 py-8 text-center text-xs text-dim px-4">
           MVP — public reference data, refine with your own measurements
         </footer>
+        <StartScanFab />
       </body>
     </html>
   );
