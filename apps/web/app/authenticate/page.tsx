@@ -84,7 +84,7 @@ type XrfMode = 'manual' | 'connected' | 'photo' | 'skip';
 type XrfTarget = 'case' | 'bracelet' | 'case-back';
 const XRF_TARGETS: readonly { id: XrfTarget; label: string; hint: string }[] = [
   { id: 'case', label: 'Case', hint: 'main case body / lugs' },
-  { id: 'bracelet', label: 'Bracelet / strap', hint: 'a bracelet link or the clasp' },
+  { id: 'bracelet', label: 'Bracelet', hint: 'a metal bracelet link or the clasp' },
   { id: 'case-back', label: 'Case back', hint: 'the screw-down back' },
 ];
 
