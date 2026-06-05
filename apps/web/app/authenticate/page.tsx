@@ -1054,21 +1054,39 @@ export default function AuthenticatePage() {
             </div>
           )}
 
-          {/* Guided per-part result: show this target's verdict, then move to the next */}
-          {xrfMode !== 'skip' && (
-            <div className="mt-5 border-t border-soft pt-4">
-              {liveXrfByTarget[activeTarget] ? (() => {
-                const r = liveXrfByTarget[activeTarget]!;
-                const idx = XRF_TARGETS.findIndex((t) => t.id === activeTarget);
-                const next = XRF_TARGETS[idx + 1];
-                const label = XRF_TARGETS[idx]!.label;
-                const color = r.verdict === 'likely-authentic' ? 'text-emerald-300'
-                  : r.verdict === 'inconclusive' ? 'text-amber-300' : 'text-red-300';
-                return (
+          {/* Guided per-part flow: measure each part, see its result, then move on */}
+          {xrfMode !== 'skip' && (() => {
+            const idx = XRF_TARGETS.findIndex((t) => t.id === activeTarget);
+            const cur = XRF_TARGETS[idx]!;
+            const prev = XRF_TARGETS[idx - 1];
+            const next = XRF_TARGETS[idx + 1];
+            const r = liveXrfByTarget[activeTarget];
+            const color = r
+              ? (r.verdict === 'likely-authentic' ? 'text-emerald-300' : r.verdict === 'inconclusive' ? 'text-amber-300' : 'text-red-300')
+              : '';
+            return (
+              <div className="mt-5 border-t border-soft pt-4 space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="text-xs text-dim">
+                    Part <span className="text-foreground font-semibold">{idx + 1} of {XRF_TARGETS.length}</span> — measuring{' '}
+                    <span className="text-foreground font-semibold">{cur.label}</span>
+                  </div>
+                  <div className="flex gap-1.5 items-center">
+                    {XRF_TARGETS.map((t, i) => (
+                      <span
+                        key={t.id}
+                        title={t.label}
+                        className={`w-2.5 h-2.5 rounded-full ${i === idx ? 'bg-accent ring-2 ring-accent/30' : liveXrfByTarget[t.id] ? 'bg-emerald-400' : 'bg-soft'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {r ? (
                   <div className="rounded-lg border border-soft bg-card p-4 fade-in">
                     <div className="flex justify-between items-baseline flex-wrap gap-2">
                       <div className="text-sm">
-                        <span className="text-dim uppercase tracking-wide text-xs">{label} result</span>
+                        <span className="text-dim uppercase tracking-wide text-xs">{cur.label} result</span>
                         <span className={`font-bold ml-2 ${color}`}>{verdictText(r.verdict)}</span>
                       </div>
                       <div className="font-mono">{r.overallScore}<span className="text-dim text-xs">/100</span></div>
@@ -1081,26 +1099,38 @@ export default function AuthenticatePage() {
                         ))}
                       </ul>
                     )}
-                    <div className="mt-3">
-                      {next ? (
-                        <button onClick={() => goToTarget(next.id)} className="btn-primary text-sm inline-flex items-center gap-2">
-                          Next: measure the {next.label}
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
-                        </button>
-                      ) : (
-                        <div className="text-sm text-emerald-300">✓ All three parts measured — press &ldquo;Continue →&rdquo; below.</div>
-                      )}
-                    </div>
                   </div>
-                );
-              })() : (
-                <div className="text-xs text-dim">
-                  Measure the <span className="text-foreground font-semibold">{XRF_TARGETS.find((t) => t.id === activeTarget)?.label}</span> with
-                  the gun (type, photo or CSV above). Its result and the next part will appear here.
+                ) : (
+                  <div className="text-xs text-dim">
+                    Measure the <span className="text-foreground font-semibold">{cur.label}</span> with the gun (type, photo or CSV above)
+                    — or skip it if this part is not metal (e.g. a leather strap).
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <button
+                    onClick={() => prev && goToTarget(prev.id)}
+                    disabled={!prev}
+                    className="btn-ghost text-sm disabled:opacity-30 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+                    Previous part
+                  </button>
+                  {next ? (
+                    <button onClick={() => goToTarget(next.id)} className="btn-primary text-sm inline-flex items-center gap-1.5">
+                      {r ? `Next: measure the ${next.label}` : `Skip — measure the ${next.label}`}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+                    </button>
+                  ) : (
+                    <button onClick={goNext} className="btn-primary text-sm inline-flex items-center gap-1.5">
+                      Finish XRF — Continue
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+                    </button>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
         </StepCard>
       )}
 
