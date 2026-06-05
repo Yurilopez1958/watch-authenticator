@@ -26,7 +26,8 @@ export default function TimegrapherPage() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const workletRef = useRef<AudioWorkletNode | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null); // legacy fallback
   const sinkRef = useRef<GainNode | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -41,17 +42,21 @@ export default function TimegrapherPage() {
   const gainRef = useRef(gain);
   const levelRef = useRef(0);
 
-  useEffect(() => { bphRef.current = expectedBph; }, [expectedBph]);
-  useEffect(() => { sensRef.current = sensitivity; }, [sensitivity]);
-  useEffect(() => { gainRef.current = gain; }, [gain]);
+  // Keep the refs (used by the legacy fallback) in sync AND live-tune the worklet.
+  useEffect(() => { bphRef.current = expectedBph; workletRef.current?.port.postMessage({ type: 'config', bph: expectedBph }); }, [expectedBph]);
+  useEffect(() => { sensRef.current = sensitivity; workletRef.current?.port.postMessage({ type: 'config', sensitivity }); }, [sensitivity]);
+  useEffect(() => { gainRef.current = gain; workletRef.current?.port.postMessage({ type: 'config', gain }); }, [gain]);
 
   const stop = () => {
+    try { workletRef.current?.port.close(); } catch { /* noop */ }
+    try { workletRef.current?.disconnect(); } catch { /* noop */ }
     try { processorRef.current?.disconnect(); } catch { /* noop */ }
     try { sourceRef.current?.disconnect(); } catch { /* noop */ }
     try { sinkRef.current?.disconnect(); } catch { /* noop */ }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     try { void audioCtxRef.current?.close(); } catch { /* noop */ }
-    processorRef.current = null; sourceRef.current = null; sinkRef.current = null;
+    workletRef.current = null; processorRef.current = null;
+    sourceRef.current = null; sinkRef.current = null;
     streamRef.current = null; audioCtxRef.current = null;
     setRunning(false);
   };
@@ -131,51 +136,86 @@ export default function TimegrapherPage() {
       if (ctx.state === 'suspended') await ctx.resume();
 
       const source = ctx.createMediaStreamSource(stream);
-      const processor = ctx.createScriptProcessor(2048, 1, 1);
 
-      // reset detection state
+      // reset detection state (shared with the fallback path + consumed by the metrics loop)
       sampleIdxRef.current = 0;
       beatsRef.current = [];
       envRef.current = 0; noiseFloorRef.current = 0; aboveRef.current = false;
       lastBeatSampleRef.current = -1e9;
 
-      processor.onaudioprocess = (e) => {
-        const input = e.inputBuffer.getChannelData(0);
-        const sr = ctx.sampleRate;
-        const nominalPeriod = 3600 / bphRef.current; // sec per beat
-        const refractory = nominalPeriod * 0.45 * sr; // samples between beats
-        const g = gainRef.current;                    // input gain (mic level boost)
-        const mult = 12 - sensRef.current;            // higher sensitivity → lower threshold
-        let env = envRef.current, nf = noiseFloorRef.current, above = aboveRef.current;
-        let last = lastBeatSampleRef.current, gi = sampleIdxRef.current;
-        let peak = levelRef.current;
+      const sink = ctx.createGain();
+      sink.gain.value = 0; // silent — avoid feedback
+
+      // Drain beat messages coming from the worklet (audio thread) into our buffer.
+      const onBeats = (d: { beats: number[]; peak: number; t: number }) => {
         const beats = beatsRef.current;
-        for (let i = 0; i < input.length; i++) {
-          const a = Math.abs(input[i]!) * g;                    // apply gain
-          env += a > env ? (a - env) * 0.4 : (a - env) * 0.005; // envelope follower
-          if (env > peak) peak = env;
-          nf += (env - nf) * 0.0003;                            // slow noise floor
-          const thr = Math.max(nf * mult, 0.0012);
-          if (!above && env > thr && gi - last > refractory) {
-            beats.push(gi / sr);
-            last = gi;
-            above = true;
-          } else if (above && env < thr * 0.5) {
-            above = false;
-          }
-          gi++;
-        }
-        envRef.current = env; noiseFloorRef.current = nf; aboveRef.current = above;
-        lastBeatSampleRef.current = last; sampleIdxRef.current = gi;
-        levelRef.current = peak;
-        const cutoff = gi / sr - 40; // keep last 40s of beats
+        for (const t of d.beats) beats.push(t);
+        if (d.peak > levelRef.current) levelRef.current = d.peak;
+        const cutoff = d.t - 40; // keep last 40s of beats
         while (beats.length && beats[0]! < cutoff) beats.shift();
       };
 
-      const sink = ctx.createGain();
-      sink.gain.value = 0; // silent — avoid feedback
-      source.connect(processor); processor.connect(sink); sink.connect(ctx.destination);
-      sourceRef.current = source; processorRef.current = processor; sinkRef.current = sink;
+      let usedWorklet = false;
+      if (ctx.audioWorklet) {
+        try {
+          await ctx.audioWorklet.addModule('/worklets/timegrapher-processor.js');
+          const node = new AudioWorkletNode(ctx, 'timegrapher-processor', {
+            numberOfInputs: 1, numberOfOutputs: 1, channelCount: 1,
+          });
+          node.port.postMessage({ type: 'config', gain: gainRef.current, sensitivity: sensRef.current, bph: bphRef.current });
+          node.port.onmessage = (e: MessageEvent) => {
+            const d = e.data as { type?: string; beats: number[]; peak: number; t: number };
+            if (d?.type === 'beats') onBeats(d);
+          };
+          source.connect(node); node.connect(sink);
+          workletRef.current = node;
+          usedWorklet = true;
+        } catch {
+          usedWorklet = false; // module failed to load → fall back below
+        }
+      }
+
+      if (!usedWorklet) {
+        // Legacy fallback: ScriptProcessorNode runs detection on the main thread.
+        const processor = ctx.createScriptProcessor(2048, 1, 1);
+        processor.onaudioprocess = (e) => {
+          const input = e.inputBuffer.getChannelData(0);
+          const sr = ctx.sampleRate;
+          const nominalPeriod = 3600 / bphRef.current; // sec per beat
+          const refractory = nominalPeriod * 0.45 * sr; // samples between beats
+          const g = gainRef.current;                    // input gain (mic level boost)
+          const mult = 12 - sensRef.current;            // higher sensitivity → lower threshold
+          let env = envRef.current, nf = noiseFloorRef.current, above = aboveRef.current;
+          let last = lastBeatSampleRef.current, gi = sampleIdxRef.current;
+          let peak = levelRef.current;
+          const beats = beatsRef.current;
+          for (let i = 0; i < input.length; i++) {
+            const a = Math.abs(input[i]!) * g;                    // apply gain
+            env += a > env ? (a - env) * 0.4 : (a - env) * 0.005; // envelope follower
+            if (env > peak) peak = env;
+            nf += (env - nf) * 0.0003;                            // slow noise floor
+            const thr = Math.max(nf * mult, 0.0012);
+            if (!above && env > thr && gi - last > refractory) {
+              beats.push(gi / sr);
+              last = gi;
+              above = true;
+            } else if (above && env < thr * 0.5) {
+              above = false;
+            }
+            gi++;
+          }
+          envRef.current = env; noiseFloorRef.current = nf; aboveRef.current = above;
+          lastBeatSampleRef.current = last; sampleIdxRef.current = gi;
+          levelRef.current = peak;
+          const cutoff = gi / sr - 40; // keep last 40s of beats
+          while (beats.length && beats[0]! < cutoff) beats.shift();
+        };
+        source.connect(processor); processor.connect(sink);
+        processorRef.current = processor;
+      }
+
+      sink.connect(ctx.destination);
+      sourceRef.current = source; sinkRef.current = sink;
       setRunning(true);
     } catch (err) {
       const e = err as Error;
