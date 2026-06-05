@@ -238,6 +238,18 @@ export default function AuthenticatePage() {
     return Array.from(groups.entries());
   }, [filteredModels]);
 
+  // Fallback list (all of the brand's models) so the dropdown is never stuck
+  // on a disabled "No matches" state when the search matches nothing.
+  const groupedAllModels = useMemo(() => {
+    const groups = new Map<string, typeof ALL_MODELS[number][]>();
+    for (const m of brandModels) {
+      const arr = groups.get(m.collection) ?? [];
+      arr.push(m);
+      groups.set(m.collection, arr);
+    }
+    return Array.from(groups.entries());
+  }, [brandModels]);
+
   // Reset selection when brand changes or current selection no longer matches
   useEffect(() => {
     if (!filteredModels.some((m) => m.id === modelId) && filteredModels.length > 0) {
@@ -838,9 +850,12 @@ export default function AuthenticatePage() {
           <div className="grid md:grid-cols-2 gap-4">
             <label className="block">
               <span className="block text-xs uppercase tracking-wide text-dim mb-2">Model</span>
-              <select value={modelId} onChange={(e) => setModelId(e.target.value)} className="field" disabled={filteredModels.length === 0}>
-                {filteredModels.length === 0 && <option>No matches</option>}
-                {groupedModels.map(([collection, models]) => (
+              <select
+                value={modelId}
+                onChange={(e) => { setModelId(e.target.value); setModelSearch(''); }}
+                className="field"
+              >
+                {(filteredModels.length > 0 ? groupedModels : groupedAllModels).map(([collection, models]) => (
                   <optgroup key={collection} label={collection}>
                     {models.map((m) => (
                       <option key={m.id} value={m.id}>{m.name} — {m.reference}</option>
@@ -848,6 +863,12 @@ export default function AuthenticatePage() {
                   </optgroup>
                 ))}
               </select>
+              {modelSearch && filteredModels.length === 0 && (
+                <span className="block text-xs text-amber-300 mt-1.5">
+                  No model matches &ldquo;{modelSearch}&rdquo;. Showing all — pick one or{' '}
+                  <button type="button" onClick={() => setModelSearch('')} className="underline">clear the search</button>.
+                </span>
+              )}
             </label>
             <div className="block">
               <span className="block text-xs uppercase tracking-wide text-dim mb-2">
