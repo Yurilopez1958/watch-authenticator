@@ -87,11 +87,15 @@ const MEDIUM = new Set(['Datejust', 'Sky-Dweller', 'Sea-Dweller', 'Yacht-Master'
 function materialMultiplier(name: string): number {
   const n = name.toLowerCase();
   let m = 1;
-  if (/platinum|\b950\b|pt950/.test(n)) m = 3.2;
-  else if (/everose|rose gold|pink gold/.test(n)) m = 2.6;
-  else if (/yellow gold|white gold|moonshine|canopus|sedna|18k|\bgold\b|\bor\b/.test(n)) m = 2.4;
+  if (/platinum|pt950|\b950\b/.test(n)) m = 3.2;
+  // Two-tone is checked BEFORE solid gold: a "steel & gold" piece (Rolesor)
+  // must not be priced as solid gold just because its name contains "gold".
   else if (/rolesor|two[- ]tone|steel.*gold|gold.*steel/.test(n)) m = 1.5;
-  if (/diamond|pav[ée]|\bgem|\brbr\b|baguette/.test(n)) m *= 1.8;
+  else if (/everose|rose gold|pink gold/.test(n)) m = 2.6;
+  // Catalog names are English; "\bor\b" (French/Spanish for gold) is omitted to
+  // avoid matching the English conjunction "or".
+  else if (/yellow gold|white gold|moonshine|canopus|sedna|18k|18ct|\bgold\b/.test(n)) m = 2.4;
+  if (/diamond|pav[ée]|\bgem|baguette/.test(n)) m *= 1.8;
   return m;
 }
 

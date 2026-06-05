@@ -12,6 +12,7 @@ import {
   type XRFMeasurement,
 } from '@watch-auth/core';
 import { useCompliance, ruleFor } from '@/lib/compliance';
+import { parseDecimal } from '@/lib/num';
 import { ComplianceBanner } from '@/app/compliance-banner';
 import { MetalModeBanner } from '@/app/metal-mode-banner';
 
@@ -136,7 +137,7 @@ export default function VerifyPage() {
   const onAnalyze = () => {
     if (brandBlocked || !complianceReady) return;
     const elementReadings: ElementReading[] = Object.entries(readings)
-      .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseFloat(raw) }))
+      .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseDecimal(raw) }))
       .filter((r) => Number.isFinite(r.pct) && r.pct > 0);
 
     if (elementReadings.length === 0) {

@@ -21,6 +21,7 @@ import {
   type XRFMeasurement,
 } from '@watch-auth/core';
 import { getPhotos, type RefPhoto } from '@/lib/photo-store';
+import { parseDecimal } from '@/lib/num';
 import { useCompliance, ruleFor } from '@/lib/compliance';
 import { ComplianceBanner } from '@/app/compliance-banner';
 import { MetalModeBanner } from '@/app/metal-mode-banner';
@@ -382,7 +383,7 @@ export default function AuthenticatePage() {
     if (xrfMode === 'skip') return null;
     if (xrfMode === 'manual' || xrfMode === 'photo') {
       const er: ElementReading[] = Object.entries(tgtReadings)
-        .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseFloat(raw) }))
+        .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseDecimal(raw) }))
         .filter((r) => Number.isFinite(r.pct) && r.pct > 0);
       if (er.length === 0) return null;
       return bestProfileMatch(
@@ -791,7 +792,7 @@ export default function AuthenticatePage() {
     if (step === 1) {
       if (xrfMode === 'skip') return true;
       if (xrfMode === 'manual' || xrfMode === 'photo')
-        return XRF_TARGETS.some((t) => Object.values(readingsByTarget[t.id]).some((v) => parseFloat(v) > 0));
+        return XRF_TARGETS.some((t) => Object.values(readingsByTarget[t.id]).some((v) => parseDecimal(v) > 0));
       return XRF_TARGETS.some((t) => csvByTarget[t.id].trim().length > 0); // connected
     }
     if (step === 2) return true; // movement step is optional

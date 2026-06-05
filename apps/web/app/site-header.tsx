@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type NavLink = { href: string; label: string; primary?: boolean };
 
@@ -21,6 +21,14 @@ const LINKS: readonly NavLink[] = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  // Close the mobile menu on Escape for keyboard users.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
 
   return (
     <header
@@ -63,6 +71,7 @@ export function SiteHeader() {
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
+          aria-controls="mobile-nav"
           className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-soft text-foreground hover:border-accent transition-colors shrink-0"
         >
           {open ? (
@@ -82,7 +91,7 @@ export function SiteHeader() {
 
       {/* Mobile dropdown menu */}
       {open && (
-        <nav className="md:hidden border-t border-soft bg-[rgba(10,15,31,0.97)] px-4 py-2 fade-in">
+        <nav id="mobile-nav" className="md:hidden border-t border-soft bg-[rgba(10,15,31,0.97)] px-4 py-2 fade-in">
           {LINKS.map((l) => (
             <Link
               key={l.href}

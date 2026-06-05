@@ -34,8 +34,12 @@ export function getCompliance(): ComplianceConfig {
 
 export function saveCompliance(cfg: ComplianceConfig): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(KEY, JSON.stringify(cfg));
-  window.dispatchEvent(new Event(CHANGED_EVENT));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(cfg));
+    window.dispatchEvent(new Event(CHANGED_EVENT));
+  } catch (e) {
+    console.warn('Could not save compliance settings:', (e as Error).message);
+  }
 }
 
 /** Returns the rule for a brand, or null if it is not represented. */

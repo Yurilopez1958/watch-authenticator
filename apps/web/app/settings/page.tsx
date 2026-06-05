@@ -44,8 +44,12 @@ export default function SettingsPage() {
             const current: BrandRule | 'none' = config.rules[b.id] ?? 'none';
             return (
               <div key={b.id} className="flex items-center justify-between gap-3 flex-wrap border-b border-soft last:border-b-0 pb-3 last:pb-0">
-                <div className="font-medium">{b.name}</div>
-                <div className="inline-flex rounded-lg border border-soft overflow-hidden">
+                <div className="font-medium" id={`brand-${b.id}-label`}>{b.name}</div>
+                <div
+                  role="radiogroup"
+                  aria-labelledby={`brand-${b.id}-label`}
+                  className="inline-flex rounded-lg border border-soft overflow-hidden"
+                >
                   {OPTIONS.map((opt) => {
                     const active = current === opt.value;
                     const tone =
@@ -57,8 +61,11 @@ export default function SettingsPage() {
                     return (
                       <button
                         key={opt.value}
+                        role="radio"
+                        aria-checked={active}
                         onClick={() => setRule(b.id, opt.value)}
                         title={opt.help}
+                        aria-label={`${b.name}: ${opt.label} — ${opt.help}`}
                         className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
                           active ? tone : 'text-dim hover:text-foreground'
                         } ${opt.value !== 'none' ? 'border-l border-soft' : ''}`}

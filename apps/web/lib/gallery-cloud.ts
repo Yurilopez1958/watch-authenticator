@@ -16,9 +16,15 @@ const BUCKET = 'gallery';
 
 function dataUrlToBlob(dataUrl: string): { blob: Blob; ext: string } {
   const comma = dataUrl.indexOf(',');
+  if (!dataUrl.startsWith('data:') || comma < 0) {
+    throw new Error('Invalid image data (expected a base64 data URL).');
+  }
   const head = dataUrl.slice(5, comma); // e.g. "image/jpeg;base64"
+  if (!/;base64$/i.test(head)) {
+    throw new Error('Invalid image data (expected base64 encoding).');
+  }
   const mime = head.split(';')[0] || 'image/jpeg';
-  const ext = mime.split('/')[1] || 'jpg';
+  const ext = (mime.split('/')[1] || 'jpg').toLowerCase();
   const bin = atob(dataUrl.slice(comma + 1));
   const arr = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
@@ -81,21 +87,24 @@ export async function listCloudPhotos(
     .order('created_at', { ascending: false });
   if (error || !data) return [];
 
-  const out: CloudPhoto[] = [];
-  for (const row of data) {
-    const signed = await sb.storage.from(BUCKET).createSignedUrl(row.storage_path, 3600);
-    out.push({
-      id: row.id,
-      brandId: row.brand_id,
-      modelId: row.model_id,
-      caliber: row.caliber,
-      year: row.year,
-      part: row.part,
-      storagePath: row.storage_path,
-      url: signed.data?.signedUrl ?? '',
-    });
+  // Sign all paths in ONE request instead of N sequential round-trips.
+  const paths = data.map((row) => row.storage_path);
+  const { data: signed } = await sb.storage.from(BUCKET).createSignedUrls(paths, 3600);
+  const urlByPath = new Map<string, string>();
+  for (const s of signed ?? []) {
+    if (s.path && s.signedUrl) urlByPath.set(s.path, s.signedUrl);
   }
-  return out;
+
+  return data.map((row) => ({
+    id: row.id,
+    brandId: row.brand_id,
+    modelId: row.model_id,
+    caliber: row.caliber,
+    year: row.year,
+    part: row.part,
+    storagePath: row.storage_path,
+    url: urlByPath.get(row.storage_path) ?? '',
+  }));
 }
 
 /** Count of cloud photos for a brand + model (across parts). */

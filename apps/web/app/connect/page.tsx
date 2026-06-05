@@ -66,13 +66,14 @@ const KNOWN_ELEMENTS: ReadonlySet<string> = new Set([
   'Au', 'Ag', 'Pt', 'Pd', 'Ru', 'Rh', 'Ir', 'Ti', 'Zn', 'Sn', 'Co', 'Al', 'W', 'Nb',
 ]);
 
-/** Parses a Niton serial/print line like "Fe 70.14 0.52" into element + percent. */
+/** Parses a Niton serial/print line like "Fe 70.14 0.52" into element + percent.
+ *  Accepts a comma decimal ("70,14") for instruments set to a European locale. */
 function parseSerialLine(line: string): { element: string; pct: number } | null {
-  const m = line.match(/^\s*([A-Za-z]{1,2})\s+(\d+(?:\.\d+)?)/);
+  const m = line.match(/^\s*([A-Za-z]{1,2})\s+(\d+(?:[.,]\d+)?)/);
   if (!m) return null;
   const el = m[1]!.charAt(0).toUpperCase() + m[1]!.slice(1).toLowerCase();
   if (!KNOWN_ELEMENTS.has(el)) return null;
-  const pct = parseFloat(m[2]!);
+  const pct = parseFloat(m[2]!.replace(',', '.'));
   if (!Number.isFinite(pct) || pct <= 0 || pct > 100) return null;
   return { element: el, pct };
 }

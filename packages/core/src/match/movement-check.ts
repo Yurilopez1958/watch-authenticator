@@ -1,13 +1,16 @@
 import type { MovementCheck } from '../types/index';
 import { getMovementForModelAcrossBrands } from '../data/brands';
 
-/** Normalizes a user-provided caliber string by stripping a leading
- *  "Cal."/"Caliber"/"Calibre" label and all whitespace. */
+/** Normalizes a caliber string for comparison: strips a leading
+ *  "Cal."/"Caliber"/"Calibre" label, removes all whitespace, drops a leading
+ *  "#", and lowercases so "Cal. 9001" and "9001" compare equal. */
 function normalizeCaliber(raw: string): string {
   return raw
     .trim()
     .replace(/^(cal(\.|iber|ibre)?)\s*/i, '')
-    .replace(/\s+/g, '');
+    .replace(/^#/, '')
+    .replace(/\s+/g, '')
+    .toLowerCase();
 }
 
 /**
@@ -44,7 +47,7 @@ export function checkMovementCaliber(
   }
 
   const observed = normalizeCaliber(observedCaliberRaw);
-  if (observed === expectedCaliber) {
+  if (observed === normalizeCaliber(expectedCaliber)) {
     return {
       status: 'match',
       expectedCaliber,

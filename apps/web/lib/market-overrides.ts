@@ -18,12 +18,41 @@ export type MarketOverride = {
 const KEY = 'market-overrides';
 const EVT = 'market-overrides-changed';
 
+/** True when an unknown value has the shape of a stored MarketOverride. */
+function isOverride(v: unknown): v is MarketOverride {
+  if (!v || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.retail === 'number' && Number.isFinite(o.retail) &&
+    typeof o.wholesale === 'number' && Number.isFinite(o.wholesale) &&
+    (o.grade === 'fast' || o.grade === 'medium' || o.grade === 'slow') &&
+    typeof o.demandScore === 'number'
+  );
+}
+
 function readAll(): Record<string, MarketOverride> {
   if (typeof window === 'undefined') return {};
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? '{}') as Record<string, MarketOverride>;
+    const parsed = JSON.parse(localStorage.getItem(KEY) ?? '{}') as unknown;
+    if (!parsed || typeof parsed !== 'object') return {};
+    // Keep only well-formed entries so corrupt/legacy data can't crash the UI.
+    const out: Record<string, MarketOverride> = {};
+    for (const [id, val] of Object.entries(parsed as Record<string, unknown>)) {
+      if (isOverride(val)) out[id] = val;
+    }
+    return out;
   } catch {
     return {};
+  }
+}
+
+/** Persists the override map; swallows quota/serialization errors. */
+function writeAll(all: Record<string, MarketOverride>): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(all));
+    window.dispatchEvent(new Event(EVT));
+  } catch (e) {
+    console.warn('Could not save market overrides:', (e as Error).message);
   }
 }
 
@@ -35,16 +64,14 @@ export function saveOverride(modelId: string, o: MarketOverride): void {
   if (typeof window === 'undefined') return;
   const all = readAll();
   all[modelId] = o;
-  localStorage.setItem(KEY, JSON.stringify(all));
-  window.dispatchEvent(new Event(EVT));
+  writeAll(all);
 }
 
 export function clearOverride(modelId: string): void {
   if (typeof window === 'undefined') return;
   const all = readAll();
   delete all[modelId];
-  localStorage.setItem(KEY, JSON.stringify(all));
-  window.dispatchEvent(new Event(EVT));
+  writeAll(all);
 }
 
 /** React hook: the override for a model + save/clear, reactive across the tab. */

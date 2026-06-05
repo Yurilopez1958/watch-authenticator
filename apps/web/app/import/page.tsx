@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ROLEX_REFERENCE_PROFILES,
   bestProfileMatch,
@@ -27,11 +27,19 @@ export default function ImportPage() {
   const [csvText, setCsvText] = useState('');
   const [year, setYear] = useState<number>(new Date().getFullYear() - 1);
   const [parsed, setParsed] = useState<NitonImportResult | null>(null);
-  const [analyzed, setAnalyzed] = useState<AnalyzedRow[]>([]);
 
-  const candidateProfiles = ROLEX_REFERENCE_PROFILES.filter(
-    (p) => year >= p.yearStart && (p.yearEnd == null || year <= p.yearEnd),
-  );
+  // Verdicts are DERIVED from the parsed rows + the selected year, so changing
+  // the year after parsing re-evaluates every row against the right profiles.
+  const analyzed = useMemo<AnalyzedRow[]>(() => {
+    if (!parsed) return [];
+    const profiles = ROLEX_REFERENCE_PROFILES.filter(
+      (p) => year >= p.yearStart && (p.yearEnd == null || year <= p.yearEnd),
+    );
+    return parsed.rows.map((row) => ({
+      row,
+      result: bestProfileMatch(rowToMeasurement(row), profiles),
+    }));
+  }, [parsed, year]);
 
   const onFile = async (file: File) => {
     const text = await file.text();
@@ -40,13 +48,7 @@ export default function ImportPage() {
 
   const onParse = () => {
     if (!csvText.trim()) return;
-    const result = parseNitonCsv(csvText);
-    setParsed(result);
-    const rows = result.rows.map((row) => {
-      const measurement = rowToMeasurement(row);
-      return { row, result: bestProfileMatch(measurement, candidateProfiles) };
-    });
-    setAnalyzed(rows);
+    setParsed(parseNitonCsv(csvText));
   };
 
   return (
