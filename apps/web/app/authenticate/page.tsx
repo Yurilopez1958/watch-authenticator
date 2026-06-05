@@ -1575,12 +1575,11 @@ export default function AuthenticatePage() {
         </div>
       )}
 
-      {/* Metal-mismatch warning modal */}
+      {/* Metal-mismatch warning — bottom sheet on mobile, centered modal on desktop */}
       {showMetalWarning && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto fade-in" role="dialog" aria-modal="true">
-          <div className="flex min-h-full items-start sm:items-center justify-center p-4 pt-20 sm:pt-4">
-            <div className="w-full max-w-md card p-0 border-l-4 flex flex-col max-h-[80dvh]" style={{ borderLeftColor: '#ef4444' }}>
-              <div className="flex items-start gap-3 p-5 pb-3 shrink-0">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 fade-in" role="dialog" aria-modal="true">
+          <div className="w-full sm:max-w-md card p-0 border-l-4 flex flex-col max-h-[85dvh] rounded-b-none rounded-t-2xl sm:rounded-xl" style={{ borderLeftColor: '#ef4444' }}>
+            <div className="flex items-start gap-3 p-5 pb-3 shrink-0">
                 <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(239,68,68,0.12)' }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
@@ -1626,7 +1625,6 @@ export default function AuthenticatePage() {
               </div>
             </div>
           </div>
-        </div>
       )}
     </div>
   );

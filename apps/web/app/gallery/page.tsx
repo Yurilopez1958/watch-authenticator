@@ -107,6 +107,15 @@ export default function GalleryPage() {
     }
     return Array.from(groups.entries());
   }, [filteredModels]);
+  const groupedAllModels = useMemo(() => {
+    const groups = new Map<string, typeof ALL_MODELS[number][]>();
+    for (const m of brandModels) {
+      const arr = groups.get(m.collection) ?? [];
+      arr.push(m);
+      groups.set(m.collection, arr);
+    }
+    return Array.from(groups.entries());
+  }, [brandModels]);
 
   useEffect(() => {
     if (!filteredModels.some((m) => m.id === modelId) && filteredModels.length > 0) {
@@ -366,9 +375,8 @@ export default function GalleryPage() {
         <div className="grid md:grid-cols-2 gap-4">
           <label className="block">
             <span className="block text-xs uppercase tracking-wide text-dim mb-2">Model</span>
-            <select value={modelId} onChange={(e) => setModelId(e.target.value)} className="field" disabled={filteredModels.length === 0}>
-              {filteredModels.length === 0 && <option>No matches</option>}
-              {groupedModels.map(([collection, models]) => (
+            <select value={modelId} onChange={(e) => { setModelId(e.target.value); setModelSearch(''); }} className="field">
+              {(filteredModels.length > 0 ? groupedModels : groupedAllModels).map(([collection, models]) => (
                 <optgroup key={collection} label={collection}>
                   {models.map((m) => (
                     <option key={m.id} value={m.id}>{m.name} — {m.reference}</option>
