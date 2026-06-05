@@ -247,10 +247,9 @@ export default function TimegrapherPage() {
       <section>
         <h1 className="text-3xl font-bold mb-2">Acoustic chronocomparator</h1>
         <p className="text-muted text-sm max-w-2xl">
-          Time a mechanical watch through a microphone. For best results plug a{' '}
-          <span className="text-accent-bright">watch contact microphone</span> into the phone and select it below;
-          the built-in mic works in a pinch (hold it to the case back in a quiet room). Measures rate (s/day),
-          beat error and the detected frequency.
+          Time a mechanical watch using your <span className="text-accent-bright">phone&apos;s microphone</span> —
+          no extra hardware needed. Press Start and hold the phone&apos;s mic to the case back in a quiet room.
+          Measures rate (s/day), beat error and the detected frequency.
         </p>
       </section>
 
@@ -308,9 +307,8 @@ export default function TimegrapherPage() {
             <button onClick={() => void detectMics()} className="btn-ghost text-sm">Detect microphones</button>
           )}
           <p className="text-xs text-dim mt-1.5">
-            Plug your <span className="text-accent-bright">watch contact microphone</span> (timing pickup) into the
-            phone — via a 3.5&nbsp;mm adapter or a USB-C audio interface — then select it here for a clean escapement
-            signal, like a professional timing machine.
+            Uses your phone&apos;s built-in microphone by default — nothing to plug in. (Optional/advanced: connect a
+            watch contact microphone and pick it here for an even cleaner signal.)
           </p>
         </div>
 
@@ -350,12 +348,11 @@ export default function TimegrapherPage() {
       <section className="card p-5 text-xs text-muted space-y-2 border-l-4 border-l-accent">
         <div className="font-semibold text-neutral-200">Tips & honest limits</div>
         <p className="leading-relaxed">
-          A <strong>watch contact microphone</strong> (timing pickup clamped to the movement) gives by far the cleanest
-          signal — select it under &ldquo;Microphone input&rdquo;. The phone&apos;s built-in mic also works in a quiet
-          room with the case back pressed to it, just less precisely (it picks up through the air).
+          The phone&apos;s built-in microphone works out of the box — quiet room, case back pressed to the mic.
           <strong> Rate</strong> and <strong>beat error</strong> stabilise after ~15–30&nbsp;seconds. The detected
-          frequency must match the watch — pick the right bph (or a model) above. <strong>Amplitude</strong> is not
-          measured yet (it needs the lift-angle plus clean intra-beat sound timing from a contact sensor).
+          frequency must match the watch — pick the right bph (or a model) above. Optionally, a{' '}
+          <strong>watch contact microphone</strong> clamped to the movement gives an even cleaner signal.
+          <strong> Amplitude</strong> is not measured yet (it needs the lift-angle plus clean intra-beat sound timing).
         </p>
       </section>
     </div>
