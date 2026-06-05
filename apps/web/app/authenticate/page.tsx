@@ -1574,24 +1574,17 @@ export default function AuthenticatePage() {
               </div>
             </div>
 
-            <div className="space-y-2 border-t border-soft px-5 py-3 overflow-y-auto flex-1 min-h-0">
+            <div className="space-y-1.5 border-t border-soft px-5 py-3 overflow-y-auto flex-1 min-h-0">
               {XRF_TARGETS
                 .map((t) => ({ t, r: liveXrfByTarget[t.id] }))
                 .filter((x) => x.r?.verdict === 'likely-fake')
                 .map(({ t, r }) => (
-                  <div key={t.id}>
-                    <div className="text-sm font-semibold text-red-300">
-                      {t.label} — {r!.materialName} ({r!.overallScore}/100)
-                    </div>
-                    {r!.flags.length > 0 && (
-                      <ul className="text-xs text-neutral-300 space-y-1 mt-1">
-                        {r!.flags.slice(0, 2).map((f, i) => (
-                          <li key={i} className="flex gap-2"><span className="text-red-400">▸</span><span>{f}</span></li>
-                        ))}
-                      </ul>
-                    )}
+                  <div key={t.id} className="flex items-baseline justify-between gap-3 text-sm">
+                    <span className="font-semibold text-red-300 shrink-0">{t.label}</span>
+                    <span className="text-xs text-muted font-mono text-right">{r!.materialName} · {r!.overallScore}/100</span>
                   </div>
                 ))}
+              <p className="text-xs text-dim pt-1">Full element-by-element breakdown is on the verdict screen.</p>
             </div>
 
             <div className="p-5 pt-3 shrink-0 border-t border-soft">
