@@ -15,3 +15,5 @@ export {
 export type { Embedding, ImageEmbedder, ScoredReference } from './clip-embeddings';
 export { extractXrfFromImage } from './xrf-ocr';
 export type { XrfOcrResult } from './xrf-ocr';
+export { estimateMarketPrice } from './market-estimate';
+export type { MarketEstimate, MarketEstimateInput } from './market-estimate';

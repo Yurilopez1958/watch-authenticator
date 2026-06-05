@@ -1,0 +1,38 @@
+import { NextResponse } from 'next/server';
+import { estimateMarketPrice, type MarketEstimateInput } from '@watch-auth/core';
+
+export const runtime = 'nodejs';
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: 'AI market estimate is not configured. Set ANTHROPIC_API_KEY.', code: 'NO_API_KEY' },
+      { status: 503 },
+    );
+  }
+
+  let body: Partial<MarketEstimateInput>;
+  try {
+    body = (await req.json()) as Partial<MarketEstimateInput>;
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+  }
+
+  const { brand, model, reference, year } = body;
+  if (!brand || !model) {
+    return NextResponse.json({ error: 'Missing brand or model.' }, { status: 400 });
+  }
+
+  const overrideModel = process.env.ANTHROPIC_MODEL;
+  try {
+    const estimate = await estimateMarketPrice(
+      { brand, model, ...(reference ? { reference } : {}), ...(year ? { year } : {}) },
+      { apiKey, ...(overrideModel ? { model: overrideModel } : {}) },
+    );
+    return NextResponse.json(estimate);
+  } catch (err) {
+    return NextResponse.json({ error: `Market estimate failed: ${(err as Error).message}` }, { status: 500 });
+  }
+}
