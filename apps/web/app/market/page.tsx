@@ -23,12 +23,31 @@ export default function MarketPage() {
   const [modelSearch, setModelSearch] = useState('');
   const [modelId, setModelId] = useState<string>(ALL_MODELS[0]!.id);
   const [currency, setCurrency] = useState<'USD' | 'EUR'>('USD');
+  const [serviceUsd, setServiceUsd] = useState(500);
+  const [listingUsd, setListingUsd] = useState(150);
+  const [salesFeePct, setSalesFeePct] = useState(5);
+  const [profitPct, setProfitPct] = useState(15);
+  const [sellUsd, setSellUsd] = useState(0);
 
   useEffect(() => {
     const c = localStorage.getItem('market-currency');
     if (c === 'EUR' || c === 'USD') setCurrency(c);
   }, []);
   const pickCurrency = (c: 'USD' | 'EUR') => { setCurrency(c); localStorage.setItem('market-currency', c); };
+
+  // Dealer cost assumptions (persisted across sessions)
+  useEffect(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem('dealer-settings') ?? '{}') as Partial<{ serviceUsd: number; listingUsd: number; salesFeePct: number; profitPct: number }>;
+      if (typeof s.serviceUsd === 'number') setServiceUsd(s.serviceUsd);
+      if (typeof s.listingUsd === 'number') setListingUsd(s.listingUsd);
+      if (typeof s.salesFeePct === 'number') setSalesFeePct(s.salesFeePct);
+      if (typeof s.profitPct === 'number') setProfitPct(s.profitPct);
+    } catch { /* noop */ }
+  }, []);
+  useEffect(() => {
+    localStorage.setItem('dealer-settings', JSON.stringify({ serviceUsd, listingUsd, salesFeePct, profitPct }));
+  }, [serviceUsd, listingUsd, salesFeePct, profitPct]);
 
   const brandModels = useMemo(() => ALL_MODELS.filter((m) => m.brandId === brandId), [brandId]);
   const filteredModels = useMemo(() => {
@@ -78,6 +97,20 @@ export default function MarketPage() {
 
   const margin = data ? data.retail - data.wholesale : 0;
   const marginPct = data && data.wholesale > 0 ? (margin / data.wholesale) * 100 : 0;
+
+  // Reset the resale price to the model's market retail when the model changes.
+  useEffect(() => {
+    if (base) setSellUsd(base.retail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelId]);
+
+  // Dealer offer: work back from resale through fees, costs and target profit.
+  const salesFee = sellUsd * (salesFeePct / 100);
+  const netProceeds = sellUsd - salesFee;
+  const invest = netProceeds / (1 + Math.max(0, profitPct) / 100);
+  const offerUsd = invest - serviceUsd - listingUsd;
+  const profitUsd = netProceeds - (offerUsd + serviceUsd + listingUsd);
+  const viable = offerUsd > 0;
 
   // ---- edit own prices ----
   const [editing, setEditing] = useState(false);
@@ -231,6 +264,65 @@ export default function MarketPage() {
           )}
         </section>
       )}
+
+      {/* Dealer offer calculator */}
+      {data && (
+        <section className="card p-5 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold">Dealer offer — what to pay</h2>
+            <p className="text-xs text-muted">
+              Works back from the resale price through your service cost, cost to bring it to market,
+              the sales fee and your target profit (≥&nbsp;15%) to the maximum buy offer.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <Field label={`Sell at (${currency})`} value={toDisp(sellUsd)} onChange={(v) => setSellUsd(toUsd(v))} />
+            <Field label={`Service cost (${currency})`} value={toDisp(serviceUsd)} onChange={(v) => setServiceUsd(toUsd(v))} />
+            <Field label={`To market (${currency})`} value={toDisp(listingUsd)} onChange={(v) => setListingUsd(toUsd(v))} />
+            <Field label="Sales fee (%)" value={salesFeePct} onChange={setSalesFeePct} step="0.5" />
+            <Field label="Profit (%)" value={profitPct} onChange={setProfitPct} hint="min 15%" />
+          </div>
+          <div className="rounded-xl p-4 border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-dim">Max offer to the seller</div>
+              <div className="text-4xl font-bold font-mono text-emerald-300">{viable ? money(offerUsd) : '—'}</div>
+            </div>
+            {!viable && <div className="text-xs text-red-300 max-w-[15rem]">Costs + profit exceed the resale price — don&apos;t buy at these numbers.</div>}
+          </div>
+          <div className="text-xs text-muted space-y-1">
+            <Row label="Resale price" val={money(sellUsd)} />
+            <Row label={`Sales fee (${salesFeePct}%)`} val={`− ${money(salesFee)}`} />
+            <Row label="Service" val={`− ${money(serviceUsd)}`} />
+            <Row label="To market" val={`− ${money(listingUsd)}`} />
+            <Row label={`Your profit (${profitPct}%)`} val={`− ${money(profitUsd)}`} />
+            <div className="border-t border-soft mt-1 pt-1"><Row label="= Max offer" val={viable ? money(offerUsd) : '—'} strong /></div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, step, hint }: { label: string; value: number; onChange: (v: number) => void; step?: string; hint?: string }) {
+  return (
+    <label className="block">
+      <span className="block text-[0.7rem] uppercase tracking-wide text-dim mb-1">{label}</span>
+      <input
+        type="number"
+        step={step ?? '1'}
+        value={Number.isFinite(value) ? value : 0}
+        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        className="field text-sm py-1.5"
+      />
+      {hint && <span className="block text-[0.65rem] text-dim mt-0.5">{hint}</span>}
+    </label>
+  );
+}
+
+function Row({ label, val, strong }: { label: string; val: string; strong?: boolean }) {
+  return (
+    <div className={`flex justify-between font-mono ${strong ? 'text-foreground font-semibold' : ''}`}>
+      <span>{label}</span><span>{val}</span>
     </div>
   );
 }
