@@ -5,10 +5,69 @@ import { ALL_MODELS, getMovementForModelAcrossBrands } from '@watch-auth/core';
 import { saveTimingReading } from '@/lib/timing-store';
 import { useLang } from '@/lib/i18n';
 
-type Metrics = { rate: number; beatError: number | null; detectedBph: number; beats: number };
-type TracePoint = { ms: number; even: boolean };
+type Metrics = { rate: number; beatError: number | null; detectedBph: number; confidence: number };
 
 const BPH_PRESETS = [18000, 19800, 21600, 25200, 28800, 36000];
+
+const ENV_HZ = 4000;            // envelope sample rate (must match the worklet)
+const ENV_BUF_SECONDS = 8;      // analysis window
+const ENV_BUF = ENV_HZ * ENV_BUF_SECONDS;
+
+type Detection = { rate: number; detectedBph: number; beatError: number | null; confidence: number };
+
+/**
+ * Finds the watch's beat period in a window of the rectified envelope by
+ * AUTOCORRELATION around the expected period, then refines the lag with
+ * parabolic interpolation. Robust to room noise: it locks onto the dominant
+ * periodicity instead of trusting individual peaks. Returns null until there is
+ * enough data; `confidence` is the normalized correlation strength (0–1).
+ */
+function analyzeEnvelope(buf: Float64Array, envHz: number, bph: number): Detection | null {
+  const N = buf.length;
+  if (N < envHz * 2.5) return null; // need ≥ 2.5 s
+
+  // Remove DC so silence/offset doesn't dominate the correlation.
+  let mean = 0;
+  for (let i = 0; i < N; i++) mean += buf[i]!;
+  mean /= N;
+  const x = new Float64Array(N);
+  let energy = 0;
+  for (let i = 0; i < N; i++) { const v = buf[i]! - mean; x[i] = v; energy += v * v; }
+  if (energy <= 1e-9) return null; // essentially silence
+
+  const nominalPeriod = 3600 / bph;          // seconds per beat
+  const P = nominalPeriod * envHz;           // samples per beat (approx)
+  const minLag = Math.max(2, Math.floor(P * 0.8));
+  const maxLag = Math.ceil(P * 1.2);
+  if (maxLag >= N) return null;
+
+  const ac: number[] = [];
+  let best = -Infinity, bestLag = minLag;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let s = 0;
+    const lim = N - lag;
+    for (let i = 0; i < lim; i++) s += x[i]! * x[i + lag]!;
+    const norm = s / energy;
+    ac.push(norm);
+    if (norm > best) { best = norm; bestLag = lag; }
+  }
+
+  // Parabolic interpolation around the peak for sub-sample precision.
+  const k = bestLag - minLag;
+  let lagRefined = bestLag;
+  if (k > 0 && k < ac.length - 1) {
+    const y0 = ac[k - 1]!, y1 = ac[k]!, y2 = ac[k + 1]!;
+    const denom = y0 - 2 * y1 + y2;
+    if (denom !== 0) lagRefined = bestLag + (0.5 * (y0 - y2)) / denom;
+  }
+
+  const measuredPeriod = lagRefined / envHz; // seconds per beat
+  if (measuredPeriod <= 0) return null;
+  const rate = 86400 * (nominalPeriod / measuredPeriod - 1);
+  const detectedBph = 3600 / measuredPeriod;
+  const confidence = Math.max(0, Math.min(1, best));
+  return { rate, detectedBph, beatError: null, confidence };
+}
 
 export default function TimegrapherPage() {
   const { t } = useLang();
@@ -16,7 +75,7 @@ export default function TimegrapherPage() {
   const [error, setError] = useState<string | null>(null);
   const [expectedBph, setExpectedBph] = useState(28800);
   const [sensitivity, setSensitivity] = useState(6);
-  const [gain, setGain] = useState(12);
+  const [gain, setGain] = useState(5);
   const [level, setLevel] = useState(0);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [modelId, setModelId] = useState<string>('');
@@ -35,12 +94,14 @@ export default function TimegrapherPage() {
   const sinkRef = useRef<GainNode | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const beatsRef = useRef<number[]>([]); // beat timestamps in seconds
-  const sampleIdxRef = useRef(0);
-  const envRef = useRef(0);
-  const noiseFloorRef = useRef(0);
-  const aboveRef = useRef(false);
-  const lastBeatSampleRef = useRef(-1e9);
+  // Decimated-envelope ring buffer (the autocorrelation analysis window).
+  const ringRef = useRef<{ data: Float32Array; head: number; count: number }>({
+    data: new Float32Array(ENV_BUF), head: 0, count: 0,
+  });
+  // Legacy-fallback envelope-follower + decimation state (mirrors the worklet).
+  const fbEnvRef = useRef(0);
+  const fbDecimRef = useRef(0);
+  const fbAccRef = useRef(0);
   const bphRef = useRef(expectedBph);
   const sensRef = useRef(sensitivity);
   const gainRef = useRef(gain);
@@ -51,9 +112,19 @@ export default function TimegrapherPage() {
   const forceFallbackRef = useRef(false); // once true, skip the worklet for the session
   const watchdogRef = useRef<number | null>(null);
 
+  // Appends decimated envelope samples into the ring buffer.
+  const pushEnv = (samples: ArrayLike<number>) => {
+    const r = ringRef.current;
+    for (let i = 0; i < samples.length; i++) {
+      r.data[r.head] = samples[i]!;
+      r.head = (r.head + 1) % ENV_BUF;
+      if (r.count < ENV_BUF) r.count++;
+    }
+  };
+
   // Keep the refs (used by the legacy fallback) in sync AND live-tune the worklet.
-  useEffect(() => { bphRef.current = expectedBph; workletRef.current?.port.postMessage({ type: 'config', bph: expectedBph }); }, [expectedBph]);
-  useEffect(() => { sensRef.current = sensitivity; workletRef.current?.port.postMessage({ type: 'config', sensitivity }); }, [sensitivity]);
+  useEffect(() => { bphRef.current = expectedBph; }, [expectedBph]);
+  useEffect(() => { sensRef.current = sensitivity; }, [sensitivity]);
   useEffect(() => { gainRef.current = gain; workletRef.current?.port.postMessage({ type: 'config', gain }); }, [gain]);
 
   const stop = () => {
@@ -128,7 +199,7 @@ export default function TimegrapherPage() {
     maxPeakRef.current = 0;
     if (watchdogRef.current) { clearTimeout(watchdogRef.current); watchdogRef.current = null; }
     setSavedMsg(null);
-    drawTrace([], 3600 / expectedBph);
+    drawWave();
     try {
       const useId = forceDeviceId !== undefined ? forceDeviceId : deviceId;
       const audio: MediaTrackConstraints = {
@@ -149,23 +220,18 @@ export default function TimegrapherPage() {
 
       const source = ctx.createMediaStreamSource(stream);
 
-      // reset detection state (shared with the fallback path + consumed by the metrics loop)
-      sampleIdxRef.current = 0;
-      beatsRef.current = [];
-      envRef.current = 0; noiseFloorRef.current = 0; aboveRef.current = false;
-      lastBeatSampleRef.current = -1e9;
+      // reset the envelope ring buffer + fallback follower state
+      ringRef.current.head = 0; ringRef.current.count = 0;
+      fbEnvRef.current = 0; fbDecimRef.current = 0; fbAccRef.current = 0;
 
       const sink = ctx.createGain();
       sink.gain.value = 0; // silent — avoid feedback
 
-      // Drain beat messages coming from the worklet (audio thread) into our buffer.
-      const onBeats = (d: { beats: number[]; peak: number; t: number }) => {
-        const beats = beatsRef.current;
-        for (const t of d.beats) beats.push(t);
+      // Drain decimated-envelope messages from the worklet into the ring buffer.
+      const onEnv = (d: { env: number[]; peak: number }) => {
         if (d.peak > levelRef.current) levelRef.current = d.peak;
         if (d.peak > maxPeakRef.current) maxPeakRef.current = d.peak;
-        const cutoff = d.t - 40; // keep last 40s of beats
-        while (beats.length && beats[0]! < cutoff) beats.shift();
+        if (d.env && d.env.length) pushEnv(d.env);
       };
 
       let usedWorklet = false;
@@ -175,10 +241,10 @@ export default function TimegrapherPage() {
           const node = new AudioWorkletNode(ctx, 'timegrapher-processor', {
             numberOfInputs: 1, numberOfOutputs: 1, channelCount: 1,
           });
-          node.port.postMessage({ type: 'config', gain: gainRef.current, sensitivity: sensRef.current, bph: bphRef.current });
+          node.port.postMessage({ type: 'config', gain: gainRef.current });
           node.port.onmessage = (e: MessageEvent) => {
-            const d = e.data as { type?: string; beats: number[]; peak: number; t: number };
-            if (d?.type === 'beats') onBeats(d);
+            const d = e.data as { type?: string; env: number[]; peak: number };
+            if (d?.type === 'env') onEnv(d);
           };
           source.connect(node); node.connect(sink);
           workletRef.current = node;
@@ -189,40 +255,27 @@ export default function TimegrapherPage() {
       }
 
       if (!usedWorklet) {
-        // Legacy fallback: ScriptProcessorNode runs detection on the main thread.
+        // Legacy fallback: ScriptProcessorNode computes the same decimated envelope
+        // on the main thread and feeds the same ring buffer.
         const processor = ctx.createScriptProcessor(2048, 1, 1);
         processor.onaudioprocess = (e) => {
           const input = e.inputBuffer.getChannelData(0);
           const sr = ctx.sampleRate;
-          const nominalPeriod = 3600 / bphRef.current; // sec per beat
-          const refractory = nominalPeriod * 0.45 * sr; // samples between beats
-          const g = gainRef.current;                    // input gain (mic level boost)
-          const mult = 12 - sensRef.current;            // higher sensitivity → lower threshold
-          let env = envRef.current, nf = noiseFloorRef.current, above = aboveRef.current;
-          let last = lastBeatSampleRef.current, gi = sampleIdxRef.current;
-          let peak = levelRef.current;
-          const beats = beatsRef.current;
+          const step = Math.max(1, Math.round(sr / ENV_HZ));
+          const g = gainRef.current;
+          let env = fbEnvRef.current, acc = fbAccRef.current, dc = fbDecimRef.current, peak = levelRef.current;
+          const out: number[] = [];
           for (let i = 0; i < input.length; i++) {
-            const a = Math.abs(input[i]!) * g;                    // apply gain
-            env += a > env ? (a - env) * 0.4 : (a - env) * 0.005; // envelope follower
+            const a = Math.abs(input[i]!) * g;
+            env += a > env ? (a - env) * 0.35 : (a - env) * 0.02; // envelope follower
             if (env > peak) peak = env;
-            nf += (env - nf) * 0.0003;                            // slow noise floor
-            const thr = Math.max(nf * mult, 0.0008);
-            if (!above && env > thr && gi - last > refractory) {
-              beats.push(gi / sr);
-              last = gi;
-              above = true;
-            } else if (above && env < thr * 0.5) {
-              above = false;
-            }
-            gi++;
+            acc += env;
+            if (++dc >= step) { out.push(acc / step); acc = 0; dc = 0; }
           }
-          envRef.current = env; noiseFloorRef.current = nf; aboveRef.current = above;
-          lastBeatSampleRef.current = last; sampleIdxRef.current = gi;
+          fbEnvRef.current = env; fbAccRef.current = acc; fbDecimRef.current = dc;
           levelRef.current = peak;
           if (peak > maxPeakRef.current) maxPeakRef.current = peak;
-          const cutoff = gi / sr - 40; // keep last 40s of beats
-          while (beats.length && beats[0]! < cutoff) beats.shift();
+          if (out.length) pushEnv(out);
         };
         source.connect(processor); processor.connect(sink);
         processorRef.current = processor;
@@ -256,70 +309,52 @@ export default function TimegrapherPage() {
   };
 
   // Metrics + trace loop
+  // Reads the ring buffer into an oldest-first array (or null if too little data).
+  const snapshotEnv = (): Float64Array | null => {
+    const r = ringRef.current;
+    if (r.count < ENV_HZ * 1.5) return null;
+    const out = new Float64Array(r.count);
+    const start = (r.head - r.count + ENV_BUF) % ENV_BUF;
+    for (let i = 0; i < r.count; i++) out[i] = r.data[(start + i) % ENV_BUF]!;
+    return out;
+  };
+
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(() => {
       const lv = levelRef.current;
       // Perceptual (sqrt) scale so a faint watch — not just a loud tap — is visible.
       setLevel(Math.min(1, Math.sqrt(lv * 8)));
-      setDiag({ peak: lv, beats: beatsRef.current.length });
+      const r = ringRef.current;
+      setDiag({ peak: lv, beats: r.count });
       levelRef.current *= 0.6; // decay so the meter falls back
-      const beats = beatsRef.current;
-      if (beats.length < 12) { setMetrics(null); return; }
-      const nominalPeriod = 3600 / expectedBph;
-      const t0 = beats[0]!;
-      const pts: { x: number; t: number }[] = [];
-      let lastIdx = -1;
-      for (const t of beats) {
-        const idx = Math.round((t - t0) / nominalPeriod);
-        if (idx === lastIdx) continue; // drop double-detections
-        pts.push({ x: idx, t });
-        lastIdx = idx;
-      }
-      if (pts.length < 12) { setMetrics(null); return; }
 
-      // Linear regression t = a + b*x  → b = measured beat period
-      const n = pts.length;
-      let sx = 0, sy = 0, sxx = 0, sxy = 0;
-      for (const p of pts) { sx += p.x; sy += p.t; sxx += p.x * p.x; sxy += p.x * p.t; }
-      const denom = n * sxx - sx * sx;
-      if (denom === 0) { setMetrics(null); return; }
-      const b = (n * sxy - sx * sy) / denom;
-      if (!Number.isFinite(b) || b <= 0) { setMetrics(null); return; }
+      const env = snapshotEnv();
+      drawWave(env);
+      if (!env) { setMetrics(null); return; }
 
-      const rate = 86400 * (nominalPeriod / b - 1);
-      const detectedBph = 3600 / b;
+      const det = analyzeEnvelope(env, ENV_HZ, expectedBph);
+      // Sensitivity acts as the lock threshold: higher → locks on a weaker periodicity.
+      const lockThreshold = Math.max(0.08, 0.42 - sensitivity * 0.03);
+      if (!det || det.confidence < lockThreshold) { setMetrics(null); return; }
 
-      // Beat error: alternate consecutive intervals by index parity
-      let evenSum = 0, evenN = 0, oddSum = 0, oddN = 0;
-      for (let i = 1; i < pts.length; i++) {
-        if (pts[i]!.x - pts[i - 1]!.x === 1) {
-          const d = pts[i]!.t - pts[i - 1]!.t;
-          if (pts[i - 1]!.x % 2 === 0) { evenSum += d; evenN++; } else { oddSum += d; oddN++; }
-        }
-      }
-      const beatError = evenN && oddN ? Math.abs(evenSum / evenN - oddSum / oddN) / 2 * 1000 : null;
-
-      const trace: TracePoint[] = pts.slice(-220).map((p) => {
-        let res = (p.t - t0) - p.x * nominalPeriod;        // drift incl. rate (sec)
-        res = res - Math.round(res / nominalPeriod) * nominalPeriod; // wrap to one period
-        return { ms: res * 1000, even: p.x % 2 === 0 };
+      setMetrics({
+        rate: det.rate,
+        beatError: det.beatError,
+        detectedBph: det.detectedBph,
+        confidence: Math.round(det.confidence * 100),
       });
-
-      setMetrics({ rate, beatError, detectedBph, beats: beats.length });
-      drawTrace(trace, nominalPeriod);
-    }, 100);
+    }, 200);
     return () => window.clearInterval(id);
-  }, [running, expectedBph]);
+  }, [running, expectedBph, sensitivity]);
 
-  const drawTrace = (trace: TracePoint[], nominalPeriod: number) => {
+  // Draws the recent envelope as a waveform: regular spikes = a watch locked in;
+  // random hash = just noise. Passing null/empty clears to the idle grid.
+  const drawWave = (env?: Float64Array | null) => {
     const cv = canvasRef.current;
     if (!cv) return;
     const ctx = cv.getContext('2d');
     if (!ctx) return;
-    // Match the backing store to the displayed size × devicePixelRatio so the
-    // trace stays crisp on high-DPI phones (cap DPR at 2 to bound memory). Draw
-    // in CSS-pixel units. Fall back to the attribute size before first layout.
     const dpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2);
     const W = cv.clientWidth || 680;
     const H = cv.clientHeight || 260;
@@ -327,31 +362,29 @@ export default function TimegrapherPage() {
     const bh = Math.max(1, Math.round(H * dpr));
     if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // dark instrument screen
     ctx.fillStyle = '#070d20';
     ctx.fillRect(0, 0, W, H);
-    // graph-paper grid
     ctx.strokeStyle = 'rgba(59,130,246,0.10)';
     ctx.lineWidth = 1;
     for (let gx = 0; gx <= W + 1; gx += W / 12) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
-    for (let gy = 0; gy <= H + 1; gy += H / 8) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
-    // brighter centre line
-    ctx.strokeStyle = 'rgba(96,165,250,0.4)';
-    ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+    for (let gy = 0; gy <= H + 1; gy += H / 4) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
 
-    const halfMs = (nominalPeriod / 2) * 1000;
-    const n = trace.length;
-    for (let i = 0; i < n; i++) {
-      const p = trace[i]!;
-      const x = (i / Math.max(1, n - 1)) * W;
-      let y = H / 2 - (p.ms / halfMs) * (H / 2);
-      y = ((y % H) + H) % H; // wrap vertically like a timegrapher tape
-      // glow + dot (phosphor green, like a timing machine)
-      ctx.fillStyle = p.even ? 'rgba(52,211,153,0.25)' : 'rgba(167,243,208,0.25)';
-      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = p.even ? '#34d399' : '#a7f3d0';
-      ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+    if (!env || env.length === 0) return;
+    // Show the most recent ~1.6 s so individual ticks are visible.
+    const showN = Math.min(env.length, Math.round(ENV_HZ * 1.6));
+    const startI = env.length - showN;
+    let mx = 1e-9;
+    for (let i = startI; i < env.length; i++) if (env[i]! > mx) mx = env[i]!;
+    ctx.strokeStyle = '#34d399';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < showN; i++) {
+      const v = env[startI + i]! / mx;             // 0..1
+      const x = (i / (showN - 1)) * W;
+      const y = H - v * (H * 0.92) - 2;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
+    ctx.stroke();
   };
 
   const onPickModel = (id: string) => {
@@ -397,7 +430,7 @@ export default function TimegrapherPage() {
           </div>
           {running && (
             <div className="text-[0.62rem] text-blue-300/45 font-mono">
-              {t('nivel', 'level')} {diag.peak.toFixed(4)} · {t('latidos', 'beats')} {diag.beats}
+              {t('nivel', 'level')} {diag.peak.toFixed(4)} · {t('buffer', 'buffer')} {(diag.beats / ENV_HZ).toFixed(1)}s
               {diag.peak < 1e-4 && <span className="text-amber-300/80"> · {t('toca el teléfono junto al micro: la barra debe saltar', 'tap the phone near the mic: the bar should jump')}</span>}
             </div>
           )}
@@ -408,7 +441,7 @@ export default function TimegrapherPage() {
             <span className={`w-2 h-2 rounded-full ${running ? 'bg-emerald-400 animate-pulse' : 'bg-blue-500/40'}`} />
             {running
               ? (metrics
-                  ? t(`Midiendo · ${metrics.beats} latidos`, `Measuring · ${metrics.beats} beats`)
+                  ? t(`Enganchado · señal ${metrics.confidence}%`, `Locked · signal ${metrics.confidence}%`)
                   : t('Escuchando… apoya el micro en el reloj', 'Listening… place the mic on the watch'))
               : t('En espera — pulsa Empezar', 'Idle — press Start')}
           </span>
@@ -492,14 +525,14 @@ export default function TimegrapherPage() {
 
         <div className="grid sm:grid-cols-2 gap-4">
           <label className="block">
-            <span className="block text-xs uppercase tracking-wide text-dim mb-2">Mic level / gain ({gain}×)</span>
+            <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Nivel de micro / ganancia', 'Mic level / gain')} ({gain}×)</span>
             <input type="range" min={1} max={30} step={1} value={gain} onChange={(e) => setGain(parseInt(e.target.value, 10))} className="w-full" />
-            <span className="block text-xs text-dim mt-1">Turn this <strong>up</strong> if the trace stays empty — it boosts a faint watch.</span>
+            <span className="block text-xs text-dim mt-1">{t('Súbelo si la onda casi no se mueve; bájalo si la barra Signal está siempre llena (saturada).', 'Raise it if the wave barely moves; lower it if the Signal bar is always full (saturated).')}</span>
           </label>
           <label className="block">
-            <span className="block text-xs uppercase tracking-wide text-dim mb-2">Sensitivity ({sensitivity})</span>
+            <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Sensibilidad de enganche', 'Lock sensitivity')} ({sensitivity})</span>
             <input type="range" min={1} max={10} step={1} value={sensitivity} onChange={(e) => setSensitivity(parseInt(e.target.value, 10))} className="w-full" />
-            <span className="block text-xs text-dim mt-1">Higher = detects fainter ticks. Lower it if it counts background noise.</span>
+            <span className="block text-xs text-dim mt-1">{t('Más alto = engancha con una señal más débil. Bájalo si da lecturas con ruido.', 'Higher = locks on a weaker signal. Lower it if it reads on noise.')}</span>
           </label>
         </div>
       </section>
