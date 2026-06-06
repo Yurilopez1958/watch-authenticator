@@ -555,7 +555,7 @@ export default function AuthenticatePage() {
     return () => { alive = false; };
   }, [brandId, modelId, examinedPart]);
 
-  // Run Claude Vision: compare the examined photo against gallery references
+  // Run the AI vision analysis: compare the examined photo against gallery references
   const runAiAnalysis = async () => {
     if (!examined) { setAiError(t('Primero haz o sube una foto del reloj examinado.', 'Capture or upload a photo of the examined watch first.')); return; }
     const gen = aiGenRef.current;
@@ -1348,7 +1348,7 @@ export default function AuthenticatePage() {
               </button>
             </div>
             <p className="text-xs text-muted">
-              {t('Claude Vision compara la foto de', 'Claude Vision compares the examined')} {PARTS.find((p) => p.id === examinedPart)?.label[lang].toLowerCase()} {t('con tus', 'photo against your')}
+              {t('La IA compara la foto de', 'The AI compares the examined')} {PARTS.find((p) => p.id === examinedPart)?.label[lang].toLowerCase()} {t('con tus', 'photo against your')}
               {galleryPhotos.length > 0 ? t(` ${Math.min(galleryPhotos.length, 4)} referencia(s) de la galería`, ` ${Math.min(galleryPhotos.length, 4)} gallery reference(s)`) : t(' foto de referencia', ' reference photo')} {t('y señala inconsistencias visuales.', 'and flags visual inconsistencies.')}
               {galleryPhotos.length === 0 && !reference && t(' Añade fotos en la Galería de referencia, o captura una arriba, para una comparación más fuerte.', ' Add reference photos in the Reference gallery, or capture one above, for a stronger comparison.')}
             </p>
@@ -1532,7 +1532,7 @@ export default function AuthenticatePage() {
                 <div className="text-sm text-dim">{t('No se capturaron fotos.', 'No photos captured.')}</div>
               )}
               <div className="text-xs text-dim mt-3">
-                {t('El análisis visual con IA (Claude Vision) requiere ANTHROPIC_API_KEY en el servidor. Una vez configurado, esta sección mostrará observaciones en lenguaje natural sobre las fotos.', 'AI visual analysis (Claude Vision) requires ANTHROPIC_API_KEY on the server. Once configured, this section will show natural-language findings about the photos.')}
+                {t('El análisis visual con IA mostrará observaciones en lenguaje natural sobre las fotos cuando esté disponible.', 'AI visual analysis will show natural-language findings about the photos when available.')}
               </div>
             </SummaryBlock>
 

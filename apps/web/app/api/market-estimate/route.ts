@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: 'AI market estimate is not configured. Set ANTHROPIC_API_KEY.', code: 'NO_API_KEY' },
+      { error: 'The market estimate is not available right now.', code: 'NO_API_KEY' },
       { status: 503 },
     );
   }

@@ -96,14 +96,22 @@ export default function MarketPage() {
   const fetchEstimate = async (key: string, payload: { brand: string; model: string; reference?: string }, force = false) => {
     if (!force && aiCache[key]) return;
     const seq = ++fetchSeqRef.current;
+    const generic = t('La estimación no está disponible ahora mismo.', 'The estimate is not available right now.');
     setAiBusy(true); setAiError(null);
     try {
       const res = await fetch('/api/market-estimate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      const j = await res.json();
-      if (res.ok) setAiCache((p) => ({ ...p, [key]: j as MarketEstimate })); // cache any valid result
-      if (seq === fetchSeqRef.current && !res.ok) setAiError(j.error ?? t('Falló la estimación de mercado.', 'Market estimate failed.'));
-    } catch (e) {
-      if (seq === fetchSeqRef.current) setAiError((e as Error).message);
+      // Parse defensively: a server/platform error can return an HTML page, not JSON.
+      const raw = await res.text();
+      let j: { error?: string; retail?: number } | null = null;
+      try { j = raw ? JSON.parse(raw) : null; } catch { j = null; }
+
+      if (res.ok && j && typeof j.retail === 'number') {
+        setAiCache((p) => ({ ...p, [key]: j as MarketEstimate }));
+      } else if (seq === fetchSeqRef.current) {
+        setAiError(generic); // neutral message; never expose server text/tech
+      }
+    } catch {
+      if (seq === fetchSeqRef.current) setAiError(generic);
     } finally {
       if (seq === fetchSeqRef.current) setAiBusy(false);
     }

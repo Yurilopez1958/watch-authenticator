@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   if (!apiKey) {
     return NextResponse.json(
       {
-        error: 'AI vision is not configured. Set ANTHROPIC_API_KEY in the deployment environment to enable photo analysis.',
+        error: 'Visual analysis is not available right now.',
         code: 'NO_API_KEY',
       },
       { status: 503 },
