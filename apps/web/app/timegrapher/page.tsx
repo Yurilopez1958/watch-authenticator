@@ -98,8 +98,9 @@ export default function TimegrapherPage() {
   const ringRef = useRef<{ data: Float32Array; head: number; count: number }>({
     data: new Float32Array(ENV_BUF), head: 0, count: 0,
   });
-  // Legacy-fallback envelope-follower + decimation state (mirrors the worklet).
+  // Legacy-fallback onset-follower + decimation state (mirrors the worklet).
   const fbEnvRef = useRef(0);
+  const fbSlowRef = useRef(0);
   const fbDecimRef = useRef(0);
   const fbAccRef = useRef(0);
   const bphRef = useRef(expectedBph);
@@ -222,7 +223,7 @@ export default function TimegrapherPage() {
 
       // reset the envelope ring buffer + fallback follower state
       ringRef.current.head = 0; ringRef.current.count = 0;
-      fbEnvRef.current = 0; fbDecimRef.current = 0; fbAccRef.current = 0;
+      fbEnvRef.current = 0; fbSlowRef.current = 0; fbDecimRef.current = 0; fbAccRef.current = 0;
 
       const sink = ctx.createGain();
       sink.gain.value = 0; // silent — avoid feedback
@@ -263,16 +264,18 @@ export default function TimegrapherPage() {
           const sr = ctx.sampleRate;
           const step = Math.max(1, Math.round(sr / ENV_HZ));
           const g = gainRef.current;
-          let env = fbEnvRef.current, acc = fbAccRef.current, dc = fbDecimRef.current, peak = levelRef.current;
+          let env = fbEnvRef.current, slow = fbSlowRef.current, acc = fbAccRef.current, dc = fbDecimRef.current, peak = levelRef.current;
           const out: number[] = [];
           for (let i = 0; i < input.length; i++) {
             const a = Math.abs(input[i]!) * g;
-            env += a > env ? (a - env) * 0.35 : (a - env) * 0.02; // envelope follower
+            env += a > env ? (a - env) * 0.4 : (a - env) * 0.08; // fast envelope
+            slow += (env - slow) * 0.0004;                        // noise-floor average
+            const nov = env > slow ? env - slow : 0;              // onset novelty
             if (env > peak) peak = env;
-            acc += env;
-            if (++dc >= step) { out.push(acc / step); acc = 0; dc = 0; }
+            if (nov > acc) acc = nov;                             // decimate by MAX
+            if (++dc >= step) { out.push(acc); acc = 0; dc = 0; }
           }
-          fbEnvRef.current = env; fbAccRef.current = acc; fbDecimRef.current = dc;
+          fbEnvRef.current = env; fbSlowRef.current = slow; fbAccRef.current = acc; fbDecimRef.current = dc;
           levelRef.current = peak;
           if (peak > maxPeakRef.current) maxPeakRef.current = peak;
           if (out.length) pushEnv(out);
@@ -323,8 +326,7 @@ export default function TimegrapherPage() {
     if (!running) return;
     const id = window.setInterval(() => {
       const lv = levelRef.current;
-      // Perceptual (sqrt) scale so a faint watch — not just a loud tap — is visible.
-      setLevel(Math.min(1, Math.sqrt(lv * 8)));
+      setLevel(Math.min(1, lv * 3));
       const r = ringRef.current;
       setDiag({ peak: lv, beats: r.count });
       levelRef.current *= 0.6; // decay so the meter falls back
