@@ -1,8 +1,37 @@
 import { getAdmin, getUserId } from './clients';
 import { PLANS, SAAS_ENABLED, type PlanId } from '@/lib/plans';
-import { ERRORS } from './errors';
+import { ERRORS, errorResponse } from './errors';
 
 export type Ctx = { userId: string; plan: PlanId };
+
+/**
+ * Route helper: when SaaS is OFF returns null (proceed, no change in behaviour).
+ * When ON: requires an active paid user, enforces the device limit and consumes
+ * one unit of monthly quota. Returns a JSON error Response if blocked, else null.
+ */
+export async function checkUsage(req: Request, kind: 'auth' | 'valuation'): Promise<Response | null> {
+  if (!SAAS_ENABLED) return null;
+  try {
+    const ctx = await requireActiveUser(req);
+    await enforceDevice(ctx, req);
+    await enforceQuota(ctx, kind);
+    return null;
+  } catch (e) {
+    return errorResponse(e);
+  }
+}
+
+/** Like checkUsage but only gates access (payment + device), no quota consumed. */
+export async function checkAccess(req: Request): Promise<Response | null> {
+  if (!SAAS_ENABLED) return null;
+  try {
+    const ctx = await requireActiveUser(req);
+    await enforceDevice(ctx, req);
+    return null;
+  } catch (e) {
+    return errorResponse(e);
+  }
+}
 
 /**
  * Requires a signed-in user whose account is not blocked and whose paid

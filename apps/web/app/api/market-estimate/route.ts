@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { estimateMarketPrice, type MarketEstimateInput } from '@watch-auth/core';
+import { checkUsage } from '@/lib/server/guard';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -24,6 +25,10 @@ export async function POST(req: Request) {
   if (!brand || !model || brand.length > 80 || model.length > 80 || (reference != null && String(reference).length > 60)) {
     return NextResponse.json({ error: 'Missing or oversized brand/model/reference.' }, { status: 400 });
   }
+
+  // SaaS gate (no-op while SAAS_ENABLED is off). Counts as one valuation.
+  const blocked = await checkUsage(req, 'valuation');
+  if (blocked) return blocked;
 
   const overrideModel = process.env.ANTHROPIC_MODEL;
   try {

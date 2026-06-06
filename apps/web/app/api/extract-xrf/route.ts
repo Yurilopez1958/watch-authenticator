@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { extractXrfFromImage } from '@watch-auth/core';
+import { checkAccess } from '@/lib/server/guard';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -33,6 +34,10 @@ export async function POST(req: Request) {
   if (!imageBase64 || !mediaType || !ALLOWED_MEDIA.includes(mediaType)) {
     return NextResponse.json({ error: 'Missing or invalid imageBase64/mediaType.' }, { status: 400 });
   }
+
+  // SaaS gate (no-op while SAAS_ENABLED is off). Helper OCR — access only, no quota.
+  const blocked = await checkAccess(req);
+  if (blocked) return blocked;
 
   const model = process.env.ANTHROPIC_MODEL;
   try {

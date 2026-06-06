@@ -11,6 +11,14 @@ async function accessToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
+/** Auth + device headers to merge into any request that hits a gated endpoint. */
+export async function authHeaders(): Promise<Record<string, string>> {
+  const token = await accessToken();
+  const h: Record<string, string> = { 'X-Device-Id': getDeviceId() };
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
+
 /** fetch() that attaches the Bearer token and the device id. */
 export async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const token = await accessToken();

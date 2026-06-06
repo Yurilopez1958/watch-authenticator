@@ -4,6 +4,7 @@ import { LangProvider } from '@/lib/i18n';
 import { ProProvider } from '@/lib/pro';
 import { SiteHeader } from './site-header';
 import { StartScanFab } from './start-scan-fab';
+import { PaywallSheet } from './paywall-sheet';
 
 export const metadata: Metadata = {
   title: 'Watch Authenticator',
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             MVP — public reference data, refine with your own measurements
           </footer>
           <StartScanFab />
+          <PaywallSheet />
           </ProProvider>
         </LangProvider>
       </body>

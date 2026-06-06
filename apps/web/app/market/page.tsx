@@ -12,6 +12,8 @@ import { useOverride } from '@/lib/market-overrides';
 import { useLang } from '@/lib/i18n';
 import { usePro } from '@/lib/pro';
 import { useBrandExpenses, computeBrandPricing } from '@/lib/brand-expenses';
+import { authedFetch } from '@/lib/billing-client';
+import { handlePaywall } from '@/lib/paywall';
 import { AdminExpenses } from './admin-expenses';
 
 const EUR_PER_USD = 0.92;
@@ -99,7 +101,8 @@ export default function MarketPage() {
     const generic = t('La estimación no está disponible ahora mismo.', 'The estimate is not available right now.');
     setAiBusy(true); setAiError(null);
     try {
-      const res = await fetch('/api/market-estimate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await authedFetch('/api/market-estimate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (await handlePaywall(res)) return; // 402/429/403 → paywall sheet (finally clears busy)
       // Parse defensively: a server/platform error can return an HTML page, not JSON.
       const raw = await res.text();
       let j: { error?: string; retail?: number } | null = null;

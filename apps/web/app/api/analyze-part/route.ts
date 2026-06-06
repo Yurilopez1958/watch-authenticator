@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { analyzeWatchPart, type VisionAnalysisInput } from '@watch-auth/core';
+import { checkUsage } from '@/lib/server/guard';
 
 export const runtime = 'nodejs';
 export const maxDuration = 45;
@@ -36,6 +37,10 @@ export async function POST(req: Request) {
   if ((references ?? []).length > 6) {
     return NextResponse.json({ error: 'Too many reference photos (max 6).' }, { status: 400 });
   }
+
+  // SaaS gate (no-op while SAAS_ENABLED is off). Counts as one authentication.
+  const blocked = await checkUsage(req, 'auth');
+  if (blocked) return blocked;
 
   const model = process.env.ANTHROPIC_MODEL;
   try {

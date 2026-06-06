@@ -24,6 +24,8 @@ import { getPhotos, type RefPhoto } from '@/lib/photo-store';
 import { parseDecimal } from '@/lib/num';
 import { useLang, type Lang } from '@/lib/i18n';
 import { usePro } from '@/lib/pro';
+import { authHeaders } from '@/lib/billing-client';
+import { handlePaywall } from '@/lib/paywall';
 import { useCompliance, ruleFor } from '@/lib/compliance';
 import { ComplianceBanner } from '@/app/compliance-banner';
 import { MetalModeBanner } from '@/app/metal-mode-banner';
@@ -52,7 +54,7 @@ function dataUrlParts(dataUrl: string): { base64: string; mediaType: 'image/jpeg
 async function postJsonWithRetry(url: string, payload: unknown): Promise<Response> {
   const init: RequestInit = {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(payload),
   };
   try {
@@ -583,6 +585,7 @@ export default function AuthenticatePage() {
         examined: { imageData: ex.base64, mediaType: ex.mediaType },
         references: refs,
       });
+      if (await handlePaywall(res)) return; // 402/429/403 → paywall sheet
       const json = await res.json();
       if (gen !== aiGenRef.current) return; // context changed → discard stale result
       if (!res.ok) { setAiError(json.error ?? t('Falló el análisis con IA.', 'AI analysis failed.')); return; }
@@ -614,6 +617,7 @@ export default function AuthenticatePage() {
         'image/jpeg' | 'image/png' | 'image/webp';
 
       const res = await postJsonWithRetry('/api/extract-xrf', { imageBase64: base64, mediaType });
+      if (await handlePaywall(res)) return; // 402/429/403 → paywall sheet
       const json = await res.json();
       if (!res.ok) {
         setPhotoError(json.error ?? t('No se pudo leer la pantalla.', 'Could not read the screen.'));
