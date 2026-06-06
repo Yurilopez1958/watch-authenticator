@@ -4,27 +4,32 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useLang } from '@/lib/i18n';
+import { usePro } from '@/lib/pro';
 import { HelpButton } from './help-button';
 import { LangToggle } from './lang-toggle';
+import { ProToggle } from './pro-toggle';
 
-type NavLink = { href: string; es: string; en: string; primary?: boolean };
+type NavLink = { href: string; es: string; en: string; primary?: boolean; pro?: boolean };
 
+// `pro: true` links only appear in Pro mode (advanced/technical screens).
 const LINKS: readonly NavLink[] = [
   { href: '/authenticate', es: 'Autenticar', en: 'Authenticate', primary: true },
-  { href: '/connect', es: 'Conectar Niton', en: 'Connect Niton' },
   { href: '/timegrapher', es: 'Cronocomparador', en: 'Timegrapher' },
   { href: '/verify', es: 'Verificación rápida', en: 'Quick verify' },
   { href: '/gallery', es: 'Galería', en: 'Reference gallery' },
   { href: '/market', es: 'Mercado', en: 'Market' },
-  { href: '/import', es: 'Importar CSV', en: 'Import CSV' },
-  { href: '/catalog', es: 'Catálogo', en: 'Catalog' },
-  { href: '/settings', es: 'Cumplimiento', en: 'Compliance' },
+  { href: '/connect', es: 'Conectar Niton', en: 'Connect Niton', pro: true },
+  { href: '/import', es: 'Importar CSV', en: 'Import CSV', pro: true },
+  { href: '/catalog', es: 'Catálogo', en: 'Catalog', pro: true },
+  { href: '/settings', es: 'Cumplimiento', en: 'Compliance', pro: true },
 ];
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { lang } = useLang();
+  const { pro } = usePro();
+  const links = LINKS.filter((l) => pro || !l.pro);
 
   // Close the mobile menu on Escape for keyboard users.
   useEffect(() => {
@@ -59,7 +64,7 @@ export function SiteHeader() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex gap-5 text-sm">
-          {LINKS.map((l) => (
+          {links.map((l) => (
             <Link
               key={l.href}
               href={l.href}
@@ -70,8 +75,9 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        {/* Right cluster: language, help (always visible) + hamburger (mobile) */}
+        {/* Right cluster: mode, language, help (always visible) + hamburger (mobile) */}
         <div className="flex items-center gap-2 shrink-0">
+          <ProToggle />
           <LangToggle />
           <HelpButton />
 
@@ -101,7 +107,7 @@ export function SiteHeader() {
       {/* Mobile dropdown menu */}
       {open && (
         <nav id="mobile-nav" className="md:hidden border-t border-soft bg-[rgba(10,15,31,0.97)] px-4 py-2 fade-in">
-          {LINKS.map((l) => (
+          {links.map((l) => (
             <Link
               key={l.href}
               href={l.href}

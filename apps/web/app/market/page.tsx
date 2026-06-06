@@ -10,6 +10,7 @@ import {
 } from '@watch-auth/core';
 import { useOverride } from '@/lib/market-overrides';
 import { useLang } from '@/lib/i18n';
+import { usePro } from '@/lib/pro';
 
 const EUR_PER_USD = 0.92;
 
@@ -34,6 +35,7 @@ const BADGE: Record<Source, { text: Bi; style: React.CSSProperties }> = {
 
 export default function MarketPage() {
   const { t, lang } = useLang();
+  const { pro } = usePro();
   const [mode, setMode] = useState<'catalog' | 'custom'>('catalog');
   const [currency, setCurrency] = useState<'USD' | 'EUR'>('USD');
 
@@ -284,8 +286,8 @@ export default function MarketPage() {
                 {aiBusy ? t('Actualizando…', 'Refreshing…') : t('↻ Actualizar estimación IA', '↻ Refresh AI estimate')}
               </button>
             )}
-            {mode === 'catalog' && !editing && <button onClick={openEdit} className="btn-ghost text-sm">{override ? t('Editar tu precio', 'Edit your price') : t('Poner tu propio precio', 'Set your own price')}</button>}
-            {mode === 'catalog' && override && <button onClick={clear} className="btn-ghost text-sm">{t('Restablecer', 'Reset')}</button>}
+            {pro && mode === 'catalog' && !editing && <button onClick={openEdit} className="btn-ghost text-sm">{override ? t('Editar tu precio', 'Edit your price') : t('Poner tu propio precio', 'Set your own price')}</button>}
+            {pro && mode === 'catalog' && override && <button onClick={clear} className="btn-ghost text-sm">{t('Restablecer', 'Reset')}</button>}
           </div>
 
           {editing && (
@@ -305,8 +307,8 @@ export default function MarketPage() {
         </section>
       )}
 
-      {/* Dealer offer calculator */}
-      {val && (
+      {/* Dealer offer calculator (Pro) */}
+      {pro && val && (
         <section className="card p-5 space-y-4">
           <div>
             <h2 className="text-lg font-semibold">{t('Oferta del dealer — cuánto pagar', 'Dealer offer — what to pay')}</h2>

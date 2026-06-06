@@ -23,6 +23,7 @@ import {
 import { getPhotos, type RefPhoto } from '@/lib/photo-store';
 import { parseDecimal } from '@/lib/num';
 import { useLang, type Lang } from '@/lib/i18n';
+import { usePro } from '@/lib/pro';
 import { useCompliance, ruleFor } from '@/lib/compliance';
 import { ComplianceBanner } from '@/app/compliance-banner';
 import { MetalModeBanner } from '@/app/metal-mode-banner';
@@ -219,6 +220,7 @@ function StatusBadge({ status }: { status: StepStatus }) {
 
 export default function AuthenticatePage() {
   const { t, lang } = useLang();
+  const { pro } = usePro();
   const [step, setStep] = useState<Step>(0);
 
   // Step 1 — watch identification
@@ -937,14 +939,14 @@ export default function AuthenticatePage() {
           <div className="mb-5">
             <MetalModeBanner />
           </div>
-          {/* Three input methods + skip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
+          {/* Input methods + skip ("Connected" CSV is a Pro-only advanced path) */}
+          <div className={`grid grid-cols-2 ${pro ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-2 mb-5`}>
             <XrfModeButton mode="manual" current={xrfMode} onClick={setXrfMode} label={t('Escribirlo', 'Type it in')} desc={t('Introduce el % a mano', 'Enter the % by hand')} icon={
               <path d="M4 7h16M4 12h16M4 17h10" />
             } />
-            <XrfModeButton mode="connected" current={xrfMode} onClick={setXrfMode} label={t('Conectado', 'Connected')} desc={t('Desde la máquina', 'From the machine')} icon={
+            {pro && <XrfModeButton mode="connected" current={xrfMode} onClick={setXrfMode} label={t('Conectado', 'Connected')} desc={t('Desde la máquina', 'From the machine')} icon={
               <><path d="M5 12h14" /><path d="M12 5v14" /><circle cx="12" cy="12" r="9" /></>
-            } />
+            } />}
             <XrfModeButton mode="photo" current={xrfMode} onClick={setXrfMode} label={t('Foto de la pantalla', 'Photo of screen')} desc={t('La IA la lee', 'AI reads it')} icon={
               <><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></>
             } />

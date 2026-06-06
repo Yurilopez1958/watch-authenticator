@@ -16,6 +16,7 @@ import { parseDecimal } from '@/lib/num';
 import { ComplianceBanner } from '@/app/compliance-banner';
 import { MetalModeBanner } from '@/app/metal-mode-banner';
 import { useLang } from '@/lib/i18n';
+import { usePro } from '@/lib/pro';
 
 /** Bilingual string pair. */
 type Bi = { es: string; en: string };
@@ -59,6 +60,7 @@ const verdictLabel: Record<MatchResult['verdict'], { text: Bi; color: string; ri
 
 export default function VerifyPage() {
   const { t, lang } = useLang();
+  const { pro } = usePro();
   const [brandId, setBrandId] = useState<string>(ALL_BRANDS[0]!.id);
   const [audience, setAudience] = useState<'all' | 'men' | 'women' | 'unisex'>('all');
   const [modelSearch, setModelSearch] = useState('');
@@ -305,7 +307,7 @@ export default function VerifyPage() {
             </div>
           )}
 
-          {result.elementMatches.length > 0 && (
+          {pro && result.elementMatches.length > 0 && (
             <div>
               <div className="text-xs uppercase tracking-wide text-dim mb-2">{t('Detalle por elemento', 'Per-element detail')}</div>
               <table className="w-full text-sm">

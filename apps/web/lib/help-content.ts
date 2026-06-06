@@ -20,8 +20,9 @@ export const HELP: Record<string, HelpTopic> = {
       { es: 'Toca el botón grande "Empezar" para autenticar un reloj paso a paso.', en: 'Tap the big "Start" button to authenticate a watch step by step.' },
       { es: 'En cada pantalla verás el botón "?" arriba: ábrelo si te pierdes.', en: 'On every screen there is a "?" button at the top: open it if you get lost.' },
       { es: 'Puedes cambiar entre Español e Inglés con el botón ES/EN.', en: 'Switch between Spanish and English with the ES/EN button.' },
+      { es: 'El botón Simple/Pro arriba muestra u oculta los controles avanzados (para expertos).', en: 'The Simple/Pro button up top shows or hides advanced controls (for experts).' },
     ],
-    tip: { es: 'No necesitas saber de química ni de relojería: la app te guía.', en: 'You do not need chemistry or watch knowledge: the app guides you.' },
+    tip: { es: 'No necesitas saber de química ni de relojería: déjalo en Simple y la app te guía.', en: 'You do not need chemistry or watch knowledge: leave it on Simple and the app guides you.' },
   },
   authenticate: {
     title: { es: 'Autenticar un reloj', en: 'Authenticate a watch' },

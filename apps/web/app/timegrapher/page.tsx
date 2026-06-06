@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ALL_MODELS, getMovementForModelAcrossBrands } from '@watch-auth/core';
 import { saveTimingReading } from '@/lib/timing-store';
 import { useLang } from '@/lib/i18n';
+import { usePro } from '@/lib/pro';
 
 type Metrics = { rate: number; beatError: number | null; detectedBph: number; confidence: number };
 
@@ -81,6 +82,7 @@ function analyzeEnvelope(buf: Float64Array, envHz: number, bph: number): Detecti
 
 export default function TimegrapherPage() {
   const { t } = useLang();
+  const { pro } = usePro();
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expectedBph, setExpectedBph] = useState(28800);
@@ -438,7 +440,7 @@ export default function TimegrapherPage() {
             </div>
             <span className="text-[0.65rem] font-mono tabular-nums text-blue-200/70 w-9 text-right shrink-0">{Math.round(level * 100)}%</span>
           </div>
-          {running && (
+          {running && pro && (
             <div className="text-[0.62rem] text-blue-300/45 font-mono">
               {t('nivel', 'level')} {diag.peak.toFixed(3)} · {t('enganche', 'lock')} {diag.conf}% · {t('buffer', 'buffer')} {diag.secs.toFixed(1)}s
               {diag.peak < 1e-4 && <span className="text-amber-300/80"> · {t('toca el teléfono junto al micro: la barra debe saltar', 'tap the phone near the mic: the bar should jump')}</span>}
@@ -490,7 +492,7 @@ export default function TimegrapherPage() {
         {savedMsg && <div className="text-xs text-emerald-300 border-l-4 border-l-emerald-500 bg-emerald-500/10 rounded-lg p-3">{savedMsg}</div>}
         {error && <div className="text-sm text-red-300 border-l-4 border-l-red-500 bg-red-500/10 rounded-lg p-3">{error}</div>}
 
-        <div>
+        {pro && <div>
           <div className="text-xs uppercase tracking-wide text-dim mb-2">{t('Entrada de micrófono', 'Microphone input')}</div>
           {devices.length > 0 ? (
             <select value={deviceId} onChange={(e) => onPickDevice(e.target.value)} className="field">
@@ -508,7 +510,7 @@ export default function TimegrapherPage() {
               'Uses your phone’s built-in microphone by default — nothing to plug in. (Optional/advanced: connect a watch contact microphone and pick it here for an even cleaner signal.)',
             )}
           </p>
-        </div>
+        </div>}
 
         <div>
           <div className="text-xs uppercase tracking-wide text-dim mb-2">{t('Frecuencia de batido (bph)', 'Beat frequency (bph)')}</div>
@@ -535,7 +537,7 @@ export default function TimegrapherPage() {
           </select>
         </label>
 
-        <div className="grid sm:grid-cols-2 gap-4">
+        {pro && <div className="grid sm:grid-cols-2 gap-4">
           <label className="block">
             <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Nivel de micro / ganancia', 'Mic level / gain')} ({gain}×)</span>
             <input type="range" min={1} max={30} step={1} value={gain} onChange={(e) => setGain(parseInt(e.target.value, 10))} className="w-full" />
@@ -546,7 +548,7 @@ export default function TimegrapherPage() {
             <input type="range" min={1} max={10} step={1} value={sensitivity} onChange={(e) => setSensitivity(parseInt(e.target.value, 10))} className="w-full" />
             <span className="block text-xs text-dim mt-1">{t('Más alto = engancha con una señal más débil. Bájalo si da lecturas con ruido.', 'Higher = locks on a weaker signal. Lower it if it reads on noise.')}</span>
           </label>
-        </div>
+        </div>}
       </section>
 
       <section className="card p-5 text-xs text-muted space-y-2 border-l-4 border-l-accent">
