@@ -18,6 +18,7 @@ const LINKS: readonly NavLink[] = [
   { href: '/verify', es: 'Verificación rápida', en: 'Quick verify' },
   { href: '/gallery', es: 'Galería', en: 'Reference gallery' },
   { href: '/market', es: 'Mercado', en: 'Market' },
+  { href: '/billing', es: 'Planes', en: 'Plans' },
   { href: '/connect', es: 'Conectar Niton', en: 'Connect Niton', pro: true },
   { href: '/import', es: 'Importar CSV', en: 'Import CSV', pro: true },
   { href: '/catalog', es: 'Catálogo', en: 'Catalog', pro: true },

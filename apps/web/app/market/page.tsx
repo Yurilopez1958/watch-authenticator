@@ -357,7 +357,7 @@ export default function MarketPage() {
 
       <AdminExpenses open={adminOpen} onClose={() => setAdminOpen(false)} initialBrandId={brandId} />
 
-      <p className="text-xs text-dim">{t('Las estimaciones de la IA son orientativas, no cotizaciones en vivo. Un feed en tiempo real real (Chrono24 / WatchCharts) requiere una API de pago — la conectamos cuando tengas una clave.', 'AI estimates are orientative, not live quotes. A true real-time feed (Chrono24 / WatchCharts) needs a paid API — we can wire it when you have a key.')}</p>
+      <p className="text-xs text-dim">{t('Las estimaciones son orientativas, no cotizaciones en vivo. Una fuente de mercado en tiempo real requiere una integración de pago — se puede conectar más adelante.', 'Estimates are orientative, not live quotes. A real-time market source requires a paid integration — it can be connected later.')}</p>
     </div>
   );
 }

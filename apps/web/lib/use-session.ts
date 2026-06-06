@@ -9,7 +9,7 @@ export type SessionState = {
   loading: boolean;
   session: Session | null;
   email: string | null;
-  signInWithEmail: (email: string) => Promise<{ error: string | null }>;
+  signInWithEmail: (email: string, redirectPath?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 };
 
@@ -39,10 +39,10 @@ export function useSession(): SessionState {
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, []);
 
-  const signInWithEmail = async (email: string): Promise<{ error: string | null }> => {
+  const signInWithEmail = async (email: string, redirectPath = '/gallery'): Promise<{ error: string | null }> => {
     const sb = getSupabase();
     if (!sb) return { error: 'Sync is not configured.' };
-    const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/gallery` : undefined;
+    const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}${redirectPath}` : undefined;
     const { error } = await sb.auth.signInWithOtp({
       email,
       options: redirectTo ? { emailRedirectTo: redirectTo } : {},
