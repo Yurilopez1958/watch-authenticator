@@ -24,6 +24,7 @@ export default function TimegrapherPage() {
   const [deviceId, setDeviceId] = useState<string>('');
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [compatMode, setCompatMode] = useState(false); // ScriptProcessor fallback engaged
+  const [diag, setDiag] = useState<{ peak: number; beats: number }>({ peak: 0, beats: 0 });
 
   // Audio graph + detection state (refs so the audio callback stays stable)
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -206,7 +207,7 @@ export default function TimegrapherPage() {
             env += a > env ? (a - env) * 0.4 : (a - env) * 0.005; // envelope follower
             if (env > peak) peak = env;
             nf += (env - nf) * 0.0003;                            // slow noise floor
-            const thr = Math.max(nf * mult, 0.0012);
+            const thr = Math.max(nf * mult, 0.0008);
             if (!above && env > thr && gi - last > refractory) {
               beats.push(gi / sr);
               last = gi;
@@ -258,8 +259,11 @@ export default function TimegrapherPage() {
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(() => {
-      setLevel(Math.min(1, levelRef.current));
-      levelRef.current *= 0.4; // decay so the meter falls back
+      const lv = levelRef.current;
+      // Perceptual (sqrt) scale so a faint watch — not just a loud tap — is visible.
+      setLevel(Math.min(1, Math.sqrt(lv * 8)));
+      setDiag({ peak: lv, beats: beatsRef.current.length });
+      levelRef.current *= 0.6; // decay so the meter falls back
       const beats = beatsRef.current;
       if (beats.length < 12) { setMetrics(null); return; }
       const nominalPeriod = 3600 / expectedBph;
@@ -304,7 +308,7 @@ export default function TimegrapherPage() {
 
       setMetrics({ rate, beatError, detectedBph, beats: beats.length });
       drawTrace(trace, nominalPeriod);
-    }, 250);
+    }, 100);
     return () => window.clearInterval(id);
   }, [running, expectedBph]);
 
@@ -380,14 +384,23 @@ export default function TimegrapherPage() {
           <Cell label="Beat error" value={metrics?.beatError != null ? metrics.beatError.toFixed(1) : '—'} unit="ms" color={beColor} />
           <Cell label="Frequency" value={metrics ? Math.round(metrics.detectedBph).toString() : '—'} unit="bph" />
         </div>
-        <div className="px-4 py-2.5 border-b border-blue-500/15 flex items-center gap-2">
-          <span className="text-[0.6rem] uppercase tracking-widest text-blue-300/50 shrink-0">Signal</span>
-          <div className="flex-1 h-2 rounded-full bg-blue-950/70 overflow-hidden">
-            <div
-              className="h-full rounded-full"
-              style={{ width: `${Math.min(100, level * 320)}%`, background: 'linear-gradient(90deg,#34d399,#fbbf24,#f87171)', transition: 'width 80ms linear' }}
-            />
+        <div className="px-4 py-2.5 border-b border-blue-500/15 space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[0.6rem] uppercase tracking-widest text-blue-300/50 shrink-0">Signal</span>
+            <div className="flex-1 h-2.5 rounded-full bg-blue-950/70 overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${Math.min(100, level * 100)}%`, background: 'linear-gradient(90deg,#34d399,#fbbf24,#f87171)', transition: 'width 70ms linear' }}
+              />
+            </div>
+            <span className="text-[0.65rem] font-mono tabular-nums text-blue-200/70 w-9 text-right shrink-0">{Math.round(level * 100)}%</span>
           </div>
+          {running && (
+            <div className="text-[0.62rem] text-blue-300/45 font-mono">
+              {t('nivel', 'level')} {diag.peak.toFixed(4)} · {t('latidos', 'beats')} {diag.beats}
+              {diag.peak < 1e-4 && <span className="text-amber-300/80"> · {t('toca el teléfono junto al micro: la barra debe saltar', 'tap the phone near the mic: the bar should jump')}</span>}
+            </div>
+          )}
         </div>
         <canvas ref={canvasRef} width={680} height={260} className="w-full block" style={{ aspectRatio: '680 / 260' }} />
         <div className="flex items-center justify-between px-4 py-2 border-t border-blue-500/15 text-xs gap-2 flex-wrap">

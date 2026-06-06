@@ -63,7 +63,7 @@ class TimegrapherProcessor extends AudioWorkletProcessor {
       env += a > env ? (a - env) * 0.4 : (a - env) * 0.005; // attack fast, release slow
       if (env > peak) peak = env;
       nf += (env - nf) * 0.0003;                            // slow noise floor
-      const thr = Math.max(nf * mult, 0.0012);
+      const thr = Math.max(nf * mult, 0.0008);
       if (!above && env > thr && gi - last > refractory) {
         beats.push(gi / sr);
         last = gi;
