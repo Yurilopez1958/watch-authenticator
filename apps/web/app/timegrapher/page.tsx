@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ALL_MODELS, getMovementForModelAcrossBrands } from '@watch-auth/core';
 import { saveTimingReading } from '@/lib/timing-store';
+import { useLang } from '@/lib/i18n';
 
 type Metrics = { rate: number; beatError: number | null; detectedBph: number; beats: number };
 type TracePoint = { ms: number; even: boolean };
@@ -10,17 +11,19 @@ type TracePoint = { ms: number; even: boolean };
 const BPH_PRESETS = [18000, 19800, 21600, 25200, 28800, 36000];
 
 export default function TimegrapherPage() {
+  const { t } = useLang();
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expectedBph, setExpectedBph] = useState(28800);
   const [sensitivity, setSensitivity] = useState(6);
-  const [gain, setGain] = useState(8);
+  const [gain, setGain] = useState(12);
   const [level, setLevel] = useState(0);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [modelId, setModelId] = useState<string>('');
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState<string>('');
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [compatMode, setCompatMode] = useState(false); // ScriptProcessor fallback engaged
 
   // Audio graph + detection state (refs so the audio callback stays stable)
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -41,6 +44,11 @@ export default function TimegrapherPage() {
   const sensRef = useRef(sensitivity);
   const gainRef = useRef(gain);
   const levelRef = useRef(0);
+  // Max raw envelope seen since start (NOT decayed). Used by the watchdog to tell
+  // "silent input" (iOS worklet bug → fall back) from "quiet watch" (just low gain).
+  const maxPeakRef = useRef(0);
+  const forceFallbackRef = useRef(false); // once true, skip the worklet for the session
+  const watchdogRef = useRef<number | null>(null);
 
   // Keep the refs (used by the legacy fallback) in sync AND live-tune the worklet.
   useEffect(() => { bphRef.current = expectedBph; workletRef.current?.port.postMessage({ type: 'config', bph: expectedBph }); }, [expectedBph]);
@@ -48,6 +56,7 @@ export default function TimegrapherPage() {
   useEffect(() => { gainRef.current = gain; workletRef.current?.port.postMessage({ type: 'config', gain }); }, [gain]);
 
   const stop = () => {
+    if (watchdogRef.current) { clearTimeout(watchdogRef.current); watchdogRef.current = null; }
     try { workletRef.current?.port.close(); } catch { /* noop */ }
     try { workletRef.current?.disconnect(); } catch { /* noop */ }
     try { processorRef.current?.disconnect(); } catch { /* noop */ }
@@ -115,6 +124,8 @@ export default function TimegrapherPage() {
     setMetrics(null);
     setLevel(0);
     levelRef.current = 0;
+    maxPeakRef.current = 0;
+    if (watchdogRef.current) { clearTimeout(watchdogRef.current); watchdogRef.current = null; }
     setSavedMsg(null);
     drawTrace([], 3600 / expectedBph);
     try {
@@ -151,12 +162,13 @@ export default function TimegrapherPage() {
         const beats = beatsRef.current;
         for (const t of d.beats) beats.push(t);
         if (d.peak > levelRef.current) levelRef.current = d.peak;
+        if (d.peak > maxPeakRef.current) maxPeakRef.current = d.peak;
         const cutoff = d.t - 40; // keep last 40s of beats
         while (beats.length && beats[0]! < cutoff) beats.shift();
       };
 
       let usedWorklet = false;
-      if (ctx.audioWorklet) {
+      if (ctx.audioWorklet && !forceFallbackRef.current) {
         try {
           await ctx.audioWorklet.addModule('/worklets/timegrapher-processor.js');
           const node = new AudioWorkletNode(ctx, 'timegrapher-processor', {
@@ -207,6 +219,7 @@ export default function TimegrapherPage() {
           envRef.current = env; noiseFloorRef.current = nf; aboveRef.current = above;
           lastBeatSampleRef.current = last; sampleIdxRef.current = gi;
           levelRef.current = peak;
+          if (peak > maxPeakRef.current) maxPeakRef.current = peak;
           const cutoff = gi / sr - 40; // keep last 40s of beats
           while (beats.length && beats[0]! < cutoff) beats.shift();
         };
@@ -217,6 +230,21 @@ export default function TimegrapherPage() {
       sink.connect(ctx.destination);
       sourceRef.current = source; sinkRef.current = sink;
       setRunning(true);
+
+      // Watchdog: on iOS Safari a MediaStream → AudioWorklet path can deliver pure
+      // silence (a known WebKit bug). If after 2.5s not a single sample of signal
+      // arrived (not even room noise → maxPeak ≈ 0), the worklet mic is muted:
+      // switch to the ScriptProcessor path, which receives audio reliably there.
+      if (usedWorklet) {
+        watchdogRef.current = window.setTimeout(() => {
+          if (maxPeakRef.current < 1e-5) {
+            forceFallbackRef.current = true;
+            setCompatMode(true);
+            stop();
+            void start(useId);
+          }
+        }, 2500);
+      }
     } catch (err) {
       const e = err as Error;
       setError(e.name === 'NotAllowedError'
@@ -365,9 +393,14 @@ export default function TimegrapherPage() {
         <div className="flex items-center justify-between px-4 py-2 border-t border-blue-500/15 text-xs gap-2 flex-wrap">
           <span className="inline-flex items-center gap-2 text-blue-200/70">
             <span className={`w-2 h-2 rounded-full ${running ? 'bg-emerald-400 animate-pulse' : 'bg-blue-500/40'}`} />
-            {running ? (metrics ? `Measuring · ${metrics.beats} beats` : 'Listening… place the mic on the watch') : 'Idle — press Start'}
+            {running
+              ? (metrics
+                  ? t(`Midiendo · ${metrics.beats} latidos`, `Measuring · ${metrics.beats} beats`)
+                  : t('Escuchando… apoya el micro en el reloj', 'Listening… place the mic on the watch'))
+              : t('En espera — pulsa Empezar', 'Idle — press Start')}
           </span>
-          {bphMismatch && <span className="text-amber-300">⚠ Detected ≠ set frequency — choose the correct bph below.</span>}
+          {compatMode && <span className="text-blue-300/60" title={t('Cambiado a modo compatible para captar el micro en este dispositivo.', 'Switched to compatibility mode to capture the mic on this device.')}>· {t('modo compatible', 'compatibility mode')}</span>}
+          {bphMismatch && <span className="text-amber-300">⚠ {t('Detectado ≠ frecuencia fijada — elige la bph correcta abajo.', 'Detected ≠ set frequency — choose the correct bph below.')}</span>}
         </div>
       </section>
 
