@@ -11,6 +11,8 @@ import {
 import { useOverride } from '@/lib/market-overrides';
 import { useLang } from '@/lib/i18n';
 import { usePro } from '@/lib/pro';
+import { useBrandExpenses, computeBrandPricing } from '@/lib/brand-expenses';
+import { AdminExpenses } from './admin-expenses';
 
 const EUR_PER_USD = 0.92;
 
@@ -54,30 +56,17 @@ export default function MarketPage() {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const fetchSeqRef = useRef(0); // only the latest fetch controls busy/error
-  const [sellEdited, setSellEdited] = useState(false); // user typed their own resale price
 
-  // Dealer cost assumptions (persisted, USD)
-  const [serviceUsd, setServiceUsd] = useState(500);
-  const [listingUsd, setListingUsd] = useState(150);
-  const [salesFeePct, setSalesFeePct] = useState(5);
-  const [profitPct, setProfitPct] = useState(15);
-  const [sellUsd, setSellUsd] = useState(0);
+  // Per-brand purchase-price calculator
+  const [priceBase, setPriceBase] = useState<'wholesale' | 'retail'>('wholesale');
+  const [adminOpen, setAdminOpen] = useState(false);
+  const { items: expenseItems } = useBrandExpenses(brandId);
 
   useEffect(() => {
     const c = localStorage.getItem('market-currency');
     if (c === 'EUR' || c === 'USD') setCurrency(c);
-    try {
-      const s = JSON.parse(localStorage.getItem('dealer-settings') ?? '{}') as Partial<{ serviceUsd: number; listingUsd: number; salesFeePct: number; profitPct: number }>;
-      if (typeof s.serviceUsd === 'number') setServiceUsd(s.serviceUsd);
-      if (typeof s.listingUsd === 'number') setListingUsd(s.listingUsd);
-      if (typeof s.salesFeePct === 'number') setSalesFeePct(s.salesFeePct);
-      if (typeof s.profitPct === 'number') setProfitPct(s.profitPct);
-    } catch { /* noop */ }
   }, []);
   const pickCurrency = (c: 'USD' | 'EUR') => { setCurrency(c); localStorage.setItem('market-currency', c); };
-  useEffect(() => {
-    localStorage.setItem('dealer-settings', JSON.stringify({ serviceUsd, listingUsd, salesFeePct, profitPct }));
-  }, [serviceUsd, listingUsd, salesFeePct, profitPct]);
 
   // Catalog filtering
   const brandModels = useMemo(() => ALL_MODELS.filter((m) => m.brandId === brandId), [brandId]);
@@ -154,22 +143,12 @@ export default function MarketPage() {
     catch { return `${currency} ${toDisp(usd).toLocaleString()}`; }
   };
 
-  // Default the resale price to the current valuation (including a late AI
-  // estimate), but stop overwriting once the user has typed their own.
-  useEffect(() => { setSellEdited(false); }, [modelId, mode, customKey]);
-  useEffect(() => {
-    if (val && !sellEdited) setSellUsd(val.retail);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [val?.retail, sellEdited, modelId, mode, customKey]);
-
   const margin = val ? val.retail - val.wholesale : 0;
   const marginPct = val && val.wholesale > 0 ? (margin / val.wholesale) * 100 : 0;
-  const salesFee = sellUsd * (salesFeePct / 100);
-  const netProceeds = sellUsd - salesFee;
-  const invest = netProceeds / (1 + Math.max(0, profitPct) / 100);
-  const offerUsd = invest - serviceUsd - listingUsd;
-  const profitUsd = netProceeds - (offerUsd + serviceUsd + listingUsd);
-  const viable = offerUsd > 0;
+
+  // Per-brand purchase-price calculation (USD base = wholesale or retail).
+  const baseUsd = val ? (priceBase === 'retail' ? val.retail : val.wholesale) : 0;
+  const pricing = computeBrandPricing(baseUsd, expenseItems);
 
   // edit own price (catalog only)
   const [editing, setEditing] = useState(false);
@@ -307,34 +286,68 @@ export default function MarketPage() {
         </section>
       )}
 
-      {/* Dealer offer calculator (Pro) */}
-      {pro && val && (
+      {/* Per-brand purchase price (Pro, catalog mode) — applies the brand's
+          configured expense percentages to the base price. */}
+      {pro && val && mode === 'catalog' && (
         <section className="card p-5 space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold">{t('Oferta del dealer — cuánto pagar', 'Dealer offer — what to pay')}</h2>
-            <p className="text-xs text-muted">{t('Parte del precio de reventa y descuenta tu coste de servicio, el coste de sacarlo al mercado, la comisión de venta y tu beneficio objetivo (≥ 15%) hasta la oferta máxima de compra.', 'Works back from the resale price through your service cost, cost to bring it to market, the sales fee and your target profit (≥ 15%) to the maximum buy offer.')}</p>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="text-lg font-semibold">{t('Precio de compra por marca', 'Per-brand purchase price')}</h2>
+              <p className="text-xs text-muted">{t(`Aplica los gastos configurados para ${currentBrand.name} sobre el precio base.`, `Applies the expenses set for ${currentBrand.name} to the base price.`)}</p>
+            </div>
+            <button onClick={() => setAdminOpen(true)} className="btn-ghost text-sm inline-flex items-center gap-1.5 shrink-0">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+              {t('Administración', 'Admin')}
+            </button>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Field label={`${t('Vender a', 'Sell at')} (${currency})`} value={toDisp(sellUsd)} onChange={(v) => { setSellUsd(toUsd(v)); setSellEdited(true); }} />
-            <Field label={`${t('Coste de servicio', 'Service cost')} (${currency})`} value={toDisp(serviceUsd)} onChange={(v) => setServiceUsd(toUsd(v))} />
-            <Field label={`${t('Sacar al mercado', 'To market')} (${currency})`} value={toDisp(listingUsd)} onChange={(v) => setListingUsd(toUsd(v))} />
-            <Field label={t('Comisión de venta (%)', 'Sales fee (%)')} value={salesFeePct} onChange={setSalesFeePct} step="0.5" />
-            <Field label={t('Beneficio (%)', 'Profit (%)')} value={profitPct} onChange={setProfitPct} hint={t('mín 15%', 'min 15%')} />
+
+          <div className="flex items-center gap-2 text-xs flex-wrap">
+            <span className="text-dim uppercase tracking-wide">{t('Base', 'Base')}</span>
+            {(['wholesale', 'retail'] as const).map((b) => (
+              <button key={b} onClick={() => setPriceBase(b)} className={`chip cursor-pointer ${priceBase === b ? '!bg-accent !text-white !border-transparent' : ''}`}>
+                {b === 'wholesale' ? t('Mayorista', 'Wholesale') : t('Venta', 'Retail')} · {money(b === 'wholesale' ? val.wholesale : val.retail)}
+              </button>
+            ))}
           </div>
-          <div className="rounded-xl p-4 border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between flex-wrap gap-3">
-            <div><div className="text-xs uppercase tracking-wide text-dim">{t('Oferta máxima al vendedor', 'Max offer to the seller')}</div><div className="text-4xl font-bold font-mono text-emerald-300">{viable ? money(offerUsd) : '—'}</div></div>
-            {!viable && <div className="text-xs text-red-300 max-w-[15rem]">{t('Costes + beneficio superan el precio de reventa — no compres a estos números.', "Costs + profit exceed the resale price — don't buy at these numbers.")}</div>}
-          </div>
-          <div className="text-xs text-muted space-y-1">
-            <Row label={t('Precio de reventa', 'Resale price')} val={money(sellUsd)} />
-            <Row label={`${t('Comisión de venta', 'Sales fee')} (${salesFeePct}%)`} val={`− ${money(salesFee)}`} />
-            <Row label={t('Servicio', 'Service')} val={`− ${money(serviceUsd)}`} />
-            <Row label={t('Sacar al mercado', 'To market')} val={`− ${money(listingUsd)}`} />
-            <Row label={`${t('Tu beneficio', 'Your profit')} (${profitPct}%)`} val={`− ${money(profitUsd)}`} />
-            <div className="border-t border-soft mt-1 pt-1"><Row label={t('= Oferta máxima', '= Max offer')} val={viable ? money(offerUsd) : '—'} strong /></div>
-          </div>
+
+          {expenseItems.filter((i) => i.active && i.percent > 0).length === 0 ? (
+            <div className="text-sm text-amber-300/90">
+              {t(`No hay gastos configurados para ${currentBrand.name}.`, `No expenses configured for ${currentBrand.name}.`)}{' '}
+              <button onClick={() => setAdminOpen(true)} className="underline">{t('Configúralos', 'Set them up')}</button>.
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="rounded-xl p-4 border border-emerald-500/30 bg-emerald-500/5">
+                  <div className="text-xs uppercase tracking-wide text-dim">{t('Precio de compra', 'Purchase price')}</div>
+                  <div className="text-3xl font-bold font-mono text-emerald-300">{pricing.over100 ? '—' : money(pricing.purchase)}</div>
+                  <div className="text-[0.65rem] text-dim mt-0.5">{t('base menos gastos', 'base minus expenses')} ({pricing.sumPct.toFixed(1)}%)</div>
+                </div>
+                <div className="rounded-xl p-4 border border-amber-500/30 bg-amber-500/5">
+                  <div className="text-xs uppercase tracking-wide text-dim">{t('Coste total', 'Total cost')}</div>
+                  <div className="text-3xl font-bold font-mono text-amber-300">{money(pricing.totalCost)}</div>
+                  <div className="text-[0.65rem] text-dim mt-0.5">{t('base más gastos', 'base plus expenses')} ({pricing.sumPct.toFixed(1)}%)</div>
+                </div>
+                <div className="rounded-xl p-4 border border-soft">
+                  <div className="text-xs uppercase tracking-wide text-dim">{t('Base', 'Base')}</div>
+                  <div className="text-3xl font-bold font-mono text-blue-50">{money(baseUsd)}</div>
+                  <div className="text-[0.65rem] text-dim mt-0.5">{priceBase === 'wholesale' ? t('mayorista', 'wholesale') : t('venta', 'retail')}</div>
+                </div>
+              </div>
+              {pricing.over100 && <div className="text-xs text-red-300">{t('Los gastos suman 100% o más. Revisa los porcentajes en Administración.', 'Expenses total 100% or more. Review the percentages in Admin.')}</div>}
+              <div className="text-xs text-muted space-y-1 border-t border-soft pt-3">
+                <Row label={t('Precio base', 'Base price')} val={money(baseUsd)} />
+                {pricing.breakdown.map((b, i) => (
+                  <Row key={i} label={`${b.label} (${b.percent.toFixed(1)}%)`} val={money(b.amount)} />
+                ))}
+                <div className="border-t border-soft mt-1 pt-1"><Row label={t('= Gastos totales', '= Total expenses')} val={`${pricing.sumPct.toFixed(1)}%`} strong /></div>
+              </div>
+            </>
+          )}
         </section>
       )}
+
+      <AdminExpenses open={adminOpen} onClose={() => setAdminOpen(false)} initialBrandId={brandId} />
 
       <p className="text-xs text-dim">{t('Las estimaciones de la IA son orientativas, no cotizaciones en vivo. Un feed en tiempo real real (Chrono24 / WatchCharts) requiere una API de pago — la conectamos cuando tengas una clave.', 'AI estimates are orientative, not live quotes. A true real-time feed (Chrono24 / WatchCharts) needs a paid API — we can wire it when you have a key.')}</p>
     </div>
