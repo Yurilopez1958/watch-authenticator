@@ -126,6 +126,20 @@ export const HELP: Record<string, HelpTopic> = {
       { es: 'Mira los rangos de cada elemento para saber qué es normal.', en: 'Look at each element range to know what is normal.' },
     ],
   },
+  billing: {
+    title: { es: 'Planes y suscripción', en: 'Plans & subscription' },
+    intro: {
+      es: 'Elige un plan según cuántas autenticaciones y valuaciones haces al mes. Puedes cambiar o cancelar cuando quieras.',
+      en: 'Pick a plan based on how many authentications and valuations you do per month. Change or cancel anytime.',
+    },
+    steps: [
+      { es: 'Inicia sesión con tu correo (te llega un enlace).', en: 'Sign in with your email (you get a link).' },
+      { es: 'Mira tu uso del mes en las barras de progreso.', en: 'See your monthly usage in the progress bars.' },
+      { es: 'Pulsa "Suscribirse" en el plan que quieras para pagar de forma segura.', en: 'Press "Subscribe" on the plan you want to pay securely.' },
+      { es: 'Usa "Gestionar suscripción" para cambiar de plan o cancelar.', en: 'Use "Manage subscription" to switch plan or cancel.' },
+    ],
+    tip: { es: 'Si llegas al límite del mes, sube de plan o espera al día 1 del mes siguiente.', en: 'If you hit the monthly limit, upgrade or wait until the 1st of next month.' },
+  },
   settings: {
     title: { es: 'Cumplimiento (marcas representadas)', en: 'Compliance (represented brands)' },
     intro: {
