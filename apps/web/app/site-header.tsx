@@ -23,6 +23,7 @@ const LINKS: readonly NavLink[] = [
   { href: '/import', es: 'Importar CSV', en: 'Import CSV', pro: true },
   { href: '/catalog', es: 'Catálogo', en: 'Catalog', pro: true },
   { href: '/settings', es: 'Cumplimiento', en: 'Compliance', pro: true },
+  { href: '/admin', es: 'Admin', en: 'Admin', pro: true },
 ];
 
 export function SiteHeader() {

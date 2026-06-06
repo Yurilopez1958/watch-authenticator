@@ -140,6 +140,18 @@ export const HELP: Record<string, HelpTopic> = {
     ],
     tip: { es: 'Si llegas al límite del mes, sube de plan o espera al día 1 del mes siguiente.', en: 'If you hit the monthly limit, upgrade or wait until the 1st of next month.' },
   },
+  admin: {
+    title: { es: 'Panel de administración', en: 'Admin panel' },
+    intro: {
+      es: 'Solo para administradores. Ves usuarios, suscripciones, pagos, uso y alertas de seguridad.',
+      en: 'Admins only. See users, subscriptions, payments, usage and security alerts.',
+    },
+    steps: [
+      { es: 'En "Usuarios" busca por correo y toca uno para ver su detalle.', en: 'In "Users" search by email and tap one to see details.' },
+      { es: 'Puedes bloquear/desbloquear una cuenta sospechosa.', en: 'You can block/unblock a suspicious account.' },
+      { es: 'En "Pagos" ves lo cobrado; en "Seguridad" las alertas de cuentas compartidas.', en: 'In "Payments" see revenue; in "Security" the account-sharing alerts.' },
+    ],
+  },
   settings: {
     title: { es: 'Cumplimiento (marcas representadas)', en: 'Compliance (represented brands)' },
     intro: {
