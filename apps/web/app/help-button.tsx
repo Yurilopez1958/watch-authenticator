@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { useLang } from '@/lib/i18n';
 import { helpForPath } from '@/lib/help-content';
@@ -12,9 +13,12 @@ import { helpForPath } from '@/lib/help-content';
  */
 export function HelpButton() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { lang, t } = useLang();
   const topic = helpForPath(pathname);
+
+  useEffect(() => { setMounted(true); }, []);
 
   // Close on Escape and lock body scroll while open.
   useEffect(() => {
@@ -26,25 +30,16 @@ export function HelpButton() {
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
   }, [open]);
 
-  return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        aria-label={t('Ayuda', 'Help')}
-        title={t('Ayuda paso a paso', 'Step-by-step help')}
-        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-soft text-accent-bright hover:border-accent hover:bg-accent-soft transition-colors shrink-0"
-      >
-        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-accent text-white text-xs font-bold">?</span>
-        <span className="text-sm font-medium hidden xs:inline">{t('Ayuda', 'Help')}</span>
-      </button>
-
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
-          onClick={() => setOpen(false)}
-          role="dialog"
-          aria-modal="true"
-        >
+  // The sheet is PORTALED to <body>: the header has a backdrop-filter, which makes
+  // it the containing block for position:fixed descendants — without the portal the
+  // overlay would be clamped inside the ~60px header bar instead of the viewport.
+  const sheet = (
+    <div
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={() => setOpen(false)}
+      role="dialog"
+      aria-modal="true"
+    >
           <div
             className="w-full sm:max-w-lg bg-card border border-soft rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[85dvh] overflow-y-auto fade-in"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -97,8 +92,22 @@ export function HelpButton() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+    </div>
+  );
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        aria-label={t('Ayuda', 'Help')}
+        title={t('Ayuda paso a paso', 'Step-by-step help')}
+        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-soft text-accent-bright hover:border-accent hover:bg-accent-soft transition-colors shrink-0"
+      >
+        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-accent text-white text-xs font-bold">?</span>
+        <span className="text-sm font-medium hidden xs:inline">{t('Ayuda', 'Help')}</span>
+      </button>
+
+      {open && mounted && createPortal(sheet, document.body)}
     </>
   );
 }

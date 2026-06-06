@@ -38,7 +38,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             Skip to content
           </a>
           <SiteHeader />
-          <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12 fade-in">{children}</main>
+          {/* No `fade-in` here: its lingering transform would make <main> the
+              containing block for position:fixed modals (camera, warnings),
+              clamping them to the content box instead of the viewport. */}
+          <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">{children}</main>
           <footer className="border-t border-soft mt-16 sm:mt-24 py-8 text-center text-xs text-dim px-4">
             MVP — public reference data, refine with your own measurements
           </footer>
