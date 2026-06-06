@@ -9,26 +9,31 @@ import {
   type MarketEstimate,
 } from '@watch-auth/core';
 import { useOverride } from '@/lib/market-overrides';
+import { useLang } from '@/lib/i18n';
 
 const EUR_PER_USD = 0.92;
 
-const GRADE_META: Record<CommercializationGrade, { label: string; color: string; bar: string }> = {
-  fast:   { label: 'Fast mover · high liquidity', color: 'text-emerald-300', bar: 'linear-gradient(90deg,#10b981,#34d399)' },
-  medium: { label: 'Medium rotation',             color: 'text-amber-300',   bar: 'linear-gradient(90deg,#f59e0b,#fbbf24)' },
-  slow:   { label: 'Slow market · low liquidity',  color: 'text-sky-300',     bar: 'linear-gradient(90deg,#3b82f6,#60a5fa)' },
+/** Bilingual string pair. */
+type Bi = { es: string; en: string };
+
+const GRADE_META: Record<CommercializationGrade, { label: Bi; color: string; bar: string }> = {
+  fast:   { label: { es: 'Alta rotación · mucha liquidez', en: 'Fast mover · high liquidity' }, color: 'text-emerald-300', bar: 'linear-gradient(90deg,#10b981,#34d399)' },
+  medium: { label: { es: 'Rotación media',                 en: 'Medium rotation'             }, color: 'text-amber-300',   bar: 'linear-gradient(90deg,#f59e0b,#fbbf24)' },
+  slow:   { label: { es: 'Mercado lento · poca liquidez',  en: 'Slow market · low liquidity'  }, color: 'text-sky-300',     bar: 'linear-gradient(90deg,#3b82f6,#60a5fa)' },
 };
 
 type Source = 'override' | 'ai' | 'curated' | 'estimated';
 type Valuation = { retail: number; wholesale: number; grade: CommercializationGrade; demandScore: number; source: Source; note: string };
 
-const BADGE: Record<Source, { text: string; style: React.CSSProperties }> = {
-  override:  { text: 'Your price', style: { color: '#60a5fa', borderColor: 'rgba(59,130,246,0.4)',  background: 'rgba(59,130,246,0.1)' } },
-  ai:        { text: 'AI estimate', style: { color: '#c084fc', borderColor: 'rgba(168,85,247,0.4)',  background: 'rgba(168,85,247,0.1)' } },
-  curated:   { text: 'Curated',     style: { color: '#34d399', borderColor: 'rgba(16,185,129,0.4)',  background: 'rgba(16,185,129,0.1)' } },
-  estimated: { text: 'Estimated',   style: { color: '#fbbf24', borderColor: 'rgba(245,158,11,0.4)',  background: 'rgba(245,158,11,0.1)' } },
+const BADGE: Record<Source, { text: Bi; style: React.CSSProperties }> = {
+  override:  { text: { es: 'Tu precio',     en: 'Your price' },  style: { color: '#60a5fa', borderColor: 'rgba(59,130,246,0.4)',  background: 'rgba(59,130,246,0.1)' } },
+  ai:        { text: { es: 'Estimación IA', en: 'AI estimate' }, style: { color: '#c084fc', borderColor: 'rgba(168,85,247,0.4)',  background: 'rgba(168,85,247,0.1)' } },
+  curated:   { text: { es: 'Curado',        en: 'Curated' },     style: { color: '#34d399', borderColor: 'rgba(16,185,129,0.4)',  background: 'rgba(16,185,129,0.1)' } },
+  estimated: { text: { es: 'Estimado',      en: 'Estimated' },   style: { color: '#fbbf24', borderColor: 'rgba(245,158,11,0.4)',  background: 'rgba(245,158,11,0.1)' } },
 };
 
 export default function MarketPage() {
+  const { t, lang } = useLang();
   const [mode, setMode] = useState<'catalog' | 'custom'>('catalog');
   const [currency, setCurrency] = useState<'USD' | 'EUR'>('USD');
 
@@ -105,7 +110,7 @@ export default function MarketPage() {
       const res = await fetch('/api/market-estimate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const j = await res.json();
       if (res.ok) setAiCache((p) => ({ ...p, [key]: j as MarketEstimate })); // cache any valid result
-      if (seq === fetchSeqRef.current && !res.ok) setAiError(j.error ?? 'Market estimate failed.');
+      if (seq === fetchSeqRef.current && !res.ok) setAiError(j.error ?? t('Falló la estimación de mercado.', 'Market estimate failed.'));
     } catch (e) {
       if (seq === fetchSeqRef.current) setAiError((e as Error).message);
     } finally {
@@ -128,12 +133,13 @@ export default function MarketPage() {
       const e = aiCache[customKey];
       return e ? { retail: e.retail, wholesale: e.wholesale, grade: e.grade, demandScore: e.demandScore, source: 'ai', note: e.note } : undefined;
     }
-    if (override) return { retail: override.retail, wholesale: override.wholesale, grade: override.grade, demandScore: override.demandScore, source: 'override', note: 'Your saved figure' };
+    if (override) return { retail: override.retail, wholesale: override.wholesale, grade: override.grade, demandScore: override.demandScore, source: 'override', note: t('Tu cifra guardada', 'Your saved figure') };
     const e = aiCache[modelId];
     if (e) return { retail: e.retail, wholesale: e.wholesale, grade: e.grade, demandScore: e.demandScore, source: 'ai', note: e.note };
     const base = getMarketData(modelId);
     return base ? { retail: base.retail, wholesale: base.wholesale, grade: base.grade, demandScore: base.demandScore, source: base.estimated ? 'estimated' : 'curated', note: base.source } : undefined;
-  }, [mode, customKey, aiCache, override, modelId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, customKey, aiCache, override, modelId, lang]);
 
   const title = mode === 'custom' ? `${ftBrand} ${ftModel}`.trim() : `${currentBrand.name} ${currentModel?.name ?? ''}`;
   const sub = mode === 'custom' ? ftRef : currentModel?.reference;
@@ -179,10 +185,10 @@ export default function MarketPage() {
     <div className="space-y-8">
       <section className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Market valuation</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('Valoración de mercado', 'Market valuation')}</h1>
           <p className="text-muted text-sm max-w-2xl">
-            Retail, wholesale and liquidity for any watch, plus a dealer offer calculator. Each search pulls a fresh
-            <span className="text-accent-bright"> AI market estimate</span>.
+            {t('Precio de venta, mayorista y liquidez de cualquier reloj, más una calculadora de oferta para dealer. Cada búsqueda trae una', 'Retail, wholesale and liquidity for any watch, plus a dealer offer calculator. Each search pulls a fresh')}
+            <span className="text-accent-bright"> {t('estimación de mercado con IA', 'AI market estimate')}</span>.
           </p>
         </div>
         <div className="flex gap-1.5 shrink-0">
@@ -194,15 +200,15 @@ export default function MarketPage() {
 
       {/* Mode */}
       <div className="flex gap-2">
-        <button onClick={() => setMode('catalog')} className={`chip cursor-pointer ${mode === 'catalog' ? '!bg-accent !text-white !border-transparent' : ''}`}>Catalog brands</button>
-        <button onClick={() => setMode('custom')} className={`chip cursor-pointer ${mode === 'custom' ? '!bg-accent !text-white !border-transparent' : ''}`}>Any watch (type it)</button>
+        <button onClick={() => setMode('catalog')} className={`chip cursor-pointer ${mode === 'catalog' ? '!bg-accent !text-white !border-transparent' : ''}`}>{t('Marcas del catálogo', 'Catalog brands')}</button>
+        <button onClick={() => setMode('custom')} className={`chip cursor-pointer ${mode === 'custom' ? '!bg-accent !text-white !border-transparent' : ''}`}>{t('Cualquier reloj (escríbelo)', 'Any watch (type it)')}</button>
       </div>
 
       {/* Picker */}
       {mode === 'catalog' ? (
         <section className="card p-5 space-y-4">
           <div>
-            <span className="block text-xs uppercase tracking-wide text-dim mb-2">Brand</span>
+            <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Marca', 'Brand')}</span>
             <div className="flex flex-wrap gap-2">
               {ALL_BRANDS.map((b) => (
                 <button key={b.id} onClick={() => setBrandId(b.id)} className={`chip cursor-pointer ${brandId === b.id ? '!bg-accent !text-white !border-transparent' : ''}`}>{b.name}</button>
@@ -210,11 +216,11 @@ export default function MarketPage() {
             </div>
           </div>
           <label className="block">
-            <span className="block text-xs uppercase tracking-wide text-dim mb-2">Search model or reference</span>
-            <input value={modelSearch} onChange={(e) => setModelSearch(e.target.value)} className="field font-mono" placeholder='e.g. "126610LN", "Nautilus", "Daytona"...' />
+            <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Busca modelo o referencia', 'Search model or reference')}</span>
+            <input value={modelSearch} onChange={(e) => setModelSearch(e.target.value)} className="field font-mono" placeholder={t('p. ej. "126610LN", "Nautilus", "Daytona"...', 'e.g. "126610LN", "Nautilus", "Daytona"...')} />
           </label>
           <label className="block">
-            <span className="block text-xs uppercase tracking-wide text-dim mb-2">Model</span>
+            <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Modelo', 'Model')}</span>
             <select value={modelId} onChange={(e) => { setModelId(e.target.value); setModelSearch(''); }} className="field">
               {(filteredModels.length > 0 ? groupedModels : groupedAllModels).map(([collection, models]) => (
                 <optgroup key={collection} label={collection}>
@@ -226,23 +232,23 @@ export default function MarketPage() {
         </section>
       ) : (
         <section className="card p-5 space-y-3">
-          <p className="text-xs text-muted">Value any watch from any brand — type it and the AI estimates the current market.</p>
+          <p className="text-xs text-muted">{t('Valora cualquier reloj de cualquier marca — escríbelo y la IA estima el mercado actual.', 'Value any watch from any brand — type it and the AI estimates the current market.')}</p>
           <div className="grid sm:grid-cols-3 gap-3">
-            <label className="block"><span className="block text-xs uppercase tracking-wide text-dim mb-1">Brand</span><input value={ftBrand} onChange={(e) => setFtBrand(e.target.value)} className="field" placeholder="Vacheron Constantin" /></label>
-            <label className="block"><span className="block text-xs uppercase tracking-wide text-dim mb-1">Model</span><input value={ftModel} onChange={(e) => setFtModel(e.target.value)} className="field" placeholder="Overseas" /></label>
-            <label className="block"><span className="block text-xs uppercase tracking-wide text-dim mb-1">Reference (optional)</span><input value={ftRef} onChange={(e) => setFtRef(e.target.value)} className="field font-mono" placeholder="4500V" /></label>
+            <label className="block"><span className="block text-xs uppercase tracking-wide text-dim mb-1">{t('Marca', 'Brand')}</span><input value={ftBrand} onChange={(e) => setFtBrand(e.target.value)} className="field" placeholder="Vacheron Constantin" /></label>
+            <label className="block"><span className="block text-xs uppercase tracking-wide text-dim mb-1">{t('Modelo', 'Model')}</span><input value={ftModel} onChange={(e) => setFtModel(e.target.value)} className="field" placeholder="Overseas" /></label>
+            <label className="block"><span className="block text-xs uppercase tracking-wide text-dim mb-1">{t('Referencia (opcional)', 'Reference (optional)')}</span><input value={ftRef} onChange={(e) => setFtRef(e.target.value)} className="field font-mono" placeholder="4500V" /></label>
           </div>
           <button
             onClick={() => ftBrand && ftModel && void fetchEstimate(customKey, { brand: ftBrand, model: ftModel, reference: ftRef }, true)}
             disabled={!ftBrand.trim() || !ftModel.trim() || aiBusy}
             className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {aiBusy ? 'Estimating…' : 'Get market estimate'}
+            {aiBusy ? t('Estimando…', 'Estimating…') : t('Obtener estimación de mercado', 'Get market estimate')}
           </button>
         </section>
       )}
 
-      {aiError && <div className="card p-3 border-l-4 border-l-amber-500 text-sm text-amber-300">{aiError} {mode === 'catalog' && '(showing heuristic estimate instead).'}</div>}
+      {aiError && <div className="card p-3 border-l-4 border-l-amber-500 text-sm text-amber-300">{aiError} {mode === 'catalog' && t('(mostrando estimación heurística en su lugar).', '(showing heuristic estimate instead).')}</div>}
 
       {/* Valuation */}
       {val && (
@@ -250,24 +256,24 @@ export default function MarketPage() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <span className="text-sm text-blue-100/80 font-semibold">{title} {sub && <span className="text-blue-200/50 font-normal">· {sub}</span>}</span>
             <div className="flex items-center gap-2">
-              {aiBusy && <span className="text-[0.65rem] text-blue-200/50">updating…</span>}
-              <span className="text-[0.65rem] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border" style={BADGE[val.source].style}>{BADGE[val.source].text}</span>
+              {aiBusy && <span className="text-[0.65rem] text-blue-200/50">{t('actualizando…', 'updating…')}</span>}
+              <span className="text-[0.65rem] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border" style={BADGE[val.source].style}>{BADGE[val.source].text[lang]}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <div><div className="text-[0.7rem] uppercase tracking-wide text-blue-200/60">Retail (market)</div><div className="text-3xl font-bold font-mono text-blue-50">{money(val.retail)}</div></div>
-            <div><div className="text-[0.7rem] uppercase tracking-wide text-blue-200/60">Wholesale (dealer)</div><div className="text-3xl font-bold font-mono text-blue-50">{money(val.wholesale)}</div></div>
-            <div><div className="text-[0.7rem] uppercase tracking-wide text-blue-200/60">Margin</div><div className="text-3xl font-bold font-mono text-emerald-300">{money(margin)}</div><div className="text-[0.7rem] text-blue-200/60">+{marginPct.toFixed(0)}%</div></div>
+            <div><div className="text-[0.7rem] uppercase tracking-wide text-blue-200/60">{t('Venta (mercado)', 'Retail (market)')}</div><div className="text-3xl font-bold font-mono text-blue-50">{money(val.retail)}</div></div>
+            <div><div className="text-[0.7rem] uppercase tracking-wide text-blue-200/60">{t('Mayorista (dealer)', 'Wholesale (dealer)')}</div><div className="text-3xl font-bold font-mono text-blue-50">{money(val.wholesale)}</div></div>
+            <div><div className="text-[0.7rem] uppercase tracking-wide text-blue-200/60">{t('Margen', 'Margin')}</div><div className="text-3xl font-bold font-mono text-emerald-300">{money(margin)}</div><div className="text-[0.7rem] text-blue-200/60">+{marginPct.toFixed(0)}%</div></div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs uppercase tracking-wide text-blue-200/60">Commercialization</span>
-              <span className={`text-sm font-semibold ${GRADE_META[val.grade].color}`}>{GRADE_META[val.grade].label}</span>
+              <span className="text-xs uppercase tracking-wide text-blue-200/60">{t('Comercialización', 'Commercialization')}</span>
+              <span className={`text-sm font-semibold ${GRADE_META[val.grade].color}`}>{GRADE_META[val.grade].label[lang]}</span>
             </div>
             <div className="h-3 rounded-full bg-blue-950/70 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${val.demandScore}%`, background: GRADE_META[val.grade].bar }} /></div>
-            <div className="flex justify-between text-[0.65rem] text-blue-200/50 mt-1"><span>Slow</span><span>Demand {val.demandScore}/100</span><span>Fast</span></div>
+            <div className="flex justify-between text-[0.65rem] text-blue-200/50 mt-1"><span>{t('Lento', 'Slow')}</span><span>{t('Demanda', 'Demand')} {val.demandScore}/100</span><span>{t('Rápido', 'Fast')}</span></div>
           </div>
 
           {val.note && <div className="text-[0.7rem] text-blue-200/50">{val.note}</div>}
@@ -275,25 +281,25 @@ export default function MarketPage() {
           <div className="flex items-center gap-3 flex-wrap border-t border-blue-500/15 pt-3">
             {mode === 'catalog' && currentModel && (
               <button onClick={() => void fetchEstimate(modelId, { brand: currentBrand.name, model: currentModel.name, reference: currentModel.reference }, true)} disabled={aiBusy} className="btn-ghost text-sm disabled:opacity-50">
-                {aiBusy ? 'Refreshing…' : '↻ Refresh AI estimate'}
+                {aiBusy ? t('Actualizando…', 'Refreshing…') : t('↻ Actualizar estimación IA', '↻ Refresh AI estimate')}
               </button>
             )}
-            {mode === 'catalog' && !editing && <button onClick={openEdit} className="btn-ghost text-sm">{override ? 'Edit your price' : 'Set your own price'}</button>}
-            {mode === 'catalog' && override && <button onClick={clear} className="btn-ghost text-sm">Reset</button>}
+            {mode === 'catalog' && !editing && <button onClick={openEdit} className="btn-ghost text-sm">{override ? t('Editar tu precio', 'Edit your price') : t('Poner tu propio precio', 'Set your own price')}</button>}
+            {mode === 'catalog' && override && <button onClick={clear} className="btn-ghost text-sm">{t('Restablecer', 'Reset')}</button>}
           </div>
 
           {editing && (
             <div className="border-t border-blue-500/15 pt-3 space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <Field label={`Retail (${currency})`} value={parseFloat(rIn) || 0} onChange={(v) => setRIn(String(v))} />
-                <Field label={`Wholesale (${currency})`} value={parseFloat(wIn) || 0} onChange={(v) => setWIn(String(v))} />
-                <label className="block"><span className="block text-[0.7rem] uppercase tracking-wide text-dim mb-1">Commercialization</span>
+                <Field label={`${t('Venta', 'Retail')} (${currency})`} value={parseFloat(rIn) || 0} onChange={(v) => setRIn(String(v))} />
+                <Field label={`${t('Mayorista', 'Wholesale')} (${currency})`} value={parseFloat(wIn) || 0} onChange={(v) => setWIn(String(v))} />
+                <label className="block"><span className="block text-[0.7rem] uppercase tracking-wide text-dim mb-1">{t('Comercialización', 'Commercialization')}</span>
                   <select value={gIn} onChange={(e) => setGIn(e.target.value as CommercializationGrade)} className="field text-sm py-1.5">
-                    <option value="fast">Fast mover</option><option value="medium">Medium rotation</option><option value="slow">Slow market</option>
+                    <option value="fast">{t('Alta rotación', 'Fast mover')}</option><option value="medium">{t('Rotación media', 'Medium rotation')}</option><option value="slow">{t('Mercado lento', 'Slow market')}</option>
                   </select>
                 </label>
               </div>
-              <div className="flex gap-2"><button onClick={doSave} className="btn-primary text-sm">Save my price</button><button onClick={() => setEditing(false)} className="btn-ghost text-sm">Cancel</button></div>
+              <div className="flex gap-2"><button onClick={doSave} className="btn-primary text-sm">{t('Guardar mi precio', 'Save my price')}</button><button onClick={() => setEditing(false)} className="btn-ghost text-sm">{t('Cancelar', 'Cancel')}</button></div>
             </div>
           )}
         </section>
@@ -303,32 +309,32 @@ export default function MarketPage() {
       {val && (
         <section className="card p-5 space-y-4">
           <div>
-            <h2 className="text-lg font-semibold">Dealer offer — what to pay</h2>
-            <p className="text-xs text-muted">Works back from the resale price through your service cost, cost to bring it to market, the sales fee and your target profit (≥&nbsp;15%) to the maximum buy offer.</p>
+            <h2 className="text-lg font-semibold">{t('Oferta del dealer — cuánto pagar', 'Dealer offer — what to pay')}</h2>
+            <p className="text-xs text-muted">{t('Parte del precio de reventa y descuenta tu coste de servicio, el coste de sacarlo al mercado, la comisión de venta y tu beneficio objetivo (≥ 15%) hasta la oferta máxima de compra.', 'Works back from the resale price through your service cost, cost to bring it to market, the sales fee and your target profit (≥ 15%) to the maximum buy offer.')}</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Field label={`Sell at (${currency})`} value={toDisp(sellUsd)} onChange={(v) => { setSellUsd(toUsd(v)); setSellEdited(true); }} />
-            <Field label={`Service cost (${currency})`} value={toDisp(serviceUsd)} onChange={(v) => setServiceUsd(toUsd(v))} />
-            <Field label={`To market (${currency})`} value={toDisp(listingUsd)} onChange={(v) => setListingUsd(toUsd(v))} />
-            <Field label="Sales fee (%)" value={salesFeePct} onChange={setSalesFeePct} step="0.5" />
-            <Field label="Profit (%)" value={profitPct} onChange={setProfitPct} hint="min 15%" />
+            <Field label={`${t('Vender a', 'Sell at')} (${currency})`} value={toDisp(sellUsd)} onChange={(v) => { setSellUsd(toUsd(v)); setSellEdited(true); }} />
+            <Field label={`${t('Coste de servicio', 'Service cost')} (${currency})`} value={toDisp(serviceUsd)} onChange={(v) => setServiceUsd(toUsd(v))} />
+            <Field label={`${t('Sacar al mercado', 'To market')} (${currency})`} value={toDisp(listingUsd)} onChange={(v) => setListingUsd(toUsd(v))} />
+            <Field label={t('Comisión de venta (%)', 'Sales fee (%)')} value={salesFeePct} onChange={setSalesFeePct} step="0.5" />
+            <Field label={t('Beneficio (%)', 'Profit (%)')} value={profitPct} onChange={setProfitPct} hint={t('mín 15%', 'min 15%')} />
           </div>
           <div className="rounded-xl p-4 border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between flex-wrap gap-3">
-            <div><div className="text-xs uppercase tracking-wide text-dim">Max offer to the seller</div><div className="text-4xl font-bold font-mono text-emerald-300">{viable ? money(offerUsd) : '—'}</div></div>
-            {!viable && <div className="text-xs text-red-300 max-w-[15rem]">Costs + profit exceed the resale price — don&apos;t buy at these numbers.</div>}
+            <div><div className="text-xs uppercase tracking-wide text-dim">{t('Oferta máxima al vendedor', 'Max offer to the seller')}</div><div className="text-4xl font-bold font-mono text-emerald-300">{viable ? money(offerUsd) : '—'}</div></div>
+            {!viable && <div className="text-xs text-red-300 max-w-[15rem]">{t('Costes + beneficio superan el precio de reventa — no compres a estos números.', "Costs + profit exceed the resale price — don't buy at these numbers.")}</div>}
           </div>
           <div className="text-xs text-muted space-y-1">
-            <Row label="Resale price" val={money(sellUsd)} />
-            <Row label={`Sales fee (${salesFeePct}%)`} val={`− ${money(salesFee)}`} />
-            <Row label="Service" val={`− ${money(serviceUsd)}`} />
-            <Row label="To market" val={`− ${money(listingUsd)}`} />
-            <Row label={`Your profit (${profitPct}%)`} val={`− ${money(profitUsd)}`} />
-            <div className="border-t border-soft mt-1 pt-1"><Row label="= Max offer" val={viable ? money(offerUsd) : '—'} strong /></div>
+            <Row label={t('Precio de reventa', 'Resale price')} val={money(sellUsd)} />
+            <Row label={`${t('Comisión de venta', 'Sales fee')} (${salesFeePct}%)`} val={`− ${money(salesFee)}`} />
+            <Row label={t('Servicio', 'Service')} val={`− ${money(serviceUsd)}`} />
+            <Row label={t('Sacar al mercado', 'To market')} val={`− ${money(listingUsd)}`} />
+            <Row label={`${t('Tu beneficio', 'Your profit')} (${profitPct}%)`} val={`− ${money(profitUsd)}`} />
+            <div className="border-t border-soft mt-1 pt-1"><Row label={t('= Oferta máxima', '= Max offer')} val={viable ? money(offerUsd) : '—'} strong /></div>
           </div>
         </section>
       )}
 
-      <p className="text-xs text-dim">AI estimates are orientative, not live quotes. A true real-time feed (Chrono24 / WatchCharts) needs a paid API — we can wire it when you have a key.</p>
+      <p className="text-xs text-dim">{t('Las estimaciones de la IA son orientativas, no cotizaciones en vivo. Un feed en tiempo real real (Chrono24 / WatchCharts) requiere una API de pago — la conectamos cuando tengas una clave.', 'AI estimates are orientative, not live quotes. A true real-time feed (Chrono24 / WatchCharts) needs a paid API — we can wire it when you have a key.')}</p>
     </div>
   );
 }

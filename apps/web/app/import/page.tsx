@@ -10,6 +10,7 @@ import {
   type NitonImportResult,
   type NitonImportRow,
 } from '@watch-auth/core';
+import { useLang } from '@/lib/i18n';
 
 type AnalyzedRow = {
   row: NitonImportRow;
@@ -24,6 +25,7 @@ const YEAR_OPTIONS = ((): number[] => {
 })();
 
 export default function ImportPage() {
+  const { t } = useLang();
   const [csvText, setCsvText] = useState('');
   const [year, setYear] = useState<number>(new Date().getFullYear() - 1);
   const [parsed, setParsed] = useState<NitonImportResult | null>(null);
@@ -54,23 +56,24 @@ export default function ImportPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-3xl font-bold mb-2">Import Niton XL measurements</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('Importar mediciones del Niton XL', 'Import Niton XL measurements')}</h1>
         <p className="text-muted text-sm">
-          Upload the CSV exported by NDT or NitonConnect (with "Also Save CSV" enabled).
-          The app parses each reading, compares it against the Rolex reference profiles for
-          the year you set, and shows a per-row verdict.
+          {t(
+            'Sube el CSV exportado por NDT o NitonConnect (con "Also Save CSV" activado). La app procesa cada lectura, la compara con los perfiles de referencia de Rolex para el año que indiques, y muestra un veredicto por fila.',
+            'Upload the CSV exported by NDT or NitonConnect (with "Also Save CSV" enabled). The app parses each reading, compares it against the Rolex reference profiles for the year you set, and shows a per-row verdict.',
+          )}
         </p>
       </section>
 
       <section className="grid md:grid-cols-2 gap-4">
         <label className="block">
-          <span className="block text-xs uppercase tracking-wide text-dim mb-2">Year of the measured watches</span>
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Año de los relojes medidos', 'Year of the measured watches')}</span>
           <select value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))} className="field">
             {YEAR_OPTIONS.map((y) => (<option key={y} value={y}>{y}</option>))}
           </select>
         </label>
         <label className="block">
-          <span className="block text-xs uppercase tracking-wide text-dim mb-2">CSV file</span>
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Archivo CSV', 'CSV file')}</span>
           <input
             type="file"
             accept=".csv,text/csv"
@@ -84,7 +87,7 @@ export default function ImportPage() {
       </section>
 
       <section className="card p-5">
-        <span className="block text-xs uppercase tracking-wide text-dim mb-2">Or paste the CSV contents here</span>
+        <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('O pega aquí el contenido del CSV', 'Or paste the CSV contents here')}</span>
         <textarea
           value={csvText}
           onChange={(e) => setCsvText(e.target.value)}
@@ -93,15 +96,15 @@ export default function ImportPage() {
           className="field font-mono text-xs"
         />
         <button onClick={onParse} className="btn-primary mt-3">
-          Parse and analyze
+          {t('Procesar y analizar', 'Parse and analyze')}
         </button>
       </section>
 
       {parsed && (
         <section className="card p-5 space-y-3 fade-in">
           <div className="flex justify-between items-baseline">
-            <h2 className="text-lg font-semibold">Summary</h2>
-            <span className="chip">{parsed.rows.length} parsed</span>
+            <h2 className="text-lg font-semibold">{t('Resumen', 'Summary')}</h2>
+            <span className="chip">{parsed.rows.length} {t('procesadas', 'parsed')}</span>
           </div>
           {parsed.warnings.length > 0 && (
             <div className="text-sm text-amber-300 space-y-1">
@@ -110,7 +113,7 @@ export default function ImportPage() {
           )}
           {parsed.unrecognizedColumns.length > 0 && (
             <div className="text-xs text-dim">
-              Unrecognized columns (ignored): {parsed.unrecognizedColumns.join(', ')}
+              {t('Columnas no reconocidas (ignoradas):', 'Unrecognized columns (ignored):')} {parsed.unrecognizedColumns.join(', ')}
             </div>
           )}
         </section>
@@ -118,7 +121,7 @@ export default function ImportPage() {
 
       {analyzed.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold mb-3">Measurements</h2>
+          <h2 className="text-lg font-semibold mb-3">{t('Mediciones', 'Measurements')}</h2>
           <div className="space-y-3">
             {analyzed.map((a, i) => (
               <div key={i} className="card p-4 card-hover fade-in">
@@ -126,7 +129,7 @@ export default function ImportPage() {
                   <div className="text-sm">
                     <span className="font-mono text-dim">#{a.row.readingNumber ?? '?'}</span>
                     {' · '}
-                    <span className="font-medium">{a.row.sampleId ?? 'no ID'}</span>
+                    <span className="font-medium">{a.row.sampleId ?? t('sin ID', 'no ID')}</span>
                     {a.row.mode && <span className="text-dim"> · {a.row.mode}</span>}
                   </div>
                   {a.result && (
@@ -138,8 +141,8 @@ export default function ImportPage() {
                         a.result.verdict === 'likely-authentic' ? 'bg-emerald-400' :
                         a.result.verdict === 'inconclusive' ? 'bg-amber-400' : 'bg-red-400'
                       }`} />
-                      {a.result.verdict === 'likely-authentic' ? 'Authentic' :
-                       a.result.verdict === 'inconclusive' ? 'Inconclusive' : 'Suspicious'}
+                      {a.result.verdict === 'likely-authentic' ? t('Auténtico', 'Authentic') :
+                       a.result.verdict === 'inconclusive' ? t('No concluyente', 'Inconclusive') : t('Sospechoso', 'Suspicious')}
                       <span className="font-mono text-muted">{a.result.overallScore}/100</span>
                     </div>
                   )}

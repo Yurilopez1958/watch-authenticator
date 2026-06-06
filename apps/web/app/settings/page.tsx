@@ -2,14 +2,19 @@
 
 import { ALL_BRANDS } from '@watch-auth/core';
 import { useCompliance, type BrandRule } from '@/lib/compliance';
+import { useLang } from '@/lib/i18n';
 
-const OPTIONS: { value: BrandRule | 'none'; label: string; help: string }[] = [
-  { value: 'none', label: 'Not represented', help: 'No restriction' },
-  { value: 'warn', label: 'Warn', help: 'Show an alert' },
-  { value: 'block', label: 'Block', help: 'Restrict the brand' },
+/** Bilingual string pair. */
+type Bi = { es: string; en: string };
+
+const OPTIONS: { value: BrandRule | 'none'; label: Bi; help: Bi }[] = [
+  { value: 'none', label: { es: 'No representada', en: 'Not represented' }, help: { es: 'Sin restricción', en: 'No restriction' } },
+  { value: 'warn', label: { es: 'Avisar', en: 'Warn' }, help: { es: 'Mostrar una alerta', en: 'Show an alert' } },
+  { value: 'block', label: { es: 'Bloquear', en: 'Block' }, help: { es: 'Restringir la marca', en: 'Restrict the brand' } },
 ];
 
 export default function SettingsPage() {
+  const { t, lang } = useLang();
   const { config, update } = useCompliance();
 
   const setRule = (brandId: string, value: BrandRule | 'none') => {
@@ -24,19 +29,21 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-3xl font-bold mb-2">Compliance settings</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('Ajustes de cumplimiento', 'Compliance settings')}</h1>
         <p className="text-muted text-sm max-w-2xl">
-          Mark the brands your business <span className="text-accent-bright">officially represents</span>{' '}
-          (authorized dealer / distributor). When you select one of these to authenticate, search or
-          register a watch, the app flags a possible conflict of interest — or restricts it — so you
-          do not breach a distribution agreement.
+          {t('Marca las marcas que tu negocio', 'Mark the brands your business')}{' '}
+          <span className="text-accent-bright">{t('representa oficialmente', 'officially represents')}</span>{' '}
+          {t(
+            '(distribuidor autorizado / distribuidor). Cuando selecciones una de estas para autenticar, buscar o registrar un reloj, la app señala un posible conflicto de interés — o lo restringe — para que no incumplas un acuerdo de distribución.',
+            '(authorized dealer / distributor). When you select one of these to authenticate, search or register a watch, the app flags a possible conflict of interest — or restricts it — so you do not breach a distribution agreement.',
+          )}
         </p>
       </section>
 
       <section className="card p-5">
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <h2 className="text-lg font-semibold">Officially represented brands</h2>
-          <span className="text-xs text-dim">{representedCount} of {ALL_BRANDS.length} flagged</span>
+          <h2 className="text-lg font-semibold">{t('Marcas representadas oficialmente', 'Officially represented brands')}</h2>
+          <span className="text-xs text-dim">{representedCount} {t('de', 'of')} {ALL_BRANDS.length} {t('marcadas', 'flagged')}</span>
         </div>
 
         <div className="space-y-3">
@@ -64,13 +71,13 @@ export default function SettingsPage() {
                         role="radio"
                         aria-checked={active}
                         onClick={() => setRule(b.id, opt.value)}
-                        title={opt.help}
-                        aria-label={`${b.name}: ${opt.label} — ${opt.help}`}
+                        title={opt.help[lang]}
+                        aria-label={`${b.name}: ${opt.label[lang]} — ${opt.help[lang]}`}
                         className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
                           active ? tone : 'text-dim hover:text-foreground'
                         } ${opt.value !== 'none' ? 'border-l border-soft' : ''}`}
                       >
-                        {opt.label}
+                        {opt.label[lang]}
                       </button>
                     );
                   })}
@@ -81,8 +88,11 @@ export default function SettingsPage() {
         </div>
 
         <p className="text-xs text-dim mt-4">
-          Stored privately on this device. <span className="text-amber-300">Warn</span> lets you continue
-          after an alert; <span className="text-red-300">Block</span> stops the flow for that brand.
+          {t('Almacenado de forma privada en este dispositivo.', 'Stored privately on this device.')}{' '}
+          <span className="text-amber-300">{t('Avisar', 'Warn')}</span>{' '}
+          {t('te permite continuar tras una alerta;', 'lets you continue after an alert;')}{' '}
+          <span className="text-red-300">{t('Bloquear', 'Block')}</span>{' '}
+          {t('detiene el flujo para esa marca.', 'stops the flow for that brand.')}
         </p>
       </section>
     </div>

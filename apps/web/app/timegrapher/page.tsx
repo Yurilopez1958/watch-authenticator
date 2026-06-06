@@ -171,7 +171,7 @@ export default function TimegrapherPage() {
       await loadDevices();
     } catch (err) {
       const e = err as Error;
-      setError(e.name === 'NotAllowedError' ? 'Microphone permission denied.' : `Mic error: ${e.message}`);
+      setError(e.name === 'NotAllowedError' ? t('Permiso de micrófono denegado.', 'Microphone permission denied.') : t(`Error de micro: ${e.message}`, `Mic error: ${e.message}`));
     }
   };
 
@@ -198,7 +198,7 @@ export default function TimegrapherPage() {
       expectedBph,
       at: Date.now(),
     });
-    setSavedMsg('Saved — it will appear in the watch authentication report.');
+    setSavedMsg(t('Guardado — aparecerá en el informe de autenticación del reloj.', 'Saved — it will appear in the watch authentication report.'));
   };
 
   const start = async (forceDeviceId?: string) => {
@@ -315,8 +315,8 @@ export default function TimegrapherPage() {
     } catch (err) {
       const e = err as Error;
       setError(e.name === 'NotAllowedError'
-        ? 'Microphone permission denied. Allow it in your browser and try again.'
-        : `Microphone error: ${e.message}`);
+        ? t('Permiso de micrófono denegado. Actívalo en tu navegador e inténtalo de nuevo.', 'Microphone permission denied. Allow it in your browser and try again.')
+        : t(`Error de micrófono: ${e.message}`, `Microphone error: ${e.message}`));
       stop();
     }
   };
@@ -413,21 +413,19 @@ export default function TimegrapherPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-3xl font-bold mb-2">Acoustic chronocomparator</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('Cronocomparador acústico', 'Acoustic chronocomparator')}</h1>
         <p className="text-muted text-sm max-w-2xl">
-          Time a mechanical watch using your <span className="text-accent-bright">phone&apos;s microphone</span> —
-          no extra hardware needed. Press Start and hold the phone&apos;s mic to the case back in a quiet room.
-          Measures rate (s/day), beat error and the detected frequency.
+          {t('Mide la marcha de un reloj mecánico con el', 'Time a mechanical watch using your')} <span className="text-accent-bright">{t('micrófono del teléfono', "phone's microphone")}</span> — {t('sin hardware extra. Pulsa Empezar y apoya el micro del teléfono en la tapa trasera, en una sala en silencio. Mide marcha (s/día), error de batido y la frecuencia detectada.', 'no extra hardware needed. Press Start and hold the phone’s mic to the case back in a quiet room. Measures rate (s/day), beat error and the detected frequency.')}
         </p>
       </section>
 
       {/* Witschi-style timing instrument */}
       <section className="rounded-2xl overflow-hidden border border-blue-500/30 shadow-xl shadow-blue-950/40" style={{ background: '#0a1024' }}>
         <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-blue-500/15 border-b border-blue-500/15">
-          <Cell label="Rate" value={metrics ? `${metrics.rate >= 0 ? '+' : ''}${metrics.rate.toFixed(1)}` : '—'} unit="s / day" color={rateColor} big />
-          <Cell label="Amplitude" value="—" unit="degrees" />
-          <Cell label="Beat error" value={metrics?.beatError != null ? metrics.beatError.toFixed(1) : '—'} unit="ms" color={beColor} />
-          <Cell label="Frequency" value={metrics ? Math.round(metrics.detectedBph).toString() : '—'} unit="bph" />
+          <Cell label={t('Marcha', 'Rate')} value={metrics ? `${metrics.rate >= 0 ? '+' : ''}${metrics.rate.toFixed(1)}` : '—'} unit={t('s / día', 's / day')} color={rateColor} big />
+          <Cell label={t('Amplitud', 'Amplitude')} value="—" unit={t('grados', 'degrees')} />
+          <Cell label={t('Error de batido', 'Beat error')} value={metrics?.beatError != null ? metrics.beatError.toFixed(1) : '—'} unit="ms" color={beColor} />
+          <Cell label={t('Frecuencia', 'Frequency')} value={metrics ? Math.round(metrics.detectedBph).toString() : '—'} unit="bph" />
         </div>
         <div className="px-4 py-2.5 border-b border-blue-500/15 space-y-1.5">
           <div className="flex items-center gap-2">
@@ -470,21 +468,21 @@ export default function TimegrapherPage() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" />
               </svg>
-              Start listening
+              {t('Empezar a escuchar', 'Start listening')}
             </button>
           ) : (
             <button onClick={stop} className="btn-ghost inline-flex items-center gap-2">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-              Stop
+              {t('Parar', 'Stop')}
             </button>
           )}
-          {running && <span className="text-xs text-emerald-300 inline-flex items-center gap-1">● mic active</span>}
+          {running && <span className="text-xs text-emerald-300 inline-flex items-center gap-1">● {t('micro activo', 'mic active')}</span>}
           {metrics && (
             <button onClick={saveForReport} className="btn-ghost text-sm inline-flex items-center gap-2">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" />
               </svg>
-              Save reading for report
+              {t('Guardar lectura para el informe', 'Save reading for report')}
             </button>
           )}
         </div>
@@ -493,25 +491,27 @@ export default function TimegrapherPage() {
         {error && <div className="text-sm text-red-300 border-l-4 border-l-red-500 bg-red-500/10 rounded-lg p-3">{error}</div>}
 
         <div>
-          <div className="text-xs uppercase tracking-wide text-dim mb-2">Microphone input</div>
+          <div className="text-xs uppercase tracking-wide text-dim mb-2">{t('Entrada de micrófono', 'Microphone input')}</div>
           {devices.length > 0 ? (
             <select value={deviceId} onChange={(e) => onPickDevice(e.target.value)} className="field">
-              <option value="">System default microphone</option>
+              <option value="">{t('Micrófono predeterminado del sistema', 'System default microphone')}</option>
               {devices.map((d, i) => (
-                <option key={d.deviceId || i} value={d.deviceId}>{d.label || `Microphone ${i + 1}`}</option>
+                <option key={d.deviceId || i} value={d.deviceId}>{d.label || t(`Micrófono ${i + 1}`, `Microphone ${i + 1}`)}</option>
               ))}
             </select>
           ) : (
-            <button onClick={() => void detectMics()} className="btn-ghost text-sm">Detect microphones</button>
+            <button onClick={() => void detectMics()} className="btn-ghost text-sm">{t('Detectar micrófonos', 'Detect microphones')}</button>
           )}
           <p className="text-xs text-dim mt-1.5">
-            Uses your phone&apos;s built-in microphone by default — nothing to plug in. (Optional/advanced: connect a
-            watch contact microphone and pick it here for an even cleaner signal.)
+            {t(
+              'Usa el micrófono interno del teléfono por defecto — no hay que conectar nada. (Opcional/avanzado: conecta un micrófono de contacto para reloj y elígelo aquí para una señal aún más limpia.)',
+              'Uses your phone’s built-in microphone by default — nothing to plug in. (Optional/advanced: connect a watch contact microphone and pick it here for an even cleaner signal.)',
+            )}
           </p>
         </div>
 
         <div>
-          <div className="text-xs uppercase tracking-wide text-dim mb-2">Beat frequency (bph)</div>
+          <div className="text-xs uppercase tracking-wide text-dim mb-2">{t('Frecuencia de batido (bph)', 'Beat frequency (bph)')}</div>
           <div className="flex flex-wrap gap-2">
             {BPH_PRESETS.map((b) => (
               <button
@@ -526,9 +526,9 @@ export default function TimegrapherPage() {
         </div>
 
         <label className="block">
-          <span className="block text-xs uppercase tracking-wide text-dim mb-2">…or match a model (sets the caliber&apos;s frequency)</span>
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('…o elige un modelo (fija la frecuencia del calibre)', "…or match a model (sets the caliber's frequency)")}</span>
           <select value={modelId} onChange={(e) => onPickModel(e.target.value)} className="field">
-            <option value="">— pick a model —</option>
+            <option value="">{t('— elige un modelo —', '— pick a model —')}</option>
             {ALL_MODELS.map((m) => (
               <option key={m.id} value={m.id}>{m.name} — {m.reference}</option>
             ))}
@@ -550,13 +550,12 @@ export default function TimegrapherPage() {
       </section>
 
       <section className="card p-5 text-xs text-muted space-y-2 border-l-4 border-l-accent">
-        <div className="font-semibold text-neutral-200">Tips & honest limits</div>
+        <div className="font-semibold text-neutral-200">{t('Consejos y límites honestos', 'Tips & honest limits')}</div>
         <p className="leading-relaxed">
-          The phone&apos;s built-in microphone works out of the box — quiet room, case back pressed to the mic.
-          <strong> Rate</strong> and <strong>beat error</strong> stabilise after ~15–30&nbsp;seconds. The detected
-          frequency must match the watch — pick the right bph (or a model) above. Optionally, a{' '}
-          <strong>watch contact microphone</strong> clamped to the movement gives an even cleaner signal.
-          <strong> Amplitude</strong> is not measured yet (it needs the lift-angle plus clean intra-beat sound timing).
+          {t(
+            'El micrófono interno del teléfono funciona sin más — sala en silencio, tapa trasera apoyada en el micro. La marcha y el error de batido se estabilizan tras ~15–30 segundos. La frecuencia detectada debe coincidir con el reloj: elige la bph correcta (o un modelo) arriba. Opcionalmente, un micrófono de contacto sujeto al movimiento da una señal aún más limpia. La amplitud todavía no se mide (necesita el ángulo de alzada y un timing limpio del sonido dentro del beat).',
+            'The phone’s built-in microphone works out of the box — quiet room, case back pressed to the mic. Rate and beat error stabilise after ~15–30 seconds. The detected frequency must match the watch — pick the right bph (or a model) above. Optionally, a watch contact microphone clamped to the movement gives an even cleaner signal. Amplitude is not measured yet (it needs the lift-angle plus clean intra-beat sound timing).',
+          )}
         </p>
       </section>
     </div>

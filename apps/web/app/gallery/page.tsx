@@ -22,25 +22,29 @@ import {
 } from '@/lib/gallery-cloud';
 import { useSession } from '@/lib/use-session';
 import { fetchTestImages } from '@/lib/test-images';
+import { useLang } from '@/lib/i18n';
 import { useCompliance, ruleFor } from '@/lib/compliance';
 import { ComplianceBanner } from '@/app/compliance-banner';
 
-type GalleryPart = { id: string; label: string; checkpointIds: string[] };
+/** Bilingual string pair. */
+type Bi = { es: string; en: string };
+
+type GalleryPart = { id: string; label: Bi; checkpointIds: string[] };
 
 /** Unified photo for display, from local cache or the cloud. */
 type DisplayPhoto = { id: string; src: string; storagePath?: string };
 
 const GALLERY_PARTS: readonly GalleryPart[] = [
-  { id: 'movement', label: 'Movement', checkpointIds: [] },
-  { id: 'dial', label: 'Dial', checkpointIds: ['dial-printing', 'cyclops'] },
-  { id: 'hands', label: 'Hands', checkpointIds: ['hands'] },
-  { id: 'logo', label: 'Coronet / logo', checkpointIds: ['crown-logo'] },
-  { id: 'crown', label: 'Winding crown', checkpointIds: ['crown-logo'] },
-  { id: 'bezel', label: 'Bezel', checkpointIds: ['weight-feel'] },
-  { id: 'case-back', label: 'Case back', checkpointIds: ['case-back'] },
-  { id: 'serial-number', label: 'Serial / rehaut', checkpointIds: ['serial-engraving', 'rehaut'] },
-  { id: 'bracelet-link', label: 'Bracelet', checkpointIds: ['bracelet-clasp'] },
-  { id: 'clasp', label: 'Clasp', checkpointIds: ['bracelet-clasp'] },
+  { id: 'movement', label: { es: 'Movimiento', en: 'Movement' }, checkpointIds: [] },
+  { id: 'dial', label: { es: 'Esfera', en: 'Dial' }, checkpointIds: ['dial-printing', 'cyclops'] },
+  { id: 'hands', label: { es: 'Agujas', en: 'Hands' }, checkpointIds: ['hands'] },
+  { id: 'logo', label: { es: 'Corona / logo', en: 'Coronet / logo' }, checkpointIds: ['crown-logo'] },
+  { id: 'crown', label: { es: 'Corona de cuerda', en: 'Winding crown' }, checkpointIds: ['crown-logo'] },
+  { id: 'bezel', label: { es: 'Bisel', en: 'Bezel' }, checkpointIds: ['weight-feel'] },
+  { id: 'case-back', label: { es: 'Tapa trasera', en: 'Case back' }, checkpointIds: ['case-back'] },
+  { id: 'serial-number', label: { es: 'Serie / rehaut', en: 'Serial / rehaut' }, checkpointIds: ['serial-engraving', 'rehaut'] },
+  { id: 'bracelet-link', label: { es: 'Brazalete', en: 'Bracelet' }, checkpointIds: ['bracelet-clasp'] },
+  { id: 'clasp', label: { es: 'Cierre', en: 'Clasp' }, checkpointIds: ['bracelet-clasp'] },
 ];
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -100,6 +104,7 @@ function checkpointPoints(part: GalleryPart, caliber: string): string[] {
 }
 
 export default function GalleryPage() {
+  const { t, lang } = useLang();
   // Step 1: pick the reference watch (brand / model / year)
   const [started, setStarted] = useState(false);
   const [brandId, setBrandId] = useState<string>(ALL_BRANDS[0]!.id);
@@ -261,8 +266,8 @@ export default function GalleryPage() {
     }
     if (failed > 0 || skipped > 0) {
       const parts: string[] = [];
-      if (failed > 0) parts.push(`${failed} could not be uploaded (check your connection)`);
-      if (skipped > 0) parts.push(`${skipped} skipped (not an image or over 25 MB)`);
+      if (failed > 0) parts.push(t(`${failed} no se pudieron subir (revisa tu conexión)`, `${failed} could not be uploaded (check your connection)`));
+      if (skipped > 0) parts.push(t(`${skipped} omitidas (no es una imagen o supera 25 MB)`, `${skipped} skipped (not an image or over 25 MB)`));
       setUploadError(`${parts.join('; ')}.`);
     }
     setBusyPart(null);
@@ -292,7 +297,7 @@ export default function GalleryPage() {
       setUploadProgress({ done: i + 1, total: GALLERY_PARTS.length });
     }
     if (added === 0) {
-      setUploadError('No sample images could be loaded. Check your connection and try again.');
+      setUploadError(t('No se pudo cargar ninguna imagen de muestra. Revisa tu conexión e inténtalo de nuevo.', 'No sample images could be loaded. Check your connection and try again.'));
     }
     setBusyPart(null);
     setUploadProgress(null);
@@ -314,7 +319,7 @@ export default function GalleryPage() {
     setAuthMsg(null);
     const { error } = await auth.signInWithEmail(emailInput.trim());
     setAuthBusy(false);
-    setAuthMsg(error ? error : 'Check your email for a sign-in link, then come back here.');
+    setAuthMsg(error ? error : t('Revisa tu correo para el enlace de acceso y vuelve aquí.', 'Check your email for a sign-in link, then come back here.'));
   };
 
   // ---------- Intro / "Create your own gallery" ----------
@@ -322,11 +327,11 @@ export default function GalleryPage() {
     return (
       <div className="space-y-8">
         <section>
-          <h1 className="text-3xl font-bold mb-2">Reference gallery</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('Galería de referencia', 'Reference gallery')}</h1>
           <p className="text-muted text-sm max-w-2xl">
-            Build your own library of <span className="text-accent-bright">verified-authentic</span> reference
-            photos. Pick a watch by model and year, then add photos of each part you check during
-            authentication. Stored privately on this device.
+            {t('Crea tu propia biblioteca de fotos de referencia ', 'Build your own library of ')}
+            <span className="text-accent-bright">{t('verificadas como auténticas', 'verified-authentic')}</span>
+            {t('. Elige un reloj por modelo y año, luego añade fotos de cada parte que revisas durante la autenticación. Se guardan en privado en este dispositivo.', ' reference photos. Pick a watch by model and year, then add photos of each part you check during authentication. Stored privately on this device.')}
           </p>
         </section>
         <section className="card p-8 text-center space-y-4">
@@ -335,12 +340,14 @@ export default function GalleryPage() {
               <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold">Create your own gallery</h2>
+          <h2 className="text-xl font-semibold">{t('Crea tu propia galería', 'Create your own gallery')}</h2>
           <p className="text-sm text-muted max-w-md mx-auto">
-            Choose the brand, model and year of an authentic watch, then photograph each part to use
-            as your personal reference.
+            {t(
+              'Elige la marca, el modelo y el año de un reloj auténtico, luego fotografía cada parte para usarla como tu referencia personal.',
+              'Choose the brand, model and year of an authentic watch, then photograph each part to use as your personal reference.',
+            )}
           </p>
-          <button onClick={() => setStarted(true)} className="btn-primary">Create your own gallery</button>
+          <button onClick={() => setStarted(true)} className="btn-primary">{t('Crea tu propia galería', 'Create your own gallery')}</button>
         </section>
       </div>
     );
@@ -351,10 +358,10 @@ export default function GalleryPage() {
     <div className="space-y-8">
       <section className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold mb-1">Create your own gallery</h1>
-          <p className="text-muted text-sm">Pick the reference watch, then add photos for each part.</p>
+          <h1 className="text-3xl font-bold mb-1">{t('Crea tu propia galería', 'Create your own gallery')}</h1>
+          <p className="text-muted text-sm">{t('Elige el reloj de referencia, luego añade fotos para cada parte.', 'Pick the reference watch, then add photos for each part.')}</p>
         </div>
-        <button onClick={() => setStarted(false)} className="btn-ghost text-sm shrink-0">← Back</button>
+        <button onClick={() => setStarted(false)} className="btn-ghost text-sm shrink-0">{t('← Volver', '← Back')}</button>
       </section>
 
       {brandRule && <ComplianceBanner brandName={currentBrand.name} rule={brandRule} />}
@@ -365,17 +372,19 @@ export default function GalleryPage() {
           {cloud ? (
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="text-sm">
-                <span className="text-emerald-300 font-semibold">☁ Synced</span>
-                <span className="text-muted"> — your photos save to the cloud as <span className="text-foreground">{auth.email}</span> and appear on all your devices.</span>
+                <span className="text-emerald-300 font-semibold">{t('☁ Sincronizado', '☁ Synced')}</span>
+                <span className="text-muted">{t(' — tus fotos se guardan en la nube como ', ' — your photos save to the cloud as ')}<span className="text-foreground">{auth.email}</span>{t(' y aparecen en todos tus dispositivos.', ' and appear on all your devices.')}</span>
               </div>
-              <button onClick={() => void auth.signOut()} className="btn-ghost text-sm">Sign out</button>
+              <button onClick={() => void auth.signOut()} className="btn-ghost text-sm">{t('Cerrar sesión', 'Sign out')}</button>
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="text-sm font-semibold">Sync across devices (optional)</div>
+              <div className="text-sm font-semibold">{t('Sincroniza entre dispositivos (opcional)', 'Sync across devices (optional)')}</div>
               <p className="text-xs text-muted">
-                Sign in with your email to store reference photos in the cloud so they appear on your phone and computer.
-                Without signing in, photos stay only on this device.
+                {t(
+                  'Inicia sesión con tu correo para guardar las fotos de referencia en la nube y que aparezcan en tu teléfono y ordenador. Sin iniciar sesión, las fotos solo quedan en este dispositivo.',
+                  'Sign in with your email to store reference photos in the cloud so they appear on your phone and computer. Without signing in, photos stay only on this device.',
+                )}
               </p>
               <div className="flex flex-wrap gap-2 items-center">
                 <input
@@ -386,7 +395,7 @@ export default function GalleryPage() {
                   className="field !w-auto flex-1 min-w-[12rem]"
                 />
                 <button onClick={() => void sendMagicLink()} disabled={authBusy || !emailInput.trim()} className="btn-primary text-sm">
-                  {authBusy ? 'Sending…' : 'Send sign-in link'}
+                  {authBusy ? t('Enviando…', 'Sending…') : t('Enviar enlace de acceso', 'Send sign-in link')}
                 </button>
               </div>
               {authMsg && <div className="text-xs text-accent-bright">{authMsg}</div>}
@@ -397,9 +406,9 @@ export default function GalleryPage() {
 
       {/* Reference watch picker */}
       <section className="card p-5 space-y-4">
-        <div className="text-sm font-semibold">1. Reference watch</div>
+        <div className="text-sm font-semibold">{t('1. Reloj de referencia', '1. Reference watch')}</div>
         <div>
-          <span className="block text-xs uppercase tracking-wide text-dim mb-2">Brand</span>
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Marca', 'Brand')}</span>
           <div className="flex flex-wrap gap-2">
             {ALL_BRANDS.map((b) => (
               <button
@@ -413,17 +422,17 @@ export default function GalleryPage() {
           </div>
         </div>
         <label className="block">
-          <span className="block text-xs uppercase tracking-wide text-dim mb-2">Search model or reference</span>
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Busca modelo o referencia', 'Search model or reference')}</span>
           <input
             value={modelSearch}
             onChange={(e) => setModelSearch(e.target.value)}
             className="field font-mono"
-            placeholder='e.g. "16234", "Submariner", "Nautilus"...'
+            placeholder={t('p. ej. "16234", "Submariner", "Nautilus"...', 'e.g. "16234", "Submariner", "Nautilus"...')}
           />
         </label>
         <div className="grid md:grid-cols-2 gap-4">
           <label className="block">
-            <span className="block text-xs uppercase tracking-wide text-dim mb-2">Model</span>
+            <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Modelo', 'Model')}</span>
             <select value={modelId} onChange={(e) => { setModelId(e.target.value); setModelSearch(''); }} className="field">
               {(filteredModels.length > 0 ? groupedModels : groupedAllModels).map(([collection, models]) => (
                 <optgroup key={collection} label={collection}>
@@ -436,8 +445,8 @@ export default function GalleryPage() {
           </label>
           <div className="block">
             <span className="block text-xs uppercase tracking-wide text-dim mb-2">
-              Year
-              {currentModel && <span className="text-dim/70 normal-case ml-1">· {currentModel.yearStart}–{currentModel.yearEnd ?? 'present'}</span>}
+              {t('Año', 'Year')}
+              {currentModel && <span className="text-dim/70 normal-case ml-1">· {currentModel.yearStart}–{currentModel.yearEnd ?? t('presente', 'present')}</span>}
             </span>
             {productionYears.length <= 18 ? (
               <div className="flex flex-wrap gap-2">
@@ -453,15 +462,15 @@ export default function GalleryPage() {
           </div>
         </div>
         <div className="text-xs text-dim">
-          {currentModel ? <>Selected: <span className="text-muted">{currentBrand.name} {currentModel.name} ({currentModel.reference})</span>{caliber && <> · Cal. {caliber}</>} · {total} photo(s) stored</> : 'Pick a model.'}
+          {currentModel ? <>{t('Seleccionado:', 'Selected:')} <span className="text-muted">{currentBrand.name} {currentModel.name} ({currentModel.reference})</span>{caliber && <> · Cal. {caliber}</>} · {t(`${total} foto(s) guardada(s)`, `${total} photo(s) stored`)}</> : t('Elige un modelo.', 'Pick a model.')}
         </div>
       </section>
 
       {/* Parts to check */}
       <section className="space-y-4">
         <div>
-          <div className="text-sm font-semibold">2. Parts to check — add reference photos for each</div>
-          <p className="text-xs text-dim mt-1">Tip: you can select several photos at once for the same part.</p>
+          <div className="text-sm font-semibold">{t('2. Partes a revisar — añade fotos de referencia para cada una', '2. Parts to check — add reference photos for each')}</div>
+          <p className="text-xs text-dim mt-1">{t('Consejo: puedes seleccionar varias fotos a la vez para la misma parte.', 'Tip: you can select several photos at once for the same part.')}</p>
         </div>
         {uploadError && (
           <div className="card p-3 border-l-4 border-l-red-500 text-sm text-red-300">{uploadError}</div>
@@ -473,7 +482,7 @@ export default function GalleryPage() {
             <div key={part.id} className="card p-5">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold">{part.label}</h3>
+                  <h3 className="text-lg font-semibold">{part.label[lang]}</h3>
                   {photos.length > 0 && <span className="chip text-[0.65rem]">{photos.length}</span>}
                 </div>
                 <button
@@ -485,8 +494,8 @@ export default function GalleryPage() {
                     <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
                   {busyPart === part.id
-                    ? `Uploading ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}…`
-                    : 'Add photos'}
+                    ? t(`Subiendo ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}…`, `Uploading ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}…`)
+                    : t('Añadir fotos', 'Add photos')}
                 </button>
                 <input
                   ref={(el) => { fileRefs.current[part.id] = el; }}
@@ -502,21 +511,21 @@ export default function GalleryPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-xs text-dim mb-4">Photograph this part on the authentic piece for reference.</p>
+                <p className="text-xs text-dim mb-4">{t('Fotografía esta parte en la pieza auténtica como referencia.', 'Photograph this part on the authentic piece for reference.')}</p>
               )}
 
               {photos.length > 0 ? (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                   {photos.map((p) => (
                     <div key={p.id} className="relative">
-                      <img src={p.src} alt={part.label} className="w-full aspect-square object-cover rounded-lg border border-soft" />
-                      <button onClick={() => void onDelete(p)} aria-label="Delete photo" className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-red-300 flex items-center justify-center text-sm hover:bg-red-500/30">×</button>
+                      <img src={p.src} alt={part.label[lang]} className="w-full aspect-square object-cover rounded-lg border border-soft" />
+                      <button onClick={() => void onDelete(p)} aria-label={t('Eliminar foto', 'Delete photo')} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-red-300 flex items-center justify-center text-sm hover:bg-red-500/30">×</button>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-xs text-dim border border-dashed border-soft rounded-lg py-6 text-center">
-                  No reference photos yet for this part.
+                  {t('Aún no hay fotos de referencia para esta parte.', 'No reference photos yet for this part.')}
                 </div>
               )}
             </div>
@@ -528,13 +537,12 @@ export default function GalleryPage() {
       <section className="card p-5 border border-dashed border-soft space-y-3">
         <div className="flex items-center gap-2">
           <span className="text-base">🧪</span>
-          <h3 className="font-semibold">Test data (for trying the app)</h3>
+          <h3 className="font-semibold">{t('Datos de prueba (para probar la app)', 'Test data (for trying the app)')}</h3>
         </div>
         <p className="text-xs text-muted">
-          Quickly fill this model&apos;s parts with openly-licensed sample photos from
-          Wikimedia Commons so you can test the gallery, cloud sync and AI analysis.
-          These are <span className="text-amber-300">placeholders for testing only</span> —
-          not verified-authentic references. Delete them (× on each photo) before real use.
+          {t('Llena rápidamente las partes de este modelo con fotos de muestra de licencia abierta de Wikimedia Commons para que puedas probar la galería, la sincronización en la nube y el análisis con IA. Son ', 'Quickly fill this model’s parts with openly-licensed sample photos from Wikimedia Commons so you can test the gallery, cloud sync and AI analysis. These are ')}
+          <span className="text-amber-300">{t('marcadores solo para pruebas', 'placeholders for testing only')}</span>
+          {t(' — no son referencias verificadas como auténticas. Elimínalas (× en cada foto) antes de un uso real.', ' — not verified-authentic references. Delete them (× on each photo) before real use.')}
         </p>
         <div className="flex flex-wrap gap-2 items-center">
           <button
@@ -543,17 +551,17 @@ export default function GalleryPage() {
             className="btn-ghost text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {busyPart === '__test__'
-              ? `Loading ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}…`
-              : 'Load 1 sample per part'}
+              ? t(`Cargando ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}…`, `Loading ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}…`)
+              : t('Cargar 1 muestra por parte', 'Load 1 sample per part')}
           </button>
           <button
             onClick={() => void loadTestPhotos(2)}
             disabled={busyPart !== null || brandBlocked}
             className="btn-ghost text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Load 2 per part
+            {t('Cargar 2 por parte', 'Load 2 per part')}
           </button>
-          {busyPart === '__test__' && <span className="text-xs text-dim">fetching from Wikimedia Commons…</span>}
+          {busyPart === '__test__' && <span className="text-xs text-dim">{t('obteniendo de Wikimedia Commons…', 'fetching from Wikimedia Commons…')}</span>}
         </div>
       </section>
     </div>

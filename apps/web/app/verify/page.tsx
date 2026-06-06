@@ -15,10 +15,15 @@ import { useCompliance, ruleFor } from '@/lib/compliance';
 import { parseDecimal } from '@/lib/num';
 import { ComplianceBanner } from '@/app/compliance-banner';
 import { MetalModeBanner } from '@/app/metal-mode-banner';
+import { useLang } from '@/lib/i18n';
+
+/** Bilingual string pair. */
+type Bi = { es: string; en: string };
 
 /** Year selector restricted to a model's production range. */
 function YearPicker({ years, value, onChange }: { years: number[]; value: number; onChange: (y: number) => void }) {
-  if (years.length === 0) return <div className="text-sm text-dim">No production years on file.</div>;
+  const { t } = useLang();
+  if (years.length === 0) return <div className="text-sm text-dim">{t('No hay años de producción registrados.', 'No production years on file.')}</div>;
   if (years.length > 18) {
     return (
       <select value={value} onChange={(e) => onChange(parseInt(e.target.value, 10))} className="field">
@@ -46,13 +51,14 @@ const ELEMENTS_OF_INTEREST: ElementSymbol[] = [
   'Au', 'Ag', 'Pt', 'Pd', 'Ru',
 ];
 
-const verdictLabel: Record<MatchResult['verdict'], { text: string; color: string; ring: string }> = {
-  'likely-authentic': { text: 'Likely authentic', color: 'text-emerald-300', ring: 'ring-emerald-500/30 bg-emerald-500/10' },
-  'inconclusive':     { text: 'Inconclusive',     color: 'text-amber-300',   ring: 'ring-amber-500/30 bg-amber-500/10' },
-  'likely-fake':      { text: 'Likely fake',      color: 'text-red-300',     ring: 'ring-red-500/30 bg-red-500/10' },
+const verdictLabel: Record<MatchResult['verdict'], { text: Bi; color: string; ring: string }> = {
+  'likely-authentic': { text: { es: 'Probablemente auténtico', en: 'Likely authentic' }, color: 'text-emerald-300', ring: 'ring-emerald-500/30 bg-emerald-500/10' },
+  'inconclusive':     { text: { es: 'No concluyente',          en: 'Inconclusive'     }, color: 'text-amber-300',   ring: 'ring-amber-500/30 bg-amber-500/10' },
+  'likely-fake':      { text: { es: 'Probablemente falso',     en: 'Likely fake'      }, color: 'text-red-300',     ring: 'ring-red-500/30 bg-red-500/10' },
 };
 
 export default function VerifyPage() {
+  const { t, lang } = useLang();
   const [brandId, setBrandId] = useState<string>(ALL_BRANDS[0]!.id);
   const [audience, setAudience] = useState<'all' | 'men' | 'women' | 'unisex'>('all');
   const [modelSearch, setModelSearch] = useState('');
@@ -159,16 +165,18 @@ export default function VerifyPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-3xl font-bold mb-2">Verify watch</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('Verificar reloj', 'Verify watch')}</h1>
         <p className="text-muted text-sm">
-          Select a model, year, and enter the percentages measured by the Niton XL.
-          The app finds the closest reference profile and issues a verdict.
+          {t(
+            'Selecciona un modelo, un año e introduce los porcentajes medidos por el Niton XL. La app encuentra el perfil de referencia más cercano y emite un veredicto.',
+            'Select a model, year, and enter the percentages measured by the Niton XL. The app finds the closest reference profile and issues a verdict.',
+          )}
         </p>
       </section>
 
       <section className="space-y-3">
         <div>
-          <span className="block text-xs uppercase tracking-wide text-dim mb-2">Brand</span>
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Marca', 'Brand')}</span>
           <div className="flex flex-wrap gap-2">
             {ALL_BRANDS.map((b) => (
               <button
@@ -182,12 +190,12 @@ export default function VerifyPage() {
           </div>
         </div>
         <label className="block">
-          <span className="block text-xs uppercase tracking-wide text-dim mb-2">Search by reference, model or collection</span>
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Busca por referencia, modelo o colección', 'Search by reference, model or collection')}</span>
           <input
             value={modelSearch}
             onChange={(e) => setModelSearch(e.target.value)}
             className="field font-mono"
-            placeholder='e.g. "126610LN", "Nautilus", "Royal Oak", "Pepsi"...'
+            placeholder={t('p. ej. "126610LN", "Nautilus", "Royal Oak", "Pepsi"...', 'e.g. "126610LN", "Nautilus", "Royal Oak", "Pepsi"...')}
           />
         </label>
         <div className="flex flex-wrap gap-2">
@@ -197,16 +205,16 @@ export default function VerifyPage() {
               onClick={() => setAudience(a)}
               className={`chip cursor-pointer ${audience === a ? '!bg-accent !text-white !border-transparent' : ''}`}
             >
-              {a === 'all' ? 'All' : a === 'men' ? "Men's" : a === 'women' ? "Women's" : 'Unisex'}
+              {a === 'all' ? t('Todos', 'All') : a === 'men' ? t('Hombre', "Men's") : a === 'women' ? t('Mujer', "Women's") : t('Unisex', 'Unisex')}
             </button>
           ))}
-          <span className="text-xs text-dim self-center ml-2">{filteredModels.length} of {brandModels.length} models · {currentBrand.name}</span>
+          <span className="text-xs text-dim self-center ml-2">{filteredModels.length} {t('de', 'of')} {brandModels.length} {t('modelos', 'models')} · {currentBrand.name}</span>
           {(modelSearch || audience !== 'all') && (
             <button
               onClick={() => { setModelSearch(''); setAudience('all'); }}
               className="text-xs text-accent-bright hover:underline self-center ml-2"
             >
-              Clear filters
+              {t('Limpiar filtros', 'Clear filters')}
             </button>
           )}
         </div>
@@ -214,7 +222,7 @@ export default function VerifyPage() {
 
       <section className="grid md:grid-cols-2 gap-4">
         <label className="block">
-          <span className="block text-xs uppercase tracking-wide text-dim mb-2">Model</span>
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Modelo', 'Model')}</span>
           <select value={modelId} onChange={(e) => { setModelId(e.target.value); setModelSearch(''); }} className="field">
             {(filteredModels.length > 0 ? groupedModels : groupedAllModels).map(([collection, models]) => (
               <optgroup key={collection} label={collection}>
@@ -227,9 +235,9 @@ export default function VerifyPage() {
         </label>
         <div className="block">
           <span className="block text-xs uppercase tracking-wide text-dim mb-2">
-            Year of manufacture
+            {t('Año de fabricación', 'Year of manufacture')}
             {currentModel && (
-              <span className="text-dim/70 normal-case ml-1">· produced {currentModel.yearStart}–{currentModel.yearEnd ?? 'present'}</span>
+              <span className="text-dim/70 normal-case ml-1">· {t('producido', 'produced')} {currentModel.yearStart}–{currentModel.yearEnd ?? t('presente', 'present')}</span>
             )}
           </span>
           <YearPicker years={productionYears} value={year} onChange={setYear} />
@@ -241,8 +249,8 @@ export default function VerifyPage() {
       <MetalModeBanner />
 
       <section className="card p-6">
-        <h2 className="text-lg font-semibold mb-1">Measured XRF composition</h2>
-        <p className="text-xs text-dim mb-4">Enter the percentage for each element reported by the Niton XL.</p>
+        <h2 className="text-lg font-semibold mb-1">{t('Composición XRF medida', 'Measured XRF composition')}</h2>
+        <p className="text-xs text-dim mb-4">{t('Introduce el porcentaje de cada elemento que reporta el Niton XL.', 'Enter the percentage for each element reported by the Niton XL.')}</p>
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
           {ELEMENTS_OF_INTEREST.map((el) => (
             <label key={el} className="block">
@@ -259,7 +267,7 @@ export default function VerifyPage() {
           ))}
         </div>
         <button onClick={onAnalyze} disabled={brandBlocked || !complianceReady} className="btn-primary mt-5 disabled:opacity-50 disabled:cursor-not-allowed">
-          {brandBlocked ? 'Restricted brand' : 'Analyze'}
+          {brandBlocked ? t('Marca restringida', 'Restricted brand') : t('Analizar', 'Analyze')}
         </button>
       </section>
 
@@ -267,25 +275,25 @@ export default function VerifyPage() {
         <section className={`card p-6 space-y-5 fade-in ring-1 ${verdictLabel[result.verdict].ring}`}>
           <div className="flex items-baseline justify-between flex-wrap gap-3">
             <div>
-              <div className="text-xs uppercase tracking-wide text-dim">Verdict</div>
+              <div className="text-xs uppercase tracking-wide text-dim">{t('Veredicto', 'Verdict')}</div>
               <div className={`text-3xl font-bold ${verdictLabel[result.verdict].color}`}>
-                {verdictLabel[result.verdict].text}
+                {verdictLabel[result.verdict].text[lang]}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs uppercase tracking-wide text-dim">Score</div>
+              <div className="text-xs uppercase tracking-wide text-dim">{t('Puntuación', 'Score')}</div>
               <div className="text-4xl font-mono font-semibold">{result.overallScore}<span className="text-dim text-2xl">/100</span></div>
             </div>
           </div>
 
           <div>
-            <div className="text-xs uppercase tracking-wide text-dim mb-1">Closest profile</div>
+            <div className="text-xs uppercase tracking-wide text-dim mb-1">{t('Perfil más cercano', 'Closest profile')}</div>
             <div className="font-mono text-sm">{result.materialName}</div>
           </div>
 
           {result.flags.length > 0 && (
             <div>
-              <div className="text-xs uppercase tracking-wide text-dim mb-2">Flags</div>
+              <div className="text-xs uppercase tracking-wide text-dim mb-2">{t('Señales', 'Flags')}</div>
               <ul className="space-y-1.5 text-sm text-neutral-200">
                 {result.flags.map((f, i) => (
                   <li key={i} className="flex gap-2">
@@ -299,14 +307,14 @@ export default function VerifyPage() {
 
           {result.elementMatches.length > 0 && (
             <div>
-              <div className="text-xs uppercase tracking-wide text-dim mb-2">Per-element detail</div>
+              <div className="text-xs uppercase tracking-wide text-dim mb-2">{t('Detalle por elemento', 'Per-element detail')}</div>
               <table className="w-full text-sm">
                 <thead className="text-[0.7rem] text-dim uppercase tracking-wider">
                   <tr>
-                    <th className="text-left py-2">Element</th>
-                    <th className="text-left py-2">Measured</th>
-                    <th className="text-left py-2">Expected</th>
-                    <th className="text-left py-2">Status</th>
+                    <th className="text-left py-2">{t('Elemento', 'Element')}</th>
+                    <th className="text-left py-2">{t('Medido', 'Measured')}</th>
+                    <th className="text-left py-2">{t('Esperado', 'Expected')}</th>
+                    <th className="text-left py-2">{t('Estado', 'Status')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -319,14 +327,14 @@ export default function VerifyPage() {
                         em.status === 'in-range' ? 'text-emerald-300' :
                         em.status === 'borderline' ? 'text-amber-300' : 'text-red-300'
                       }`}>
-                        {em.status === 'in-range' ? 'in range' :
-                         em.status === 'borderline' ? 'borderline' : 'out of range'}
+                        {em.status === 'in-range' ? t('en rango', 'in range') :
+                         em.status === 'borderline' ? t('al límite', 'borderline') : t('fuera de rango', 'out of range')}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <div className="text-xs text-dim mt-2">* critical element</div>
+              <div className="text-xs text-dim mt-2">{t('* elemento crítico', '* critical element')}</div>
             </div>
           )}
         </section>
