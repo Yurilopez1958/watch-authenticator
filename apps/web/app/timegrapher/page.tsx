@@ -26,14 +26,24 @@ function analyzeEnvelope(buf: Float64Array, envHz: number, bph: number): Detecti
   const N = buf.length;
   if (N < envHz * 2.5) return null; // need ≥ 2.5 s
 
-  // Remove DC so silence/offset doesn't dominate the correlation.
+  // Robust preprocessing so faint periodic ticks survive next to loud aperiodic
+  // bumps (handling noise). Center-clip below mean+0.5σ to drop the low "grass",
+  // then sqrt-compress so a big bump doesn't dominate the correlation energy.
   let mean = 0;
   for (let i = 0; i < N; i++) mean += buf[i]!;
   mean /= N;
+  let varSum = 0;
+  for (let i = 0; i < N; i++) { const d = buf[i]! - mean; varSum += d * d; }
+  const std = Math.sqrt(varSum / N);
+  const clip = mean + 0.5 * std;
+
   const x = new Float64Array(N);
+  let xm = 0;
+  for (let i = 0; i < N; i++) { const v = buf[i]! - clip; const c = v > 0 ? Math.sqrt(v) : 0; x[i] = c; xm += c; }
+  xm /= N;
   let energy = 0;
-  for (let i = 0; i < N; i++) { const v = buf[i]! - mean; x[i] = v; energy += v * v; }
-  if (energy <= 1e-9) return null; // essentially silence
+  for (let i = 0; i < N; i++) { const v = x[i]! - xm; x[i] = v; energy += v * v; }
+  if (energy <= 1e-9) return null; // essentially silence / no onsets
 
   const nominalPeriod = 3600 / bph;          // seconds per beat
   const P = nominalPeriod * envHz;           // samples per beat (approx)
@@ -83,7 +93,7 @@ export default function TimegrapherPage() {
   const [deviceId, setDeviceId] = useState<string>('');
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [compatMode, setCompatMode] = useState(false); // ScriptProcessor fallback engaged
-  const [diag, setDiag] = useState<{ peak: number; beats: number }>({ peak: 0, beats: 0 });
+  const [diag, setDiag] = useState<{ peak: number; secs: number; conf: number }>({ peak: 0, secs: 0, conf: 0 });
 
   // Audio graph + detection state (refs so the audio callback stays stable)
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -328,23 +338,23 @@ export default function TimegrapherPage() {
       const lv = levelRef.current;
       setLevel(Math.min(1, lv * 3));
       const r = ringRef.current;
-      setDiag({ peak: lv, beats: r.count });
       levelRef.current *= 0.6; // decay so the meter falls back
 
       const env = snapshotEnv();
       drawWave(env);
-      if (!env) { setMetrics(null); return; }
+      const det = env ? analyzeEnvelope(env, ENV_HZ, expectedBph) : null;
+      const conf = det ? Math.round(det.confidence * 100) : 0;
+      setDiag({ peak: lv, secs: r.count / ENV_HZ, conf });
 
-      const det = analyzeEnvelope(env, ENV_HZ, expectedBph);
       // Sensitivity acts as the lock threshold: higher → locks on a weaker periodicity.
-      const lockThreshold = Math.max(0.08, 0.42 - sensitivity * 0.03);
+      const lockThreshold = Math.max(0.06, 0.34 - sensitivity * 0.025);
       if (!det || det.confidence < lockThreshold) { setMetrics(null); return; }
 
       setMetrics({
         rate: det.rate,
         beatError: det.beatError,
         detectedBph: det.detectedBph,
-        confidence: Math.round(det.confidence * 100),
+        confidence: conf,
       });
     }, 200);
     return () => window.clearInterval(id);
@@ -432,7 +442,7 @@ export default function TimegrapherPage() {
           </div>
           {running && (
             <div className="text-[0.62rem] text-blue-300/45 font-mono">
-              {t('nivel', 'level')} {diag.peak.toFixed(4)} · {t('buffer', 'buffer')} {(diag.beats / ENV_HZ).toFixed(1)}s
+              {t('nivel', 'level')} {diag.peak.toFixed(3)} · {t('enganche', 'lock')} {diag.conf}% · {t('buffer', 'buffer')} {diag.secs.toFixed(1)}s
               {diag.peak < 1e-4 && <span className="text-amber-300/80"> · {t('toca el teléfono junto al micro: la barra debe saltar', 'tap the phone near the mic: the bar should jump')}</span>}
             </div>
           )}
