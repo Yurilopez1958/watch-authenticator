@@ -162,4 +162,136 @@ export const ROLEX_MODELS: readonly Model[] = [
 
   // ---- Milgauss ----
   { id: 'rolex-milgauss-116400',     brandId: 'rolex', collection: 'Milgauss',           audience: 'men',     name: 'Milgauss 116400 / 116400GV',           reference: '116400',  yearStart: 2007, yearEnd: 2023, caliber: 'Cal. 3131', caseDiameterMm: 40 },
+
+  // ============================================================
+  // EXPANDED CATALOG — full reference coverage (modern + vintage).
+  // Some vintage figures are best-effort; correct any if needed.
+  // ============================================================
+
+  // ---- Daytona (modern, extra) ----
+  { id: 'rolex-daytona-126503',   brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 126503 (yellow Rolesor)', reference: '126503',   yearStart: 2023, caliber: 'Cal. 4131', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-126509',   brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 126509 (white gold)',     reference: '126509',   yearStart: 2023, caliber: 'Cal. 4131', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-126518ln', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 126518LN (yellow gold)',  reference: '126518LN', yearStart: 2023, caliber: 'Cal. 4131', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-126519ln', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 126519LN (white gold)',   reference: '126519LN', yearStart: 2023, caliber: 'Cal. 4131', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-116503',   brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 116503 (yellow Rolesor)', reference: '116503',   yearStart: 2016, yearEnd: 2023, caliber: 'Cal. 4130', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-116508',   brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 116508 (yellow gold)',    reference: '116508',   yearStart: 2016, yearEnd: 2023, caliber: 'Cal. 4130', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-116509',   brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 116509 (white gold)',     reference: '116509',   yearStart: 2004, yearEnd: 2023, caliber: 'Cal. 4130', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-116515ln', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 116515LN (Everose)',      reference: '116515LN', yearStart: 2011, yearEnd: 2023, caliber: 'Cal. 4130', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-116518ln', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 116518LN (yellow gold)',  reference: '116518LN', yearStart: 2016, yearEnd: 2023, caliber: 'Cal. 4130', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-116519ln', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 116519LN (white gold)',   reference: '116519LN', yearStart: 2016, yearEnd: 2023, caliber: 'Cal. 4130', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-116506',   brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 116506 (platinum)',       reference: '116506',   yearStart: 2013, yearEnd: 2023, caliber: 'Cal. 4130', caseDiameterMm: 40 },
+  // ---- Daytona (vintage, extra) ----
+  { id: 'rolex-daytona-16523', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 16523 (Zenith, two-tone)',   reference: '16523', yearStart: 1988, yearEnd: 2000, caliber: 'Cal. 4030', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-16528', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 16528 (Zenith, yellow gold)', reference: '16528', yearStart: 1988, yearEnd: 2000, caliber: 'Cal. 4030', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-16518', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 16518 (Zenith, yellow gold)', reference: '16518', yearStart: 1991, yearEnd: 2000, caliber: 'Cal. 4030', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-16519', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 16519 (Zenith, white gold)',  reference: '16519', yearStart: 1997, yearEnd: 2000, caliber: 'Cal. 4030', caseDiameterMm: 40 },
+  { id: 'rolex-daytona-6265', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 6265 (manual)', reference: '6265', yearStart: 1971, yearEnd: 1987, caliber: 'Cal. 727', caseDiameterMm: 37 },
+  { id: 'rolex-daytona-6262', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 6262 (manual)', reference: '6262', yearStart: 1970, yearEnd: 1972, caliber: 'Cal. 727', caseDiameterMm: 37 },
+  { id: 'rolex-daytona-6264', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 6264 (manual)', reference: '6264', yearStart: 1970, yearEnd: 1972, caliber: 'Cal. 727', caseDiameterMm: 37 },
+  { id: 'rolex-daytona-6240', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 6240 (manual, screw pushers)', reference: '6240', yearStart: 1965, yearEnd: 1969, caliber: 'Cal. 722', caseDiameterMm: 37 },
+  { id: 'rolex-daytona-6239', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 6239 (manual)', reference: '6239', yearStart: 1963, yearEnd: 1969, caliber: 'Cal. 722', caseDiameterMm: 37 },
+  { id: 'rolex-daytona-6241', brandId: 'rolex', collection: 'Cosmograph Daytona', audience: 'men', name: 'Cosmograph Daytona 6241 (manual)', reference: '6241', yearStart: 1965, yearEnd: 1969, caliber: 'Cal. 722', caseDiameterMm: 37 },
+
+  // ---- GMT-Master (modern + vintage, extra) ----
+  { id: 'rolex-gmt-126713grnr', brandId: 'rolex', collection: 'GMT-Master II', audience: 'men', name: 'GMT-Master II 126713GRNR (two-tone, grey/black)', reference: '126713GRNR', yearStart: 2024, caliber: 'Cal. 3285', caseDiameterMm: 40 },
+  { id: 'rolex-gmt-126718grnr', brandId: 'rolex', collection: 'GMT-Master II', audience: 'men', name: 'GMT-Master II 126718GRNR (yellow gold, grey/black)', reference: '126718GRNR', yearStart: 2023, caliber: 'Cal. 3285', caseDiameterMm: 40 },
+  { id: 'rolex-gmt-126715chnr', brandId: 'rolex', collection: 'GMT-Master II', audience: 'men', name: 'GMT-Master II 126715CHNR "Root Beer" (Everose)', reference: '126715CHNR', yearStart: 2018, caliber: 'Cal. 3285', caseDiameterMm: 40 },
+  { id: 'rolex-gmt-16753', brandId: 'rolex', collection: 'GMT-Master', audience: 'men', name: 'GMT-Master 16753 (two-tone "Root Beer")', reference: '16753', yearStart: 1981, yearEnd: 1988, caliber: 'Cal. 3075', caseDiameterMm: 40 },
+  { id: 'rolex-gmt-16758', brandId: 'rolex', collection: 'GMT-Master', audience: 'men', name: 'GMT-Master 16758 (yellow gold)', reference: '16758', yearStart: 1981, yearEnd: 1988, caliber: 'Cal. 3075', caseDiameterMm: 40 },
+  { id: 'rolex-gmt-ii-16713', brandId: 'rolex', collection: 'GMT-Master II', audience: 'men', name: 'GMT-Master II 16713 (two-tone)', reference: '16713', yearStart: 1989, yearEnd: 2007, caliber: 'Cal. 3185', caseDiameterMm: 40 },
+  { id: 'rolex-gmt-ii-16718', brandId: 'rolex', collection: 'GMT-Master II', audience: 'men', name: 'GMT-Master II 16718 (yellow gold)', reference: '16718', yearStart: 1989, yearEnd: 2007, caliber: 'Cal. 3185', caseDiameterMm: 40 },
+
+  // ---- Air-King (extra) ----
+  { id: 'rolex-air-king-116900', brandId: 'rolex', collection: 'Air-King', audience: 'men', name: 'Air-King 116900 (previous gen)', reference: '116900', yearStart: 2016, yearEnd: 2022, caliber: 'Cal. 3131', caseDiameterMm: 40 },
+  { id: 'rolex-air-king-14010', brandId: 'rolex', collection: 'Air-King', audience: 'unisex', name: 'Air-King 14010 / 14010M', reference: '14010', yearStart: 1989, yearEnd: 2007, caliber: 'Cal. 3130', caseDiameterMm: 34 },
+
+  // ---- Submariner (modern + vintage, extra) ----
+  { id: 'rolex-submariner-126613ln', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner Date 126613LN (two-tone, black)', reference: '126613LN', yearStart: 2020, caliber: 'Cal. 3235', caseDiameterMm: 41 },
+  { id: 'rolex-submariner-126618lb', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner Date 126618LB (yellow gold, blue)', reference: '126618LB', yearStart: 2020, caliber: 'Cal. 3235', caseDiameterMm: 41 },
+  { id: 'rolex-submariner-126619lb', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner Date 126619LB (white gold, blue)', reference: '126619LB', yearStart: 2020, caliber: 'Cal. 3235', caseDiameterMm: 41 },
+  { id: 'rolex-submariner-6204', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner 6204', reference: '6204', yearStart: 1953, yearEnd: 1955, caliber: 'Cal. A260', caseDiameterMm: 37 },
+  { id: 'rolex-submariner-6205', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner 6205', reference: '6205', yearStart: 1954, yearEnd: 1955, caliber: 'Cal. A260', caseDiameterMm: 37 },
+  { id: 'rolex-submariner-6200', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner 6200 "Big Crown"', reference: '6200', yearStart: 1954, yearEnd: 1956, caliber: 'Cal. A296', caseDiameterMm: 38 },
+  { id: 'rolex-submariner-6536', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner 6536', reference: '6536', yearStart: 1955, yearEnd: 1959, caliber: 'Cal. 1030', caseDiameterMm: 38 },
+  { id: 'rolex-submariner-6538', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner 6538 "Big Crown" (Bond)', reference: '6538', yearStart: 1956, yearEnd: 1959, caliber: 'Cal. 1030', caseDiameterMm: 38 },
+  { id: 'rolex-submariner-5512', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner 5512 (4-line, COSC)', reference: '5512', yearStart: 1959, yearEnd: 1978, caliber: 'Cal. 1560', caseDiameterMm: 40 },
+  { id: 'rolex-submariner-168000', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner Date 168000 "Triple Zero"', reference: '168000', yearStart: 1987, yearEnd: 1988, caliber: 'Cal. 3035', caseDiameterMm: 40 },
+  { id: 'rolex-submariner-16613', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner Date 16613 (two-tone)', reference: '16613', yearStart: 1989, yearEnd: 2010, caliber: 'Cal. 3135', caseDiameterMm: 40 },
+  { id: 'rolex-submariner-16618', brandId: 'rolex', collection: 'Submariner', audience: 'men', name: 'Submariner Date 16618 (yellow gold)', reference: '16618', yearStart: 1989, yearEnd: 2010, caliber: 'Cal. 3135', caseDiameterMm: 40 },
+
+  // ---- Datejust (modern + vintage, extra) ----
+  { id: 'rolex-datejust-36-126233', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 36 126233 (two-tone yellow, fluted)', reference: '126233', yearStart: 2018, caliber: 'Cal. 3235', caseDiameterMm: 36 },
+  { id: 'rolex-datejust-36-126231', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 36 126231 (Everose Rolesor, fluted)', reference: '126231', yearStart: 2018, caliber: 'Cal. 3235', caseDiameterMm: 36 },
+  { id: 'rolex-datejust-31-278273', brandId: 'rolex', collection: 'Datejust 31', audience: 'women', name: 'Datejust 31 278273 (two-tone yellow)', reference: '278273', yearStart: 2018, caliber: 'Cal. 2236', caseDiameterMm: 31 },
+  { id: 'rolex-datejust-31-278271', brandId: 'rolex', collection: 'Datejust 31', audience: 'women', name: 'Datejust 31 278271 (Everose Rolesor)', reference: '278271', yearStart: 2018, caliber: 'Cal. 2236', caseDiameterMm: 31 },
+  { id: 'rolex-datejust-1600', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 1600 (smooth bezel)', reference: '1600', yearStart: 1959, yearEnd: 1977, caliber: 'Cal. 1570', caseDiameterMm: 36 },
+  { id: 'rolex-datejust-1603', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 1603 (engine-turned)', reference: '1603', yearStart: 1959, yearEnd: 1977, caliber: 'Cal. 1570', caseDiameterMm: 36 },
+  { id: 'rolex-datejust-16030', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 16030 (smooth)', reference: '16030', yearStart: 1977, yearEnd: 1988, caliber: 'Cal. 3035', caseDiameterMm: 36 },
+  { id: 'rolex-datejust-16013', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 16013 (two-tone, fluted)', reference: '16013', yearStart: 1977, yearEnd: 1988, caliber: 'Cal. 3035', caseDiameterMm: 36 },
+  { id: 'rolex-datejust-16200', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 16200 (smooth)', reference: '16200', yearStart: 1988, yearEnd: 2006, caliber: 'Cal. 3135', caseDiameterMm: 36 },
+  { id: 'rolex-datejust-16220', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 16220 (engine-turned)', reference: '16220', yearStart: 1988, yearEnd: 2006, caliber: 'Cal. 3135', caseDiameterMm: 36 },
+  { id: 'rolex-datejust-16233', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 16233 (two-tone, fluted)', reference: '16233', yearStart: 1988, yearEnd: 2009, caliber: 'Cal. 3135', caseDiameterMm: 36 },
+  { id: 'rolex-datejust-16238', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 16238 (yellow gold, fluted)', reference: '16238', yearStart: 1988, yearEnd: 2009, caliber: 'Cal. 3135', caseDiameterMm: 36 },
+  { id: 'rolex-datejust-16203', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 16203 (two-tone)', reference: '16203', yearStart: 1988, yearEnd: 2009, caliber: 'Cal. 3135', caseDiameterMm: 36 },
+  { id: 'rolex-datejust-16223', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 16223 (two-tone, engine-turned)', reference: '16223', yearStart: 1988, yearEnd: 2009, caliber: 'Cal. 3135', caseDiameterMm: 36 },
+
+  // ---- Day-Date (modern + vintage, extra) ----
+  { id: 'rolex-day-date-40-228239', brandId: 'rolex', collection: 'Day-Date 40', audience: 'men', name: 'Day-Date 40 228239 (white gold)', reference: '228239', yearStart: 2015, caliber: 'Cal. 3255', caseDiameterMm: 40 },
+  { id: 'rolex-day-date-36-128239', brandId: 'rolex', collection: 'Day-Date 36', audience: 'unisex', name: 'Day-Date 36 128239 (white gold)', reference: '128239', yearStart: 2019, caliber: 'Cal. 3255', caseDiameterMm: 36 },
+  { id: 'rolex-day-date-36-128206', brandId: 'rolex', collection: 'Day-Date 36', audience: 'unisex', name: 'Day-Date 36 128206 (platinum)', reference: '128206', yearStart: 2019, caliber: 'Cal. 3255', caseDiameterMm: 36 },
+  { id: 'rolex-day-date-18039', brandId: 'rolex', collection: 'Day-Date 36', audience: 'men', name: 'Day-Date 18039 (white gold)', reference: '18039', yearStart: 1977, yearEnd: 1988, caliber: 'Cal. 3055', caseDiameterMm: 36 },
+  { id: 'rolex-day-date-18239', brandId: 'rolex', collection: 'Day-Date 36', audience: 'men', name: 'Day-Date 18239 (white gold)', reference: '18239', yearStart: 1988, yearEnd: 2000, caliber: 'Cal. 3155', caseDiameterMm: 36 },
+  { id: 'rolex-day-date-18348', brandId: 'rolex', collection: 'Day-Date 36', audience: 'men', name: 'Day-Date 18348 (yellow gold, diamond bezel)', reference: '18348', yearStart: 1988, yearEnd: 2000, caliber: 'Cal. 3155', caseDiameterMm: 36 },
+  { id: 'rolex-day-date-18349', brandId: 'rolex', collection: 'Day-Date 36', audience: 'men', name: 'Day-Date 18349 (white gold, diamond bezel)', reference: '18349', yearStart: 1988, yearEnd: 2000, caliber: 'Cal. 3155', caseDiameterMm: 36 },
+
+  // ---- Explorer / Sea-Dweller (extra) ----
+  { id: 'rolex-explorer-6610', brandId: 'rolex', collection: 'Explorer', audience: 'unisex', name: 'Explorer 6610', reference: '6610', yearStart: 1955, yearEnd: 1959, caliber: 'Cal. 1030', caseDiameterMm: 36 },
+  { id: 'rolex-sea-dweller-16660', brandId: 'rolex', collection: 'Sea-Dweller', audience: 'men', name: 'Sea-Dweller 16660 "Triple Six"', reference: '16660', yearStart: 1978, yearEnd: 1989, caliber: 'Cal. 3035', caseDiameterMm: 40 },
+
+  // ---- Yacht-Master (extra) + Yacht-Master II ----
+  { id: 'rolex-yacht-master-226659', brandId: 'rolex', collection: 'Yacht-Master', audience: 'men', name: 'Yacht-Master 42 (white gold)', reference: '226659', yearStart: 2019, caliber: 'Cal. 3235', caseDiameterMm: 42 },
+  { id: 'rolex-yacht-master-16622', brandId: 'rolex', collection: 'Yacht-Master', audience: 'men', name: 'Yacht-Master 16622 (Rolesium, platinum bezel)', reference: '16622', yearStart: 1999, yearEnd: 2015, caliber: 'Cal. 3135', caseDiameterMm: 40 },
+  { id: 'rolex-yacht-master-16623', brandId: 'rolex', collection: 'Yacht-Master', audience: 'men', name: 'Yacht-Master 16623 (two-tone yellow)', reference: '16623', yearStart: 2008, yearEnd: 2015, caliber: 'Cal. 3135', caseDiameterMm: 40 },
+  { id: 'rolex-yacht-master-16628', brandId: 'rolex', collection: 'Yacht-Master', audience: 'men', name: 'Yacht-Master 16628 (yellow gold)', reference: '16628', yearStart: 1992, yearEnd: 2015, caliber: 'Cal. 3135', caseDiameterMm: 40 },
+  { id: 'rolex-ym-ii-116680', brandId: 'rolex', collection: 'Yacht-Master II', audience: 'men', name: 'Yacht-Master II 116680 (steel)', reference: '116680', yearStart: 2007, caliber: 'Cal. 4161', caseDiameterMm: 44 },
+  { id: 'rolex-ym-ii-116681', brandId: 'rolex', collection: 'Yacht-Master II', audience: 'men', name: 'Yacht-Master II 116681 (Everose two-tone)', reference: '116681', yearStart: 2011, caliber: 'Cal. 4161', caseDiameterMm: 44 },
+  { id: 'rolex-ym-ii-116688', brandId: 'rolex', collection: 'Yacht-Master II', audience: 'men', name: 'Yacht-Master II 116688 (yellow gold)', reference: '116688', yearStart: 2007, caliber: 'Cal. 4161', caseDiameterMm: 44 },
+  { id: 'rolex-ym-ii-116689', brandId: 'rolex', collection: 'Yacht-Master II', audience: 'men', name: 'Yacht-Master II 116689 (white gold)', reference: '116689', yearStart: 2007, caliber: 'Cal. 4161', caseDiameterMm: 44 },
+
+  // ---- Sky-Dweller (extra) ----
+  { id: 'rolex-sky-dweller-336933', brandId: 'rolex', collection: 'Sky-Dweller', audience: 'men', name: 'Sky-Dweller 336933 (yellow Rolesor)', reference: '336933', yearStart: 2017, caliber: 'Cal. 9002', caseDiameterMm: 42 },
+  { id: 'rolex-sky-dweller-336238', brandId: 'rolex', collection: 'Sky-Dweller', audience: 'men', name: 'Sky-Dweller 336238 (yellow gold)', reference: '336238', yearStart: 2017, caliber: 'Cal. 9002', caseDiameterMm: 42 },
+  { id: 'rolex-sky-dweller-336235', brandId: 'rolex', collection: 'Sky-Dweller', audience: 'men', name: 'Sky-Dweller 336235 (Everose gold)', reference: '336235', yearStart: 2017, caliber: 'Cal. 9002', caseDiameterMm: 42 },
+  { id: 'rolex-sky-dweller-336239', brandId: 'rolex', collection: 'Sky-Dweller', audience: 'men', name: 'Sky-Dweller 336239 (white gold)', reference: '336239', yearStart: 2017, caliber: 'Cal. 9002', caseDiameterMm: 42 },
+  { id: 'rolex-sky-dweller-326934', brandId: 'rolex', collection: 'Sky-Dweller', audience: 'men', name: 'Sky-Dweller 326934 (steel, 1st gen)', reference: '326934', yearStart: 2014, yearEnd: 2017, caliber: 'Cal. 9001', caseDiameterMm: 42 },
+  { id: 'rolex-sky-dweller-326933', brandId: 'rolex', collection: 'Sky-Dweller', audience: 'men', name: 'Sky-Dweller 326933 (yellow Rolesor, 1st gen)', reference: '326933', yearStart: 2014, yearEnd: 2017, caliber: 'Cal. 9001', caseDiameterMm: 42 },
+  { id: 'rolex-sky-dweller-326238', brandId: 'rolex', collection: 'Sky-Dweller', audience: 'men', name: 'Sky-Dweller 326238 (yellow gold, 1st gen)', reference: '326238', yearStart: 2012, yearEnd: 2017, caliber: 'Cal. 9001', caseDiameterMm: 42 },
+  { id: 'rolex-sky-dweller-326235', brandId: 'rolex', collection: 'Sky-Dweller', audience: 'men', name: 'Sky-Dweller 326235 (Everose, 1st gen)', reference: '326235', yearStart: 2012, yearEnd: 2017, caliber: 'Cal. 9001', caseDiameterMm: 42 },
+  { id: 'rolex-sky-dweller-326139', brandId: 'rolex', collection: 'Sky-Dweller', audience: 'men', name: 'Sky-Dweller 326139 (white gold, 1st gen)', reference: '326139', yearStart: 2012, yearEnd: 2017, caliber: 'Cal. 9001', caseDiameterMm: 42 },
+
+  // ---- Oyster Perpetual (vintage, extra) ----
+  { id: 'rolex-op-1002', brandId: 'rolex', collection: 'Oyster Perpetual', audience: 'unisex', name: 'Oyster Perpetual 1002', reference: '1002', yearStart: 1959, yearEnd: 1980, caliber: 'Cal. 1570', caseDiameterMm: 34 },
+  { id: 'rolex-op-1003', brandId: 'rolex', collection: 'Oyster Perpetual', audience: 'unisex', name: 'Oyster Perpetual 1003 (engine-turned)', reference: '1003', yearStart: 1960, yearEnd: 1980, caliber: 'Cal. 1570', caseDiameterMm: 34 },
+  { id: 'rolex-op-1007', brandId: 'rolex', collection: 'Oyster Perpetual', audience: 'unisex', name: 'Oyster Perpetual 1007', reference: '1007', yearStart: 1960, yearEnd: 1980, caliber: 'Cal. 1570', caseDiameterMm: 34 },
+  { id: 'rolex-op-6426', brandId: 'rolex', collection: 'Oyster Perpetual', audience: 'unisex', name: 'Oyster Perpetual 6426 (manual)', reference: '6426', yearStart: 1958, yearEnd: 1970, caliber: 'Cal. 1225', caseDiameterMm: 34 },
+  { id: 'rolex-op-6427', brandId: 'rolex', collection: 'Oyster Perpetual', audience: 'unisex', name: 'Oyster Perpetual 6427 (manual)', reference: '6427', yearStart: 1958, yearEnd: 1970, caliber: 'Cal. 1215', caseDiameterMm: 34 },
+  { id: 'rolex-oysterdate-6694', brandId: 'rolex', collection: 'Oyster Perpetual', audience: 'unisex', name: 'Oysterdate Precision 6694 (manual, date)', reference: '6694', yearStart: 1962, yearEnd: 1989, caliber: 'Cal. 1225', caseDiameterMm: 34 },
+  { id: 'rolex-op-39-114300', brandId: 'rolex', collection: 'Oyster Perpetual', audience: 'men', name: 'Oyster Perpetual 39 114300', reference: '114300', yearStart: 2015, yearEnd: 2020, caliber: 'Cal. 3132', caseDiameterMm: 39 },
+
+  // ---- Perpetual 1908 (extra) ----
+  { id: 'rolex-perpetual-1908-52505', brandId: 'rolex', collection: 'Perpetual 1908', audience: 'men', name: 'Perpetual 1908 (platinum)', reference: '52505', yearStart: 2024, caliber: 'Cal. 7140', caseDiameterMm: 39 },
+
+  // ---- Lady-Datejust (28 modern + 26 vintage) ----
+  { id: 'rolex-lady-datejust-28-279173', brandId: 'rolex', collection: 'Lady-Datejust 28', audience: 'women', name: 'Lady-Datejust 28 279173 (two-tone yellow)', reference: '279173', yearStart: 2018, caliber: 'Cal. 2236', caseDiameterMm: 28 },
+  { id: 'rolex-lady-datejust-28-279171', brandId: 'rolex', collection: 'Lady-Datejust 28', audience: 'women', name: 'Lady-Datejust 28 279171 (Everose Rolesor)', reference: '279171', yearStart: 2018, caliber: 'Cal. 2236', caseDiameterMm: 28 },
+  { id: 'rolex-lady-datejust-28-279178', brandId: 'rolex', collection: 'Lady-Datejust 28', audience: 'women', name: 'Lady-Datejust 28 279178 (yellow gold)', reference: '279178', yearStart: 2018, caliber: 'Cal. 2236', caseDiameterMm: 28 },
+  { id: 'rolex-lady-datejust-26-179174', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 179174 (steel / WG bezel)', reference: '179174', yearStart: 2005, yearEnd: 2015, caliber: 'Cal. 2235', caseDiameterMm: 26 },
+  { id: 'rolex-lady-datejust-26-179173', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 179173 (two-tone)', reference: '179173', yearStart: 2005, yearEnd: 2015, caliber: 'Cal. 2235', caseDiameterMm: 26 },
+  { id: 'rolex-lady-datejust-26-179178', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 179178 (yellow gold)', reference: '179178', yearStart: 2005, yearEnd: 2015, caliber: 'Cal. 2235', caseDiameterMm: 26 },
+  { id: 'rolex-lady-datejust-26-79173', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 79173 (two-tone)', reference: '79173', yearStart: 2000, yearEnd: 2005, caliber: 'Cal. 2235', caseDiameterMm: 26 },
+  { id: 'rolex-lady-datejust-26-79178', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 79178 (yellow gold)', reference: '79178', yearStart: 2000, yearEnd: 2005, caliber: 'Cal. 2235', caseDiameterMm: 26 },
+  { id: 'rolex-lady-datejust-26-79174', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 79174 (steel / WG)', reference: '79174', yearStart: 2000, yearEnd: 2005, caliber: 'Cal. 2235', caseDiameterMm: 26 },
+  { id: 'rolex-lady-datejust-26-69173', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 69173 (two-tone)', reference: '69173', yearStart: 1984, yearEnd: 2000, caliber: 'Cal. 2135', caseDiameterMm: 26 },
+  { id: 'rolex-lady-datejust-26-69178', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 69178 (yellow gold)', reference: '69178', yearStart: 1984, yearEnd: 2000, caliber: 'Cal. 2135', caseDiameterMm: 26 },
+  { id: 'rolex-lady-datejust-26-69174', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 69174 (steel / WG)', reference: '69174', yearStart: 1984, yearEnd: 2000, caliber: 'Cal. 2135', caseDiameterMm: 26 },
 ];

@@ -487,6 +487,90 @@ export const ROLEX_MODEL_TO_CALIBER: Readonly<Record<string, string>> = {
   'rolex-air-king-114200':           '3130',
   // Milgauss
   'rolex-milgauss-116400':           '3131',
+
+  // ===== EXPANDED CATALOG (calibers with reference specs on file) =====
+  // Daytona (extra)
+  'rolex-daytona-126503':            '4131',
+  'rolex-daytona-126509':            '4131',
+  'rolex-daytona-126518ln':          '4131',
+  'rolex-daytona-126519ln':          '4131',
+  'rolex-daytona-116503':            '4130',
+  'rolex-daytona-116508':            '4130',
+  'rolex-daytona-116509':            '4130',
+  'rolex-daytona-116515ln':          '4130',
+  'rolex-daytona-116518ln':          '4130',
+  'rolex-daytona-116519ln':          '4130',
+  'rolex-daytona-116506':            '4130',
+  'rolex-daytona-16523':             '4030',
+  'rolex-daytona-16528':             '4030',
+  'rolex-daytona-16518':             '4030',
+  'rolex-daytona-16519':             '4030',
+  'rolex-daytona-6265':              '727',
+  'rolex-daytona-6262':              '727',
+  'rolex-daytona-6264':              '727',
+  // GMT-Master (extra)
+  'rolex-gmt-126713grnr':            '3285',
+  'rolex-gmt-126718grnr':            '3285',
+  'rolex-gmt-126715chnr':            '3285',
+  'rolex-gmt-16753':                 '3075',
+  'rolex-gmt-16758':                 '3075',
+  'rolex-gmt-ii-16713':              '3185',
+  'rolex-gmt-ii-16718':              '3185',
+  // Air-King (extra)
+  'rolex-air-king-116900':           '3131',
+  'rolex-air-king-14010':            '3130',
+  // Submariner (extra)
+  'rolex-submariner-126613ln':       '3235',
+  'rolex-submariner-126618lb':       '3235',
+  'rolex-submariner-126619lb':       '3235',
+  'rolex-submariner-168000':         '3035',
+  'rolex-submariner-16613':          '3135',
+  'rolex-submariner-16618':          '3135',
+  // Datejust (extra)
+  'rolex-datejust-36-126233':        '3235',
+  'rolex-datejust-36-126231':        '3235',
+  'rolex-datejust-31-278273':        '2236',
+  'rolex-datejust-31-278271':        '2236',
+  'rolex-datejust-1600':             '1570',
+  'rolex-datejust-1603':             '1570',
+  'rolex-datejust-16030':            '3035',
+  'rolex-datejust-16013':            '3035',
+  'rolex-datejust-16200':            '3135',
+  'rolex-datejust-16220':            '3135',
+  'rolex-datejust-16233':            '3135',
+  'rolex-datejust-16238':            '3135',
+  'rolex-datejust-16203':            '3135',
+  'rolex-datejust-16223':            '3135',
+  // Day-Date (extra)
+  'rolex-day-date-40-228239':        '3255',
+  'rolex-day-date-36-128239':        '3255',
+  'rolex-day-date-36-128206':        '3255',
+  'rolex-day-date-18039':            '3055',
+  'rolex-day-date-18239':            '3155',
+  'rolex-day-date-18348':            '3155',
+  'rolex-day-date-18349':            '3155',
+  // Sea-Dweller (extra)
+  'rolex-sea-dweller-16660':         '3035',
+  // Yacht-Master (extra)
+  'rolex-yacht-master-226659':       '3235',
+  'rolex-yacht-master-16622':        '3135',
+  'rolex-yacht-master-16623':        '3135',
+  'rolex-yacht-master-16628':        '3135',
+  // Sky-Dweller (extra)
+  'rolex-sky-dweller-336933':        '9002',
+  'rolex-sky-dweller-336238':        '9002',
+  'rolex-sky-dweller-336235':        '9002',
+  'rolex-sky-dweller-336239':        '9002',
+  // Oyster Perpetual (extra)
+  'rolex-op-1002':                   '1570',
+  'rolex-op-1003':                   '1570',
+  'rolex-op-1007':                   '1570',
+  // Perpetual 1908 (extra)
+  'rolex-perpetual-1908-52505':      '7140',
+  // Lady-Datejust 28 (extra)
+  'rolex-lady-datejust-28-279173':   '2236',
+  'rolex-lady-datejust-28-279171':   '2236',
+  'rolex-lady-datejust-28-279178':   '2236',
 };
 
 /** Returns the Movement entry for a given Rolex model id, or undefined if unknown. */
