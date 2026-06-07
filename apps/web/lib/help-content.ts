@@ -140,6 +140,19 @@ export const HELP: Record<string, HelpTopic> = {
     ],
     tip: { es: 'Si llegas al límite del mes, sube de plan o espera al día 1 del mes siguiente.', en: 'If you hit the monthly limit, upgrade or wait until the 1st of next month.' },
   },
+  developer: {
+    title: { es: 'API para dealers', en: 'Dealer API' },
+    intro: {
+      es: 'Crea claves para usar la autenticación y la valuación desde tu propio sistema.',
+      en: 'Create keys to use authentication and valuation from your own system.',
+    },
+    steps: [
+      { es: 'Inicia sesión (en Planes) y crea una clave; cópiala (solo se muestra una vez).', en: 'Sign in (in Plans) and create a key; copy it (shown only once).' },
+      { es: 'Mándala en la cabecera Authorization: Bearer wa_live_…', en: 'Send it in the Authorization: Bearer wa_live_… header.' },
+      { es: 'Llama a /api/v1/value o /api/v1/authenticate (ver ejemplos).', en: 'Call /api/v1/value or /api/v1/authenticate (see examples).' },
+      { es: 'El uso cuenta contra tu plan; puedes revocar una clave cuando quieras.', en: 'Usage counts against your plan; you can revoke a key anytime.' },
+    ],
+  },
   admin: {
     title: { es: 'Panel de administración', en: 'Admin panel' },
     intro: {
