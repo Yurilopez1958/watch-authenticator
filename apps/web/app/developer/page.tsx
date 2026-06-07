@@ -130,6 +130,19 @@ curl -X POST ${base}/api/v1/authenticate \\
   -d '{"brandName":"Rolex","modelName":"Submariner","part":"bezel",
        "examined":{"imageData":"<base64>","mediaType":"image/jpeg"}}'`}</pre>
         <p className="text-xs text-dim">{t('Respuesta: JSON con "data". Errores: 401 (clave inválida), 402 (pago pendiente), 429 (límite del plan).', 'Response: JSON with "data". Errors: 401 (invalid key), 402 (payment due), 429 (plan limit).')}</p>
+
+        <div className="border-t border-soft pt-3 mt-1">
+          <div className="text-xs uppercase tracking-wide text-dim mb-2">{t('Qué significa cada cosa', 'What each part means')}</div>
+          <p className="text-xs text-dim mb-3">{t('El código va en inglés porque son instrucciones que el programa lee literalmente (no se traducen, igual que un email o un número de serie). Esto explica, en español, qué hace cada parte:', 'The code is in English because these are instructions the program reads literally (they are not translated, like an email or a serial number). Here is what each part does, in plain language:')}</p>
+          <ul className="text-xs text-muted space-y-1.5 leading-relaxed">
+            <li><span className="font-semibold">{t('Valoración', 'Valuation')}</span> — {t('pide el precio de mercado de un reloj a partir de su marca, modelo y referencia.', 'requests the market price of a watch from its brand, model and reference.')}</li>
+            <li><span className="font-semibold">{t('Autenticación', 'Authentication')}</span> — {t('envía la foto de una parte (p. ej. el bisel) y devuelve el análisis de autenticidad.', 'sends a photo of a part (e.g. the bezel) and returns the authenticity analysis.')}</li>
+            <li><code className="font-mono text-accent-bright">curl -X POST</code> — {t('un programa enviando la consulta a tu servidor (no una persona).', 'a program sending the query to your server (not a person).')}</li>
+            <li><code className="font-mono text-accent-bright">Authorization: Bearer wa_live_…</code> — {t('la clave secreta del cliente (su «contraseña» para identificarse y que se le cobre).', "the client's secret key (their “password” to identify themselves and be billed).")}</li>
+            <li><code className="font-mono text-accent-bright">brand / model / reference</code> — {t('marca, modelo y referencia del reloj.', 'the watch brand, model and reference.')}</li>
+            <li><code className="font-mono text-accent-bright">part / examined</code> — {t('la parte fotografiada y la imagen (en formato base64) que se analiza.', 'the photographed part and the image (in base64 format) being analyzed.')}</li>
+          </ul>
+        </div>
       </section>
     </div>
   );
