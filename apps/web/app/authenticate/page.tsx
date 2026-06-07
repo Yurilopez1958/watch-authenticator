@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ALL_BRANDS,
   ALL_MODELS,
@@ -20,7 +20,7 @@ import {
   type WatchPart,
   type XRFMeasurement,
 } from '@watch-auth/core';
-import { getPhotos, type RefPhoto } from '@/lib/photo-store';
+import { getPhotos, getPhotosByModel, savePhoto, deletePhoto, type RefPhoto } from '@/lib/photo-store';
 import { parseDecimal } from '@/lib/num';
 import { useLang, type Lang } from '@/lib/i18n';
 import { usePro } from '@/lib/pro';
@@ -90,6 +90,55 @@ const PARTS: readonly { id: WatchPart; label: Bi }[] = [
   { id: 'bracelet-link', label: { es: 'Brazalete', en: 'Bracelet' } },
   { id: 'clasp', label: { es: 'Cierre', en: 'Clasp' } },
 ];
+
+// Which watch part each authentication checkpoint's reference photo lives under.
+const CHECKPOINT_PART: Readonly<Record<string, WatchPart>> = {
+  // Rolex
+  'crown-logo': 'logo', cyclops: 'dial', 'dial-printing': 'dial', hands: 'hands',
+  rehaut: 'serial-number', 'case-back': 'case-back', 'serial-engraving': 'serial-number',
+  'bracelet-clasp': 'clasp', 'weight-feel': 'bezel',
+  // Omega
+  'omega-logo': 'logo', 'omega-caseback': 'case-back', 'omega-movement': 'movement',
+  'omega-bracelet': 'clasp', 'omega-bezel-dial': 'dial',
+  // Patek Philippe
+  'patek-seal': 'movement', 'patek-dial-logo': 'dial', 'patek-case-hallmarks': 'case-back',
+  'patek-nautilus-aquanaut': 'dial', 'patek-bracelet-strap': 'clasp',
+  // Audemars Piguet
+  'ap-tapisserie': 'dial', 'ap-octagonal-bezel': 'bezel', 'ap-movement': 'movement',
+  'ap-bracelet': 'bracelet-link',
+  // Cartier
+  'cartier-secret-signature': 'dial', 'cartier-cabochon-crown': 'logo',
+  'cartier-case-screws': 'bezel', 'cartier-movement': 'movement', 'cartier-bracelet': 'clasp',
+};
+
+/** Read an image file and downscale it (longest side ≤ max) to keep IndexedDB lean. */
+async function imageFileToDataUrl(file: File, max = 1600): Promise<string> {
+  const raw = await new Promise<string>((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result as string);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(file);
+  });
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error('image decode failed'));
+      i.src = raw;
+    });
+    const scale = Math.min(1, max / Math.max(img.width, img.height));
+    if (scale >= 1) return raw;
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(img.width * scale);
+    cv.height = Math.round(img.height * scale);
+    const ctx = cv.getContext('2d');
+    if (!ctx) return raw;
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+    return cv.toDataURL('image/jpeg', 0.85);
+  } catch {
+    return raw;
+  }
+}
 
 type Step = 0 | 1 | 2 | 3 | 4;
 const STEP_LABELS: readonly Bi[] = [
@@ -382,6 +431,49 @@ export default function AuthenticatePage() {
   // For the movement check, a custom watch has no known caliber → treat as unknown.
   const movementModelId = modelCustom ? '__custom__' : modelId;
   const expectedMovement = useMemo(() => getMovementForModelAcrossBrands(movementModelId), [movementModelId]);
+
+  // Per-part reference photos the user saved for this brand+model, grouped by part —
+  // surfaced under each authentication checkpoint as "my authentic reference".
+  const [refByPart, setRefByPart] = useState<Record<string, RefPhoto[]>>({});
+  const [refLightbox, setRefLightbox] = useState<string | null>(null);
+  const refUploadPart = useRef<WatchPart | null>(null);
+  const refFileInput = useRef<HTMLInputElement | null>(null);
+
+  const reloadRefs = useCallback(async () => {
+    try {
+      const rows = await getPhotosByModel(effectiveBrandId, movementModelId);
+      const map: Record<string, RefPhoto[]> = {};
+      for (const r of rows) (map[r.part] ??= []).push(r);
+      setRefByPart(map);
+    } catch { setRefByPart({}); }
+  }, [effectiveBrandId, movementModelId]);
+  useEffect(() => { void reloadRefs(); }, [reloadRefs]);
+
+  const onAddRefPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const part = refUploadPart.current;
+    e.target.value = '';
+    if (!file || !part) return;
+    try {
+      const dataUrl = await imageFileToDataUrl(file);
+      await savePhoto({
+        id: crypto.randomUUID(),
+        brandId: effectiveBrandId,
+        modelId: movementModelId,
+        caliber: expectedMovement?.caliber ?? '',
+        year,
+        part,
+        dataUrl,
+        createdAt: Date.now(),
+      });
+      await reloadRefs();
+    } catch (err) {
+      alert(t('No se pudo guardar la foto.', 'Could not save the photo.') + ' ' + (err as Error).message);
+    }
+  };
+  const onDeleteRef = async (id: string) => {
+    try { await deletePhoto(id); await reloadRefs(); } catch { /* ignore */ }
+  };
 
   // Saved chronocomparator reading (shown in the verdict + included in the report).
   const [timing, setTiming] = useState<TimingReading | null>(null);
@@ -1462,7 +1554,10 @@ export default function AuthenticatePage() {
 
               {/* General brand checkpoints */}
               <div className="grid md:grid-cols-2 gap-3">
-                {getBrandCheckpoints(effectiveBrandId).map((cp) => (
+                {getBrandCheckpoints(effectiveBrandId).map((cp) => {
+                  const part = CHECKPOINT_PART[cp.id];
+                  const refs = part ? (refByPart[part] ?? []) : [];
+                  return (
                   <div key={cp.id} className="rounded-lg border border-soft bg-card p-4">
                     <div className="text-sm font-semibold mb-2">{cp.label[lang]}</div>
                     <ul className="space-y-1.5 text-xs text-muted">
@@ -1470,9 +1565,39 @@ export default function AuthenticatePage() {
                         <li key={i} className="flex gap-2"><span className="text-accent-bright shrink-0">·</span><span>{pt[lang]}</span></li>
                       ))}
                     </ul>
+                    {part && (
+                      <div className="mt-3 pt-3 border-t border-soft">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[0.7rem] uppercase tracking-wide text-dim">{t('Mi referencia auténtica', 'My authentic reference')}</span>
+                          <button type="button" onClick={() => { refUploadPart.current = part; refFileInput.current?.click(); }} className="text-[0.7rem] text-accent-bright hover:underline">+ {t('Añadir foto', 'Add photo')}</button>
+                        </div>
+                        {refs.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {refs.map((r) => (
+                              <div key={r.id} className="relative group">
+                                <img src={r.dataUrl} alt="" onClick={() => setRefLightbox(r.dataUrl)} className="w-14 h-14 object-cover rounded-md border border-soft cursor-pointer" />
+                                <button type="button" onClick={() => void onDeleteRef(r.id)} aria-label={t('Eliminar', 'Delete')} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white text-[0.7rem] leading-none hidden group-hover:flex items-center justify-center">×</button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[0.7rem] text-dim">{t('Aún no tienes foto de esta parte. Añade una de tu pieza auténtica.', 'No photo of this part yet. Add one from your authentic piece.')}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* Hidden uploader + lightbox for reference photos */}
+              <input ref={refFileInput} type="file" accept="image/*" className="hidden" onChange={(e) => void onAddRefPhoto(e)} />
+              {refLightbox && (
+                <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setRefLightbox(null)}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={refLightbox} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
+                </div>
+              )}
             </div>
           )}
         </StepCard>

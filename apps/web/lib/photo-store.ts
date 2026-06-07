@@ -101,6 +101,13 @@ export function getPhotos(brandId: string, modelId: string, part: string): Promi
   ).then((rows) => rows.sort((a, b) => b.createdAt - a.createdAt));
 }
 
+/** All photos for a brand + model, across every part (newest first). */
+export function getPhotosByModel(brandId: string, modelId: string): Promise<RefPhoto[]> {
+  return tx<RefPhoto[]>('readonly', (store) =>
+    store.index('by_model').getAll([brandId, modelId]),
+  ).then((rows) => rows.sort((a, b) => b.createdAt - a.createdAt));
+}
+
 /** Count of photos stored for a brand + model (across all parts). */
 export function countByModel(brandId: string, modelId: string): Promise<number> {
   return tx<number>('readonly', (store) =>
