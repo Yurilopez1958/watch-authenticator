@@ -1,6 +1,7 @@
 import { getAdmin, getUserId } from './clients';
 import { PLANS, SAAS_ENABLED, type PlanId } from '@/lib/plans';
 import { ERRORS, errorResponse } from './errors';
+import { sendEmail, biHtml } from './email';
 
 export type Ctx = { userId: string; plan: PlanId };
 
@@ -68,7 +69,23 @@ export async function enforceQuota(ctx: Ctx, kind: 'auth' | 'valuation') {
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
   if (!row?.allowed) throw ERRORS.limitReached(kind, limit ?? 0);
+  // One-shot usage warnings at 80% and 100% (fires once as `used` crosses each).
+  if (limit) {
+    const used = row.used as number;
+    if (used === Math.floor(limit * 0.8) || used === limit) void notifyQuota(ctx.userId, kind, used, limit);
+  }
   return { used: row.used as number, limit };
+}
+
+async function notifyQuota(userId: string, kind: 'auth' | 'valuation', used: number, limit: number) {
+  const { data: prof } = await getAdmin().from('profiles').select('email').eq('id', userId).single();
+  const es = kind === 'auth' ? 'autenticaciones' : 'valuaciones';
+  const en = kind === 'auth' ? 'authentications' : 'valuations';
+  await sendEmail(
+    prof?.email,
+    used >= limit ? 'Límite alcanzado / Limit reached — Watch Authenticator' : 'Aviso de uso / Usage notice — Watch Authenticator',
+    biHtml(`Llevas ${used}/${limit} ${es} este mes.`, `You've used ${used}/${limit} ${en} this month.`),
+  );
 }
 
 /** Registers the device and enforces the plan's device limit (anti-sharing). */
@@ -107,5 +124,7 @@ export async function enforceDevice(ctx: Ctx, req: Request) {
       user_id: ctx.userId, type: 'suspicious_ip', severity: 3, ip, details: { ips: [...ips] },
     });
     await admin.from('profiles').update({ status: 'review' }).eq('id', ctx.userId);
+    void sendEmail(process.env.ADMIN_EMAIL, 'Alerta de seguridad / Security alert — Watch Authenticator',
+      biHtml(`Actividad sospechosa (varias IPs) en el usuario ${ctx.userId}.`, `Suspicious activity (multiple IPs) for user ${ctx.userId}.`));
   }
 }

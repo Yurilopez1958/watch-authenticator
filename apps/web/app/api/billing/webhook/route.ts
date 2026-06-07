@@ -1,6 +1,7 @@
 import type Stripe from 'stripe';
 import { getStripe, getAdmin } from '@/lib/server/clients';
 import { planFromPriceId, GRACE_DAYS } from '@/lib/plans';
+import { sendEmail, biHtml } from '@/lib/server/email';
 
 // App Router handlers receive the RAW body via req.text() — required to verify
 // the Stripe signature.
@@ -59,6 +60,14 @@ export async function POST(req: Request) {
         });
         await admin.from('subscriptions').update({ grace_until: null })
           .eq('stripe_customer_id', inv.customer as string);
+        // Receipt email (no-op if email not configured).
+        if (userId) {
+          const { data: prof } = await admin.from('profiles').select('email').eq('id', userId).single();
+          const amount = `${(inv.amount_paid / 100).toLocaleString()} ${inv.currency.toUpperCase()}`;
+          await sendEmail(prof?.email,
+            'Recibo / Receipt — Watch Authenticator',
+            biHtml(`Hemos recibido tu pago de ${amount}. ¡Gracias!`, `We received your payment of ${amount}. Thank you!`));
+        }
         break;
       }
     }
