@@ -7,9 +7,9 @@ import { getBillingMe, startCheckout, openPortal, buyCredits, type BillingMe, ty
 
 type Card = { id: PlanId; price: string; auth: string; val: string; dev: number; highlight?: boolean };
 const CARDS: Card[] = [
-  { id: 'free',     price: '0',  auth: '5',   val: '10',  dev: 1 },
-  { id: 'pro',      price: '29', auth: '100', val: '500', dev: 2, highlight: true },
-  { id: 'business', price: '99', auth: '∞',   val: '∞',   dev: 5 },
+  { id: 'free',     price: '0',     auth: '5',   val: '10',  dev: 1 },
+  { id: 'pro',      price: '9.99',  auth: '100', val: '500', dev: 2, highlight: true },
+  { id: 'business', price: '29.99', auth: '∞',   val: '∞',   dev: 5 },
 ];
 const NAME: Record<PlanId, string> = { free: 'Free', pro: 'Pro', business: 'Business' };
 
@@ -149,7 +149,7 @@ export default function BillingPage() {
             <div key={c.id} className={`card p-5 space-y-3 ${c.highlight ? 'border-accent' : ''}`}>
               <div className="flex items-baseline justify-between">
                 <h3 className="text-lg font-bold">{NAME[c.id]}</h3>
-                <div className="text-right"><span className="text-2xl font-bold">{c.price === '0' ? t('Gratis', 'Free') : `${c.price} €`}</span>{c.price !== '0' && <span className="text-xs text-dim">/{t('mes', 'mo')}</span>}</div>
+                <div className="text-right"><span className="text-2xl font-bold">{c.price === '0' ? t('Gratis', 'Free') : `$${c.price}`}</span>{c.price !== '0' && <span className="text-xs text-dim">/{t('mes', 'mo')}</span>}</div>
               </div>
               <ul className="text-sm text-muted space-y-1">
                 <li>{c.auth} {t('autenticaciones/mes', 'authentications/mo')}</li>
