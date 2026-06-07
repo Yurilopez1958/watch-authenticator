@@ -21,7 +21,6 @@ const LINKS: readonly NavLink[] = [
   { href: '/billing', es: 'Planes', en: 'Plans' },
   { href: '/connect', es: 'Conectar Niton', en: 'Connect Niton', pro: true },
   { href: '/import', es: 'Importar CSV', en: 'Import CSV', pro: true },
-  { href: '/catalog', es: 'Catálogo', en: 'Catalog', pro: true },
   { href: '/settings', es: 'Cumplimiento', en: 'Compliance', pro: true },
   { href: '/developer', es: 'API', en: 'API', pro: true },
   { href: '/admin', es: 'Admin', en: 'Admin', pro: true },
