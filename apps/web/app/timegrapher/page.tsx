@@ -159,8 +159,11 @@ export default function TimegrapherPage() {
 
   const loadDevices = async () => {
     try {
-      const list = await navigator.mediaDevices.enumerateDevices();
-      setDevices(list.filter((d) => d.kind === 'audioinput'));
+      const list = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput');
+      setDevices(list);
+      // If the remembered mic was unplugged (and we can see real ids), fall back to default.
+      const real = list.filter((d) => d.deviceId);
+      setDeviceId((cur) => (cur && real.length > 0 && !real.some((d) => d.deviceId === cur)) ? '' : cur);
     } catch { /* noop */ }
   };
 
@@ -177,8 +180,11 @@ export default function TimegrapherPage() {
     }
   };
 
-  // Refresh the device list when a mic is plugged in / removed.
+  // On mount: restore the saved mic choice and list inputs. Also refresh the list
+  // whenever a mic is plugged in / removed (works on phone and PC).
   useEffect(() => {
+    try { const saved = localStorage.getItem('tg-mic-device'); if (saved) setDeviceId(saved); } catch { /* noop */ }
+    void loadDevices();
     const md = navigator.mediaDevices;
     if (!md?.addEventListener) return;
     const handler = () => { void loadDevices(); };
@@ -188,6 +194,7 @@ export default function TimegrapherPage() {
 
   const onPickDevice = (id: string) => {
     setDeviceId(id);
+    try { if (id) localStorage.setItem('tg-mic-device', id); else localStorage.removeItem('tg-mic-device'); } catch { /* noop */ }
     if (running) { stop(); window.setTimeout(() => void start(id), 200); }
   };
 
@@ -494,20 +501,24 @@ export default function TimegrapherPage() {
 
         {pro && <div>
           <div className="text-xs uppercase tracking-wide text-dim mb-2">{t('Entrada de micrófono', 'Microphone input')}</div>
-          {devices.length > 0 ? (
-            <select value={deviceId} onChange={(e) => onPickDevice(e.target.value)} className="field">
-              <option value="">{t('Micrófono predeterminado del sistema', 'System default microphone')}</option>
-              {devices.map((d, i) => (
-                <option key={d.deviceId || i} value={d.deviceId}>{d.label || t(`Micrófono ${i + 1}`, `Microphone ${i + 1}`)}</option>
-              ))}
-            </select>
-          ) : (
-            <button onClick={() => void detectMics()} className="btn-ghost text-sm">{t('Detectar micrófonos', 'Detect microphones')}</button>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {devices.length > 0 && (
+              <select value={deviceId} onChange={(e) => onPickDevice(e.target.value)} className="field max-w-xs">
+                <option value="">{t('Micrófono predeterminado del sistema', 'System default microphone')}</option>
+                {devices.map((d, i) => (
+                  <option key={d.deviceId || i} value={d.deviceId}>{d.label || t(`Micrófono ${i + 1}`, `Microphone ${i + 1}`)}</option>
+                ))}
+              </select>
+            )}
+            <button onClick={() => void detectMics()} className="btn-ghost text-sm shrink-0">
+              {devices.some((d) => d.label) ? t('Actualizar lista', 'Refresh list') : t('Detectar micrófonos', 'Detect microphones')}
+            </button>
+          </div>
+          {deviceId && <p className="text-xs text-emerald-300 mt-1.5">✓ {t('Micrófono externo seleccionado (se recuerda para la próxima vez).', 'External microphone selected (remembered for next time).')}</p>}
           <p className="text-xs text-dim mt-1.5">
             {t(
-              'Usa el micrófono interno del teléfono por defecto — no hay que conectar nada. (Opcional/avanzado: conecta un micrófono de contacto para reloj y elígelo aquí para una señal aún más limpia.)',
-              'Uses your phone’s built-in microphone by default — nothing to plug in. (Optional/advanced: connect a watch contact microphone and pick it here for an even cleaner signal.)',
+              'Por defecto usa el micrófono interno — no hay que conectar nada. Avanzado: conecta un micrófono de contacto para reloj (por USB-C/jack/adaptador en el móvil, o USB/jack en el PC), pulsa "Detectar" y elígelo aquí para una señal más limpia.',
+              'By default it uses the built-in microphone — nothing to plug in. Advanced: connect a watch contact microphone (via USB-C/jack/adapter on phone, or USB/jack on PC), press "Detect" and pick it here for a cleaner signal.',
             )}
           </p>
         </div>}
