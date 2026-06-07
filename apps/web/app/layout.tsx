@@ -38,11 +38,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ProProvider>
           <SkipLink />
           <SiteHeader />
-          {/* No `fade-in` here: its lingering transform would make <main> the
-              containing block for position:fixed modals (camera, warnings),
-              clamping them to the content box instead of the viewport. */}
-          <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">{children}</main>
-          <SiteFooter />
+          {/* On desktop the nav is a fixed left sidebar (w-60), so the content
+              column is pushed right by the same amount (lg:pl-60). */}
+          <div className="lg:pl-60">
+            {/* No `fade-in` here: its lingering transform would make <main> the
+                containing block for position:fixed modals (camera, warnings),
+                clamping them to the content box instead of the viewport. */}
+            <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">{children}</main>
+            <SiteFooter />
+          </div>
           <StartScanFab />
           <PaywallSheet />
           </ProProvider>
