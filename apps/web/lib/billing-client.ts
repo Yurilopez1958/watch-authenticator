@@ -30,6 +30,8 @@ export async function authedFetch(path: string, init: RequestInit = {}): Promise
 
 export type PlanId = 'free' | 'pro' | 'business';
 
+export type BillingInterval = 'month' | 'year';
+
 export type BillingMe = {
   plan: PlanId;
   status: string;
@@ -37,6 +39,7 @@ export type BillingMe = {
   cancelAtPeriodEnd: boolean;
   limits: { auth: number | null; valuation: number | null; devices: number };
   used: { auth: number; valuation: number };
+  credits: number;
 };
 
 /** Loads the current plan + usage, or null if unavailable (not signed in / not configured). */
@@ -48,11 +51,22 @@ export async function getBillingMe(): Promise<BillingMe | null> {
   } catch { return null; }
 }
 
-/** Starts Stripe Checkout for a paid plan; returns the redirect URL or null. */
-export async function startCheckout(plan: 'pro' | 'business'): Promise<string | null> {
+/** Starts Stripe Checkout for a paid plan + interval; returns the redirect URL or null. */
+export async function startCheckout(plan: 'pro' | 'business', interval: BillingInterval = 'month'): Promise<string | null> {
   try {
     const res = await authedFetch('/api/billing/checkout', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan, interval }),
+    });
+    const j = await res.json().catch(() => null);
+    return j?.url ?? null;
+  } catch { return null; }
+}
+
+/** Starts a one-time Checkout to buy credit packs; returns the URL or null. */
+export async function buyCredits(packs = 1): Promise<string | null> {
+  try {
+    const res = await authedFetch('/api/billing/buy-credits', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ packs }),
     });
     const j = await res.json().catch(() => null);
     return j?.url ?? null;

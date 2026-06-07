@@ -17,6 +17,7 @@ export async function GET(req: Request) {
     const { data: usage } = await admin.from('usage_counters')
       .select('auth_count, valuation_count')
       .eq('user_id', userId).eq('period_start', period.toISOString().slice(0, 10)).maybeSingle();
+    const { data: credits } = await admin.from('credits').select('balance').eq('user_id', userId).maybeSingle();
 
     return Response.json({
       plan,
@@ -25,6 +26,7 @@ export async function GET(req: Request) {
       cancelAtPeriodEnd: sub?.cancel_at_period_end ?? false,
       limits: { auth: PLANS[plan].authPerMonth, valuation: PLANS[plan].valuationsPerMonth, devices: PLANS[plan].devices },
       used: { auth: usage?.auth_count ?? 0, valuation: usage?.valuation_count ?? 0 },
+      credits: credits?.balance ?? 0,
     });
   } catch (e) {
     return errorResponse(e);

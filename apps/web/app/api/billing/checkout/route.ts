@@ -1,13 +1,13 @@
 import { getStripe, getAdmin, getUserId } from '@/lib/server/clients';
-import { PLANS, type PlanId } from '@/lib/plans';
+import { priceIdFor, type PlanId, type BillingInterval } from '@/lib/plans';
 import { ERRORS, errorResponse } from '@/lib/server/errors';
 
 export async function POST(req: Request) {
   try {
     const userId = await getUserId(req);
     if (!userId) throw ERRORS.unauthorized();
-    const { plan } = (await req.json().catch(() => ({}))) as { plan?: PlanId };
-    const priceId = plan ? PLANS[plan]?.stripePriceId : null;
+    const { plan, interval } = (await req.json().catch(() => ({}))) as { plan?: PlanId; interval?: BillingInterval };
+    const priceId = plan ? priceIdFor(plan, interval === 'year' ? 'year' : 'month') : null;
     if (!priceId) return Response.json({ error: 'invalid_plan' }, { status: 400 });
 
     const stripe = getStripe();

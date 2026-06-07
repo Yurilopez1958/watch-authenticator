@@ -68,7 +68,12 @@ export async function enforceQuota(ctx: Ctx, kind: 'auth' | 'valuation') {
   });
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
-  if (!row?.allowed) throw ERRORS.limitReached(kind, limit ?? 0);
+  if (!row?.allowed) {
+    // Over the plan limit: spend a prepaid credit if the user has any.
+    const { data: spent } = await getAdmin().rpc('spend_credit', { p_user: ctx.userId });
+    if (spent === true) return { used: limit ?? 0, limit, viaCredit: true };
+    throw ERRORS.limitReached(kind, limit ?? 0);
+  }
   // One-shot usage warnings at 80% and 100% (fires once as `used` crosses each).
   if (limit) {
     const used = row.used as number;

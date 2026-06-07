@@ -26,11 +26,24 @@ export async function POST(req: Request) {
 
   try {
     switch (event.type) {
-      case 'checkout.session.completed':
+      case 'checkout.session.completed': {
+        const s = event.data.object as Stripe.Checkout.Session;
+        if (s.metadata?.kind === 'credits' && s.metadata.user_id) {
+          const n = Number(s.metadata.credits ?? 0);
+          if (n > 0) {
+            await admin.rpc('add_credits', { p_user: s.metadata.user_id, p_n: n, p_reason: 'purchase' });
+            const { data: prof } = await admin.from('profiles').select('email').eq('id', s.metadata.user_id).single();
+            await sendEmail(prof?.email, 'Créditos añadidos / Credits added — Watch Authenticator',
+              biHtml(`Se añadieron ${n} créditos a tu cuenta.`, `${n} credits were added to your account.`));
+          }
+        } else if (s.subscription) {
+          await upsertFromSubscription(await getStripe().subscriptions.retrieve(s.subscription as string));
+        }
+        break;
+      }
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
-        const sub = await resolveSubscription(event);
-        if (sub) await upsertFromSubscription(sub);
+        await upsertFromSubscription(event.data.object as Stripe.Subscription);
         break;
       }
       case 'customer.subscription.deleted': {
@@ -76,15 +89,6 @@ export async function POST(req: Request) {
     return new Response('handler error', { status: 500 }); // Stripe will retry
   }
   return new Response('ok', { status: 200 });
-}
-
-async function resolveSubscription(event: Stripe.Event): Promise<Stripe.Subscription | null> {
-  if (event.type === 'checkout.session.completed') {
-    const s = event.data.object as Stripe.Checkout.Session;
-    if (!s.subscription) return null;
-    return getStripe().subscriptions.retrieve(s.subscription as string);
-  }
-  return event.data.object as Stripe.Subscription;
 }
 
 async function upsertFromSubscription(sub: Stripe.Subscription) {

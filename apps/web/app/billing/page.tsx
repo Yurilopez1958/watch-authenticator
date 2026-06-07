@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useLang } from '@/lib/i18n';
 import { useSession } from '@/lib/use-session';
-import { getBillingMe, startCheckout, openPortal, type BillingMe, type PlanId } from '@/lib/billing-client';
+import { getBillingMe, startCheckout, openPortal, buyCredits, type BillingMe, type PlanId, type BillingInterval } from '@/lib/billing-client';
 
 type Card = { id: PlanId; price: string; auth: string; val: string; dev: number; highlight?: boolean };
 const CARDS: Card[] = [
@@ -17,15 +17,17 @@ export default function BillingPage() {
   const { t, lang } = useLang();
   const { enabled, session, email, signInWithEmail } = useSession();
   const [me, setMe] = useState<BillingMe | null>(null);
-  const [busy, setBusy] = useState<PlanId | 'portal' | null>(null);
+  const [busy, setBusy] = useState<PlanId | 'portal' | 'credits' | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [signEmail, setSignEmail] = useState('');
   const [signSent, setSignSent] = useState(false);
+  const [interval, setIntervalState] = useState<BillingInterval>('month');
 
   // Success / cancel banners from the Stripe redirect.
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     if (p.get('success')) setNotice(t('¡Gracias! Tu suscripción se está activando.', 'Thank you! Your subscription is being activated.'));
+    if (p.get('credits')) setNotice(t('¡Gracias! Tus créditos se están añadiendo.', 'Thank you! Your credits are being added.'));
     if (p.get('canceled')) setNotice(t('Pago cancelado. No se ha cobrado nada.', 'Payment canceled. Nothing was charged.'));
   }, [t]);
 
@@ -35,10 +37,17 @@ export default function BillingPage() {
 
   const subscribe = async (plan: 'pro' | 'business') => {
     setBusy(plan); setNotice(null);
-    const url = await startCheckout(plan);
+    const url = await startCheckout(plan, interval);
     setBusy(null);
     if (url) window.location.href = url;
     else setNotice(t('El sistema de suscripciones aún no está activo. Vuelve a intentarlo más tarde.', 'The subscription system is not active yet. Please try again later.'));
+  };
+  const purchaseCredits = async () => {
+    setBusy('credits'); setNotice(null);
+    const url = await buyCredits(1);
+    setBusy(null);
+    if (url) window.location.href = url;
+    else setNotice(t('La compra de créditos aún no está disponible.', 'Buying credits is not available yet.'));
   };
   const manage = async () => {
     setBusy('portal'); setNotice(null);
@@ -82,10 +91,21 @@ export default function BillingPage() {
             )}
           </div>
           {me && (
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Usage label={t('Autenticaciones este mes', 'Authentications this month')} used={me.used.auth} limit={me.limits.auth} pct={pct(me.used.auth, me.limits.auth)} t={t} />
-              <Usage label={t('Valuaciones este mes', 'Valuations this month')} used={me.used.valuation} limit={me.limits.valuation} pct={pct(me.used.valuation, me.limits.valuation)} t={t} />
-            </div>
+            <>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Usage label={t('Autenticaciones este mes', 'Authentications this month')} used={me.used.auth} limit={me.limits.auth} pct={pct(me.used.auth, me.limits.auth)} t={t} />
+                <Usage label={t('Valuaciones este mes', 'Valuations this month')} used={me.used.valuation} limit={me.limits.valuation} pct={pct(me.used.valuation, me.limits.valuation)} t={t} />
+              </div>
+              <div className="flex items-center justify-between flex-wrap gap-2 border-t border-soft pt-3">
+                <div className="text-sm">
+                  <span className="text-dim">{t('Créditos extra', 'Extra credits')}:</span> <span className="font-bold font-mono">{me.credits}</span>
+                  <span className="text-xs text-dim ml-2">{t('(se usan al pasar el límite del plan)', '(used when you exceed the plan limit)')}</span>
+                </div>
+                <button onClick={() => void purchaseCredits()} disabled={busy === 'credits'} className="btn-ghost text-sm">
+                  {busy === 'credits' ? t('Abriendo…', 'Opening…') : t('Comprar créditos', 'Buy credits')}
+                </button>
+              </div>
+            </>
           )}
         </section>
       )}
@@ -106,6 +126,16 @@ export default function BillingPage() {
           )}
         </section>
       )}
+
+      {/* Intervalo */}
+      <div className="flex items-center gap-2">
+        {(['month', 'year'] as BillingInterval[]).map((iv) => (
+          <button key={iv} onClick={() => setIntervalState(iv)} className={`chip cursor-pointer ${interval === iv ? '!bg-accent !text-white !border-transparent' : ''}`}>
+            {iv === 'month' ? t('Mensual', 'Monthly') : t('Anual', 'Yearly')}
+          </button>
+        ))}
+        {interval === 'year' && <span className="text-xs text-emerald-300">{t('Ahorra ~2 meses', 'Save ~2 months')}</span>}
+      </div>
 
       {/* Tarjetas de planes */}
       <section className="grid sm:grid-cols-3 gap-4">
