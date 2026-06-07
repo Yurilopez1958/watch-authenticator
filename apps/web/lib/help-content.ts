@@ -115,17 +115,6 @@ export const HELP: Record<string, HelpTopic> = {
     ],
     tip: { es: 'La app convierte sola las unidades (ppm a %) para no equivocar el veredicto.', en: 'The app converts units for you (ppm to %) so the verdict is not skewed.' },
   },
-  catalog: {
-    title: { es: 'Catálogo', en: 'Catalog' },
-    intro: {
-      es: 'Una lista de modelos con sus materiales y los rangos de cada metal que debería tener un original.',
-      en: 'A list of models with their materials and the metal ranges a genuine one should have.',
-    },
-    steps: [
-      { es: 'Busca o desplázate hasta el modelo que te interesa.', en: 'Search or scroll to the model you want.' },
-      { es: 'Mira los rangos de cada elemento para saber qué es normal.', en: 'Look at each element range to know what is normal.' },
-    ],
-  },
   billing: {
     title: { es: 'Planes y suscripción', en: 'Plans & subscription' },
     intro: {
