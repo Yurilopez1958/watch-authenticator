@@ -236,6 +236,10 @@ export default function AuthenticatePage() {
   const [customMode, setCustomMode] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customRef, setCustomRef] = useState('');
+  // "Other brand" mode: authenticate a brand outside the catalog by typing its
+  // name. The XRF match falls back to generic alloy profiles; movement is skipped.
+  const [customBrand, setCustomBrand] = useState(false);
+  const [customBrandName, setCustomBrandName] = useState('');
 
   const brandModels = useMemo(() => ALL_MODELS.filter((m) => m.brandId === brandId), [brandId]);
 
@@ -339,7 +343,10 @@ export default function AuthenticatePage() {
   // exam input/result so a verdict is never computed from one watch's readings
   // against another watch's reference profiles. Year changes are intentionally
   // NOT reset (same piece, just refining the date).
-  const identityKey = customMode ? `${brandId}/custom:${customName}|${customRef}` : `${brandId}/${modelId}`;
+  // Model is free-text whenever the custom-model toggle is on OR an off-catalog brand is typed.
+  const modelCustom = customMode || customBrand;
+  const effectiveBrandId = customBrand ? '__custom_brand__' : brandId;
+  const identityKey = `${customBrand ? `cb:${customBrandName}` : brandId}/${modelCustom ? `custom:${customName}|${customRef}` : modelId}`;
   const prevIdentity = useRef(identityKey);
   useEffect(() => {
     if (prevIdentity.current === identityKey) return;
@@ -357,20 +364,23 @@ export default function AuthenticatePage() {
   }, [identityKey]);
 
   const candidateProfiles = useMemo(
-    () => getReferenceProfilesForBrand(brandId, year),
-    [brandId, year],
+    () => getReferenceProfilesForBrand(effectiveBrandId, year),
+    [effectiveBrandId, year],
   );
 
   // Fall back to the first catalog entry if the id is momentarily out of sync
   // (e.g. just after a brand change) — never crash the render with a bad `!`.
   const catalogModel = ALL_MODELS.find((m) => m.id === modelId) ?? ALL_MODELS[0]!;
-  // In "not in the list" mode, synthesise a model from the typed name/reference.
-  const currentModel = customMode
+  // In "not in the list" / "other brand" mode, synthesise a model from the typed name/reference.
+  const currentModel = modelCustom
     ? { ...catalogModel, id: '__custom__', name: customName.trim() || t('Modelo personalizado', 'Custom model'), reference: customRef.trim(), yearStart: 1950 }
     : catalogModel;
-  const currentBrand = ALL_BRANDS.find((b) => b.id === brandId) ?? ALL_BRANDS[0]!;
+  // In "other brand" mode, synthesise a brand from the typed name.
+  const currentBrand = customBrand
+    ? { ...ALL_BRANDS[0]!, id: '__custom_brand__', name: customBrandName.trim() || t('Otra marca', 'Other brand') }
+    : (ALL_BRANDS.find((b) => b.id === brandId) ?? ALL_BRANDS[0]!);
   // For the movement check, a custom watch has no known caliber → treat as unknown.
-  const movementModelId = customMode ? '__custom__' : modelId;
+  const movementModelId = modelCustom ? '__custom__' : modelId;
   const expectedMovement = useMemo(() => getMovementForModelAcrossBrands(movementModelId), [movementModelId]);
 
   // Saved chronocomparator reading (shown in the verdict + included in the report).
@@ -553,13 +563,13 @@ export default function AuthenticatePage() {
   useEffect(() => {
     let alive = true;
     aiGenRef.current++; // invalidate any in-flight AI request for the old context
-    getPhotos(brandId, modelId, examinedPart)
+    getPhotos(effectiveBrandId, movementModelId, examinedPart)
       .then((rows) => { if (alive) setGalleryPhotos(rows); })
       .catch(() => { if (alive) setGalleryPhotos([]); });
     setAiResult(null);
     setAiError(null);
     return () => { alive = false; };
-  }, [brandId, modelId, examinedPart]);
+  }, [effectiveBrandId, movementModelId, examinedPart]);
 
   // Run the AI vision analysis: compare the examined photo against gallery references
   const runAiAnalysis = async () => {
@@ -819,8 +829,9 @@ export default function AuthenticatePage() {
 
   const canAdvance = (): boolean => {
     if (step === 0) {
-      const idOk = customMode ? (customName.trim().length > 0 || customRef.trim().length > 0) : !!modelId;
-      return idOk && !!year;
+      const brandOk = customBrand ? customBrandName.trim().length > 0 : true;
+      const idOk = modelCustom ? (customName.trim().length > 0 || customRef.trim().length > 0) : !!modelId;
+      return brandOk && idOk && !!year;
     }
     if (step === 1) {
       if (xrfMode === 'skip') return true;
@@ -851,20 +862,32 @@ export default function AuthenticatePage() {
         <StepCard title={t('1. Identifica el reloj', '1. Watch identification')} subtitle={t('Dile a la app qué pieza estás revisando.', 'Tell the app which piece you are inspecting.')} status={stepStatuses[0]}>
           <div className="mb-4 space-y-3">
             <div>
-              <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Marca', 'Brand')}</span>
-              <div className="flex flex-wrap gap-2">
-                {ALL_BRANDS.map((b) => (
-                  <button
-                    key={b.id}
-                    onClick={() => setBrandId(b.id)}
-                    className={`chip cursor-pointer ${brandId === b.id ? '!bg-accent !text-white !border-transparent' : ''}`}
-                  >
-                    {b.name}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <span className="text-xs uppercase tracking-wide text-dim">{t('Marca', 'Brand')}</span>
+                <button type="button" onClick={() => { setCustomBrand((v) => !v); setModelSearch(''); }} className="text-xs text-accent-bright hover:underline shrink-0">
+                  {customBrand ? t('Elegir del catálogo', 'Pick from catalog') : t('Otra marca', 'Other brand')}
+                </button>
               </div>
+              {customBrand ? (
+                <div className="space-y-2">
+                  <input value={customBrandName} onChange={(e) => setCustomBrandName(e.target.value)} className="field" placeholder={t('Marca (p. ej. Omega, Cartier, Seiko…)', 'Brand (e.g. Omega, Cartier, Seiko…)')} />
+                  <span className="block text-xs text-dim">{t('Para marcas fuera del catálogo. El metal (XRF) se comprueba contra aleaciones genéricas (acero, oro 18k…) por año; el calibre se omite.', 'For brands outside the catalog. The metal (XRF) is checked against generic alloys (steel, 18k gold…) by year; the caliber is skipped.')}</span>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {ALL_BRANDS.map((b) => (
+                    <button
+                      key={b.id}
+                      onClick={() => setBrandId(b.id)}
+                      className={`chip cursor-pointer ${brandId === b.id ? '!bg-accent !text-white !border-transparent' : ''}`}
+                    >
+                      {b.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            {!customMode && (<>
+            {!modelCustom && (<>
             <label className="block">
               <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Busca por número de referencia, modelo o colección', 'Search by reference number, model or collection')}</span>
               <input
@@ -900,15 +923,17 @@ export default function AuthenticatePage() {
             <div className="block">
               <div className="flex items-center justify-between mb-2 gap-2">
                 <span className="text-xs uppercase tracking-wide text-dim">{t('Modelo', 'Model')}</span>
-                <button type="button" onClick={() => setCustomMode((v) => !v)} className="text-xs text-accent-bright hover:underline shrink-0">
-                  {customMode ? t('Elegir del catálogo', 'Pick from catalog') : t('No está en la lista', 'Not in the list')}
-                </button>
+                {!customBrand && (
+                  <button type="button" onClick={() => setCustomMode((v) => !v)} className="text-xs text-accent-bright hover:underline shrink-0">
+                    {customMode ? t('Elegir del catálogo', 'Pick from catalog') : t('No está en la lista', 'Not in the list')}
+                  </button>
+                )}
               </div>
-              {customMode ? (
+              {modelCustom ? (
                 <div className="space-y-2">
                   <input value={customName} onChange={(e) => setCustomName(e.target.value)} className="field" placeholder={t('Modelo (p. ej. Datejust 41)', 'Model (e.g. Datejust 41)')} />
                   <input value={customRef} onChange={(e) => setCustomRef(e.target.value)} className="field font-mono" placeholder={t('Referencia (p. ej. 126333)', 'Reference (e.g. 126333)')} />
-                  <span className="block text-xs text-dim">{t('Para relojes que no están en el catálogo. La comprobación de metal (XRF) funciona por marca + año; el calibre del movimiento se omite.', 'For watches not in the catalog. The metal (XRF) check works by brand + year; the movement caliber is skipped.')}</span>
+                  <span className="block text-xs text-dim">{t('La comprobación de metal (XRF) funciona por marca + año; el calibre del movimiento se omite.', 'The metal (XRF) check works by brand + year; the movement caliber is skipped.')}</span>
                 </div>
               ) : (
                 <>
@@ -939,7 +964,7 @@ export default function AuthenticatePage() {
             <div className="block">
               <span className="block text-xs uppercase tracking-wide text-dim mb-2">
                 {t('Año de fabricación', 'Year of manufacture')}
-                {!customMode && <span className="text-dim/70 normal-case ml-1">· {t('producido', 'produced')} {currentModel.yearStart}–{currentModel.yearEnd ?? t('presente', 'present')}</span>}
+                {!modelCustom && <span className="text-dim/70 normal-case ml-1">· {t('producido', 'produced')} {currentModel.yearStart}–{currentModel.yearEnd ?? t('presente', 'present')}</span>}
               </span>
               <YearPicker years={productionYears} value={year} onChange={setYear} />
             </div>
@@ -1409,7 +1434,7 @@ export default function AuthenticatePage() {
           </div>
 
           {/* Authentication guide (per brand) */}
-          {getBrandCheckpoints(brandId).length > 0 && (
+          {getBrandCheckpoints(effectiveBrandId).length > 0 && (
             <div className="mt-6 space-y-4">
               <div className="flex items-center gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent-bright">
@@ -1437,7 +1462,7 @@ export default function AuthenticatePage() {
 
               {/* General brand checkpoints */}
               <div className="grid md:grid-cols-2 gap-3">
-                {getBrandCheckpoints(brandId).map((cp) => (
+                {getBrandCheckpoints(effectiveBrandId).map((cp) => (
                   <div key={cp.id} className="rounded-lg border border-soft bg-card p-4">
                     <div className="text-sm font-semibold mb-2">{cp.label}</div>
                     <ul className="space-y-1.5 text-xs text-muted">
@@ -1597,6 +1622,7 @@ export default function AuthenticatePage() {
                   setExamined(null); setReference(null);
                   setSerial(''); setNotes(''); setObservedCaliber('');
                   setCustomMode(false); setCustomName(''); setCustomRef('');
+                  setCustomBrand(false); setCustomBrandName('');
                   setXrfResultByTarget({ case: null, bracelet: null, 'case-back': null });
                   setMovementResult(null);
                 }}
