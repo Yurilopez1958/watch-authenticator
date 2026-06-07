@@ -58,12 +58,9 @@ export async function startCheckout(plan: 'pro' | 'business', interval: BillingI
     const res = await authedFetch('/api/billing/checkout', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan, interval }),
     });
-    const j = (await res.json().catch(() => null)) as { url?: string; detail?: string; error?: string; message?: { es?: string } | string } | null;
+    const j = (await res.json().catch(() => null)) as { url?: string; error?: string; message?: { es?: string } | string } | null;
     if (j?.url) return { url: j.url };
-    const msg = j?.detail
-      || (typeof j?.message === 'object' ? j?.message?.es : j?.message)
-      || j?.error
-      || `HTTP ${res.status}`;
+    const msg = (typeof j?.message === 'object' ? j?.message?.es : j?.message) || j?.error || `HTTP ${res.status}`;
     return { url: null, error: msg };
   } catch (e) { return { url: null, error: (e as Error).message }; }
 }
