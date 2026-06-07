@@ -154,17 +154,6 @@ export const HELP: Record<string, HelpTopic> = {
       { es: 'En "Pagos" ves lo cobrado; en "Seguridad" las alertas de cuentas compartidas.', en: 'In "Payments" see revenue; in "Security" the account-sharing alerts.' },
     ],
   },
-  settings: {
-    title: { es: 'Cumplimiento (marcas representadas)', en: 'Compliance (represented brands)' },
-    intro: {
-      es: 'Marca las marcas que representas oficialmente. La app te avisará (o bloqueará) al autenticarlas para evitar conflictos.',
-      en: 'Mark the brands you officially represent. The app will warn (or block) when authenticating them to avoid conflicts.',
-    },
-    steps: [
-      { es: 'Junto a cada marca elige: No representada, Avisar o Bloquear.', en: 'Next to each brand choose: Not represented, Warn or Block.' },
-      { es: 'Se guarda solo en este dispositivo, en privado.', en: 'It is saved only on this device, privately.' },
-    ],
-  },
 };
 
 /** Resolves the help topic for a route path (e.g. "/authenticate" → authenticate). */

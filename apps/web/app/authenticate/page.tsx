@@ -26,8 +26,6 @@ import { useLang, type Lang } from '@/lib/i18n';
 import { usePro } from '@/lib/pro';
 import { authHeaders } from '@/lib/billing-client';
 import { handlePaywall } from '@/lib/paywall';
-import { useCompliance, ruleFor } from '@/lib/compliance';
-import { ComplianceBanner } from '@/app/compliance-banner';
 import { MetalModeBanner } from '@/app/metal-mode-banner';
 import { getTimingReading, type TimingReading } from '@/lib/timing-store';
 
@@ -374,12 +372,6 @@ export default function AuthenticatePage() {
   // For the movement check, a custom watch has no known caliber → treat as unknown.
   const movementModelId = customMode ? '__custom__' : modelId;
   const expectedMovement = useMemo(() => getMovementForModelAcrossBrands(movementModelId), [movementModelId]);
-
-  // Compliance / conflict-of-interest filter for the selected brand.
-  const { config: complianceConfig } = useCompliance();
-  const brandRule = ruleFor(brandId, complianceConfig);
-  const brandBlocked = brandRule === 'block';
-  const representedBrands = ALL_BRANDS.filter((b) => ruleFor(b.id, complianceConfig)).map((b) => b.name);
 
   // Saved chronocomparator reading (shown in the verdict + included in the report).
   const [timing, setTiming] = useState<TimingReading | null>(null);
@@ -828,7 +820,7 @@ export default function AuthenticatePage() {
   const canAdvance = (): boolean => {
     if (step === 0) {
       const idOk = customMode ? (customName.trim().length > 0 || customRef.trim().length > 0) : !!modelId;
-      return idOk && !!year && !brandBlocked;
+      return idOk && !!year;
     }
     if (step === 1) {
       if (xrfMode === 'skip') return true;
@@ -853,15 +845,10 @@ export default function AuthenticatePage() {
         </p>
       </section>
 
-      <StepHeader step={step} statuses={stepStatuses} onJump={(s) => { if (brandBlocked && s > 0) return; setStep(s); }} />
+      <StepHeader step={step} statuses={stepStatuses} onJump={(s) => setStep(s)} />
 
       {step === 0 && (
         <StepCard title={t('1. Identifica el reloj', '1. Watch identification')} subtitle={t('Dile a la app qué pieza estás revisando.', 'Tell the app which piece you are inspecting.')} status={stepStatuses[0]}>
-          {brandRule && (
-            <div className="mb-4">
-              <ComplianceBanner brandName={currentBrand.name} rule={brandRule} representedBrands={representedBrands} />
-            </div>
-          )}
           <div className="mb-4 space-y-3">
             <div>
               <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Marca', 'Brand')}</span>

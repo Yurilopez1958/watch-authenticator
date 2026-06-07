@@ -11,9 +11,7 @@ import {
   type MatchResult,
   type XRFMeasurement,
 } from '@watch-auth/core';
-import { useCompliance, ruleFor } from '@/lib/compliance';
 import { parseDecimal } from '@/lib/num';
-import { ComplianceBanner } from '@/app/compliance-banner';
 import { MetalModeBanner } from '@/app/metal-mode-banner';
 import { useLang } from '@/lib/i18n';
 import { usePro } from '@/lib/pro';
@@ -103,10 +101,6 @@ export default function VerifyPage() {
   const currentBrand = ALL_BRANDS.find((b) => b.id === brandId)!;
   const currentModel = ALL_MODELS.find((m) => m.id === modelId);
 
-  const { config: complianceConfig, ready: complianceReady } = useCompliance();
-  const brandRule = ruleFor(brandId, complianceConfig);
-  const brandBlocked = brandRule === 'block';
-
   // Years this model was produced (newest first); keep selected year in range
   const productionYears = useMemo(() => {
     const cur = new Date().getFullYear();
@@ -143,7 +137,6 @@ export default function VerifyPage() {
   }, [brandId, modelId, year]);
 
   const onAnalyze = () => {
-    if (brandBlocked || !complianceReady) return;
     const elementReadings: ElementReading[] = Object.entries(readings)
       .map(([element, raw]) => ({ element: element as ElementSymbol, pct: parseDecimal(raw) }))
       .filter((r) => Number.isFinite(r.pct) && r.pct > 0);
@@ -246,8 +239,6 @@ export default function VerifyPage() {
         </div>
       </section>
 
-      {brandRule && <ComplianceBanner brandName={currentBrand.name} rule={brandRule} />}
-
       <MetalModeBanner />
 
       <section className="card p-6">
@@ -268,8 +259,8 @@ export default function VerifyPage() {
             </label>
           ))}
         </div>
-        <button onClick={onAnalyze} disabled={brandBlocked || !complianceReady} className="btn-primary mt-5 disabled:opacity-50 disabled:cursor-not-allowed">
-          {brandBlocked ? t('Marca restringida', 'Restricted brand') : t('Analizar', 'Analyze')}
+        <button onClick={onAnalyze} className="btn-primary mt-5 disabled:opacity-50 disabled:cursor-not-allowed">
+          {t('Analizar', 'Analyze')}
         </button>
       </section>
 
