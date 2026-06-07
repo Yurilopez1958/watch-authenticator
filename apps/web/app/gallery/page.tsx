@@ -91,9 +91,9 @@ async function compressDataUrl(dataUrl: string): Promise<string> {
   }
 }
 
-function checkpointPoints(part: GalleryPart, caliber: string): string[] {
+function checkpointPoints(part: GalleryPart, caliber: string): { es: string; en: string }[] {
   if (part.id === 'movement') return [...getMovementCheckpoints(caliber)];
-  const pts: string[] = [];
+  const pts: { es: string; en: string }[] = [];
   for (const id of part.checkpointIds) {
     const cp = ROLEX_AUTH_CHECKPOINTS.find((c) => c.id === id);
     if (cp) pts.push(...cp.points);
@@ -498,7 +498,7 @@ export default function GalleryPage() {
               {points.length > 0 ? (
                 <ul className="space-y-1.5 text-xs text-muted mb-4">
                   {points.map((pt, i) => (
-                    <li key={i} className="flex gap-2"><span className="text-accent-bright shrink-0">·</span><span>{pt}</span></li>
+                    <li key={i} className="flex gap-2"><span className="text-accent-bright shrink-0">·</span><span>{pt[lang]}</span></li>
                   ))}
                 </ul>
               ) : (

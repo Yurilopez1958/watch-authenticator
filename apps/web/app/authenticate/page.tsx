@@ -1454,7 +1454,7 @@ export default function AuthenticatePage() {
                   </div>
                   <ul className="space-y-1.5 text-sm text-neutral-200">
                     {getMovementCheckpoints(expectedMovement.caliber).map((pt, i) => (
-                      <li key={i} className="flex gap-2"><span className="text-accent-bright shrink-0">▸</span><span>{pt}</span></li>
+                      <li key={i} className="flex gap-2"><span className="text-accent-bright shrink-0">▸</span><span>{pt[lang]}</span></li>
                     ))}
                   </ul>
                 </div>
@@ -1464,10 +1464,10 @@ export default function AuthenticatePage() {
               <div className="grid md:grid-cols-2 gap-3">
                 {getBrandCheckpoints(effectiveBrandId).map((cp) => (
                   <div key={cp.id} className="rounded-lg border border-soft bg-card p-4">
-                    <div className="text-sm font-semibold mb-2">{cp.label}</div>
+                    <div className="text-sm font-semibold mb-2">{cp.label[lang]}</div>
                     <ul className="space-y-1.5 text-xs text-muted">
                       {cp.points.map((pt, i) => (
-                        <li key={i} className="flex gap-2"><span className="text-accent-bright shrink-0">·</span><span>{pt}</span></li>
+                        <li key={i} className="flex gap-2"><span className="text-accent-bright shrink-0">·</span><span>{pt[lang]}</span></li>
                       ))}
                     </ul>
                   </div>
