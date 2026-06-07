@@ -410,6 +410,8 @@ export const ROLEX_MODEL_TO_CALIBER: Readonly<Record<string, string>> = {
   // Datejust 41 / 36
   'rolex-datejust-41-126300':        '3235',
   'rolex-datejust-41-126334':        '3235',
+  'rolex-datejust-41-126333':        '3235',
+  'rolex-datejust-41-126331':        '3235',
   'rolex-datejust-36-126200':        '3235',
   'rolex-datejust-36-126234':        '3235',
   'rolex-datejust-36-126284rbr':     '3235',
