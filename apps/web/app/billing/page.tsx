@@ -37,9 +37,10 @@ export default function BillingPage() {
 
   const subscribe = async (plan: 'pro' | 'business') => {
     setBusy(plan); setNotice(null);
-    const url = await startCheckout(plan, interval);
+    const { url, error } = await startCheckout(plan, interval);
     setBusy(null);
     if (url) window.location.href = url;
+    else if (error) setNotice(t(`No se pudo iniciar el pago: ${error}`, `Could not start checkout: ${error}`));
     else setNotice(t('El sistema de suscripciones aún no está activo. Vuelve a intentarlo más tarde.', 'The subscription system is not active yet. Please try again later.'));
   };
   const purchaseCredits = async () => {

@@ -51,5 +51,8 @@ export function errorResponse(e: unknown): Response {
     return Response.json({ error: e.code, ...e.payload }, { status: e.status });
   }
   console.error(e);
-  return Response.json({ error: 'server_error' }, { status: 500 });
+  return Response.json(
+    { error: 'server_error', detail: e instanceof Error ? e.message : String(e) },
+    { status: 500 },
+  );
 }
