@@ -1,9 +1,17 @@
+'use client';
+
+import { useLang } from '@/lib/i18n';
+
 /**
  * Fixed reminder shown wherever a Niton reading is taken/entered: the gun must
  * be in METAL (General Metals / Alloy) mode, not Precious Metals mode, or the
  * Cr/Ni/Mo composition needed to authenticate steel/gold cases will be wrong.
+ *
+ * The Niton device labels (General Metals / Alloy Mode / Precious Metals) are
+ * kept in English on purpose: that is exactly how they appear on the gun.
  */
 export function MetalModeBanner() {
+  const { t } = useLang();
   return (
     <div
       role="alert"
@@ -21,13 +29,14 @@ export function MetalModeBanner() {
       </svg>
       <div>
         <div className="font-bold text-amber-300 text-sm uppercase tracking-wide mb-1">
-          Important — gun mode
+          {t('Importante — modo de la pistola', 'Important — gun mode')}
         </div>
         <p className="text-sm text-amber-100/90 leading-relaxed">
-          Make sure the Niton gun is set to <span className="font-bold">METAL mode
-          (General Metals / Alloy Mode)</span>, <span className="font-bold">NOT Precious
-          Metals mode</span>, to guarantee correct alloy-composition readings on the case and
-          watch components.
+          {t('Asegúrate de que la pistola Niton está en ', 'Make sure the Niton gun is set to ')}
+          <span className="font-bold">{t('modo METAL (General Metals / Alloy Mode)', 'METAL mode (General Metals / Alloy Mode)')}</span>
+          {t(', ', ', ')}
+          <span className="font-bold">{t('NO en modo Precious Metals', 'NOT Precious Metals mode')}</span>
+          {t(', para garantizar lecturas correctas de la composición de la aleación en la caja y los componentes del reloj.', ', to guarantee correct alloy-composition readings on the case and watch components.')}
         </p>
       </div>
     </div>

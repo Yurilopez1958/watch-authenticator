@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useLang } from '@/lib/i18n';
 import type { BrandRule } from '@/lib/compliance';
 
 /**
@@ -8,6 +9,7 @@ import type { BrandRule } from '@/lib/compliance';
  * officially represents. 'warn' = amber alert; 'block' = red restriction.
  */
 export function ComplianceBanner({ brandName, rule }: { brandName: string; rule: BrandRule }) {
+  const { t } = useLang();
   const isBlock = rule === 'block';
   return (
     <div
@@ -37,16 +39,16 @@ export function ComplianceBanner({ brandName, rule }: { brandName: string; rule:
       </svg>
       <div>
         <div className={`font-bold text-sm uppercase tracking-wide mb-1 ${isBlock ? 'text-red-300' : 'text-amber-300'}`}>
-          {isBlock ? 'Restricted — conflict of interest' : 'Possible conflict of interest'}
+          {isBlock ? t('Restringido — conflicto de interés', 'Restricted — conflict of interest') : t('Posible conflicto de interés', 'Possible conflict of interest')}
         </div>
         <p className={`text-sm leading-relaxed ${isBlock ? 'text-red-100/90' : 'text-amber-100/90'}`}>
-          <span className="font-semibold">{brandName}</span> is on your list of officially
-          represented brands.{' '}
+          <span className="font-semibold">{brandName}</span>{' '}
+          {t('está en tu lista de marcas representadas oficialmente.', 'is on your list of officially represented brands.')}{' '}
           {isBlock
-            ? 'Authenticating or registering this brand is restricted by your compliance settings.'
-            : 'Continue only if this does not breach your distribution / dealer agreement.'}{' '}
-          Manage this in{' '}
-          <Link href="/settings" className="underline font-medium">Compliance settings</Link>.
+            ? t('Autenticar o registrar esta marca está restringido por tus ajustes de cumplimiento.', 'Authenticating or registering this brand is restricted by your compliance settings.')
+            : t('Continúa solo si esto no incumple tu acuerdo de distribución / distribuidor.', 'Continue only if this does not breach your distribution / dealer agreement.')}{' '}
+          {t('Gestiónalo en', 'Manage this in')}{' '}
+          <Link href="/settings" className="underline font-medium">{t('Ajustes de cumplimiento', 'Compliance settings')}</Link>.
         </p>
       </div>
     </div>
