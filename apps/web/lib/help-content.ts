@@ -130,10 +130,10 @@ export const HELP: Record<string, HelpTopic> = {
     tip: { es: 'Si llegas al límite del mes, sube de plan o espera al día 1 del mes siguiente.', en: 'If you hit the monthly limit, upgrade or wait until the 1st of next month.' },
   },
   developer: {
-    title: { es: 'API para dealers', en: 'Dealer API' },
+    title: { es: 'API para negocios', en: 'Business API' },
     intro: {
-      es: 'Crea claves para usar la autenticación y la valuación desde tu propio sistema.',
-      en: 'Create keys to use authentication and valuation from your own system.',
+      es: 'Una «puerta» para que otros programas usen tu autenticación y valoración de forma automática. Tú creas una clave y se la das a un negocio; su programador la integra. Cada consulta cuenta en tu plan.',
+      en: 'A “door” so other software can use your authentication and valuation automatically. You create a key and give it to a business; their developer integrates it. Every call counts against your plan.',
     },
     steps: [
       { es: 'Inicia sesión (en Planes) y crea una clave; cópiala (solo se muestra una vez).', en: 'Sign in (in Plans) and create a key; copy it (shown only once).' },

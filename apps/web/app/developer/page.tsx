@@ -43,10 +43,34 @@ export default function DeveloperPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-3xl font-bold mb-2">{t('API para dealers', 'Dealer API')}</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('API para negocios', 'Business API')}</h1>
         <p className="text-muted text-sm max-w-2xl">
-          {t('Integra la autenticación y la valuación en tu propio sistema. Crea una clave, mándala en la cabecera Authorization y consume los endpoints. El uso cuenta contra tu plan.', 'Integrate authentication and valuation into your own system. Create a key, send it in the Authorization header, and call the endpoints. Usage counts against your plan.')}
+          {t('Permite que otros programas usen tu autenticación y tu valoración de forma automática, sin entrar a la web. Pensado para negocios que quieran integrar el servicio en su propio sistema.', 'Lets other software use your authentication and valuation automatically, without opening the website. Built for businesses that want to integrate the service into their own system.')}
         </p>
+      </section>
+
+      <section className="card p-5 space-y-4">
+        <div>
+          <h2 className="text-base font-semibold mb-1">{t('¿Qué es esto, en simple?', 'What is this, in plain terms?')}</h2>
+          <p className="text-sm text-muted leading-relaxed">
+            {t('Es una «puerta de servicio» para que otros programas consulten tu app de forma automática (no una persona haciendo clics). Tú vendes el acceso; ellos lo integran en su propio software.', 'It is a “service door” so other software can query your app automatically (not a person clicking). You sell the access; they integrate it into their own software.')}
+          </p>
+        </div>
+        <div>
+          <h3 className="text-xs uppercase tracking-wide text-dim mb-2">{t('Para quién es', 'Who it is for')}</h3>
+          <p className="text-sm text-muted leading-relaxed">
+            {t('Negocios que necesitan autenticar o valorar relojes en cantidad desde su propio sistema: tiendas y plataformas de compraventa, casas de empeño, tasadoras y aseguradoras.', 'Businesses that need to authenticate or value watches at scale from their own system: shops and marketplaces, pawn shops, appraisers and insurers.')}
+          </p>
+        </div>
+        <div>
+          <h3 className="text-xs uppercase tracking-wide text-dim mb-2">{t('Cómo funciona', 'How it works')}</h3>
+          <ol className="text-sm text-muted space-y-1.5 list-decimal pl-5 leading-relaxed">
+            <li>{t('Creas una «clave» (más abajo): es la contraseña que identifica a ese cliente.', 'You create a “key” (below): the password that identifies that client.')}</li>
+            <li>{t('El programador del cliente la pone en su sistema y ya puede consultar tu servicio.', "The client's developer puts it in their system and can call your service.")}</li>
+            <li>{t('Cada consulta que hacen cuenta en tu plan, igual que si la hicieras tú.', 'Every call they make counts against your plan, just like if you made it.')}</li>
+          </ol>
+        </div>
+        <p className="text-xs text-dim">{t('Nota: la parte técnica (los ejemplos del final) la suele configurar un programador. Tú solo creas la clave y se la entregas.', 'Note: the technical part (the examples at the end) is usually set up by a developer. You just create the key and hand it over.')}</p>
       </section>
 
       {!session ? (
@@ -91,7 +115,8 @@ export default function DeveloperPage() {
       )}
 
       <section className="card p-5 space-y-3">
-        <div className="text-sm font-semibold">{t('Ejemplos', 'Examples')}</div>
+        <div className="text-sm font-semibold">{t('Ejemplos para tu programador', 'Examples for your developer')}</div>
+        <p className="text-xs text-dim -mt-1">{t('Esto es para quien integre el servicio; no necesitas entenderlo para crear la clave.', 'This is for whoever integrates the service; you do not need to understand it to create the key.')}</p>
         <pre className="text-[0.7rem] font-mono bg-black/40 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{`# ${t('Valuación', 'Valuation')}
 curl -X POST ${base}/api/v1/value \\
   -H "Authorization: Bearer wa_live_..." \\
