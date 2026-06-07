@@ -437,6 +437,7 @@ export default function AuthenticatePage() {
   const [refByPart, setRefByPart] = useState<Record<string, RefPhoto[]>>({});
   const [refLightbox, setRefLightbox] = useState<string | null>(null);
   const refUploadPart = useRef<WatchPart | null>(null);
+  const refUploadKind = useRef<'authentic' | 'fake'>('authentic');
   const refFileInput = useRef<HTMLInputElement | null>(null);
 
   const reloadRefs = useCallback(async () => {
@@ -449,6 +450,11 @@ export default function AuthenticatePage() {
   }, [effectiveBrandId, movementModelId]);
   useEffect(() => { void reloadRefs(); }, [reloadRefs]);
 
+  const addRef = (part: WatchPart, kind: 'authentic' | 'fake') => {
+    refUploadPart.current = part;
+    refUploadKind.current = kind;
+    refFileInput.current?.click();
+  };
   const onAddRefPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     const part = refUploadPart.current;
@@ -464,6 +470,7 @@ export default function AuthenticatePage() {
         year,
         part,
         dataUrl,
+        kind: refUploadKind.current,
         createdAt: Date.now(),
       });
       await reloadRefs();
@@ -474,6 +481,17 @@ export default function AuthenticatePage() {
   const onDeleteRef = async (id: string) => {
     try { await deletePhoto(id); await reloadRefs(); } catch { /* ignore */ }
   };
+  const refThumbRow = (list: RefPhoto[]) => (
+    <div className="flex flex-wrap gap-2">
+      {list.map((r) => (
+        <div key={r.id} className="relative group">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={r.dataUrl} alt="" onClick={() => setRefLightbox(r.dataUrl)} className="w-14 h-14 object-cover rounded-md border border-soft cursor-pointer" />
+          <button type="button" onClick={() => void onDeleteRef(r.id)} aria-label={t('Eliminar', 'Delete')} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white text-[0.7rem] leading-none hidden group-hover:flex items-center justify-center">×</button>
+        </div>
+      ))}
+    </div>
+  );
 
   // Saved chronocomparator reading (shown in the verdict + included in the report).
   const [timing, setTiming] = useState<TimingReading | null>(null);
@@ -1556,7 +1574,9 @@ export default function AuthenticatePage() {
               <div className="grid md:grid-cols-2 gap-3">
                 {getBrandCheckpoints(effectiveBrandId).map((cp) => {
                   const part = CHECKPOINT_PART[cp.id];
-                  const refs = part ? (refByPart[part] ?? []) : [];
+                  const all = part ? (refByPart[part] ?? []) : [];
+                  const authentic = all.filter((r) => r.kind !== 'fake');
+                  const fakes = all.filter((r) => r.kind === 'fake');
                   return (
                   <div key={cp.id} className="rounded-lg border border-soft bg-card p-4">
                     <div className="text-sm font-semibold mb-2">{cp.label[lang]}</div>
@@ -1566,23 +1586,27 @@ export default function AuthenticatePage() {
                       ))}
                     </ul>
                     {part && (
-                      <div className="mt-3 pt-3 border-t border-soft">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[0.7rem] uppercase tracking-wide text-dim">{t('Mi referencia auténtica', 'My authentic reference')}</span>
-                          <button type="button" onClick={() => { refUploadPart.current = part; refFileInput.current?.click(); }} className="text-[0.7rem] text-accent-bright hover:underline">+ {t('Añadir foto', 'Add photo')}</button>
-                        </div>
-                        {refs.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {refs.map((r) => (
-                              <div key={r.id} className="relative group">
-                                <img src={r.dataUrl} alt="" onClick={() => setRefLightbox(r.dataUrl)} className="w-14 h-14 object-cover rounded-md border border-soft cursor-pointer" />
-                                <button type="button" onClick={() => void onDeleteRef(r.id)} aria-label={t('Eliminar', 'Delete')} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white text-[0.7rem] leading-none hidden group-hover:flex items-center justify-center">×</button>
-                              </div>
-                            ))}
+                      <div className="mt-3 pt-3 border-t border-soft space-y-3">
+                        {/* Authentic reference */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[0.7rem] uppercase tracking-wide text-emerald-300/80">✓ {t('Auténtica', 'Authentic')}</span>
+                            <button type="button" onClick={() => addRef(part, 'authentic')} className="text-[0.7rem] text-accent-bright hover:underline">+ {t('Añadir', 'Add')}</button>
                           </div>
-                        ) : (
-                          <p className="text-[0.7rem] text-dim">{t('Aún no tienes foto de esta parte. Añade una de tu pieza auténtica.', 'No photo of this part yet. Add one from your authentic piece.')}</p>
-                        )}
+                          {authentic.length > 0 ? refThumbRow(authentic) : (
+                            <p className="text-[0.7rem] text-dim">{t('Añade una foto de tu pieza auténtica.', 'Add a photo of your authentic piece.')}</p>
+                          )}
+                        </div>
+                        {/* Known-fake example */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[0.7rem] uppercase tracking-wide text-red-300/80">✗ {t('Ejemplo de falsa', 'Fake example')}</span>
+                            <button type="button" onClick={() => addRef(part, 'fake')} className="text-[0.7rem] text-accent-bright hover:underline">+ {t('Añadir', 'Add')}</button>
+                          </div>
+                          {fakes.length > 0 ? refThumbRow(fakes) : (
+                            <p className="text-[0.7rem] text-dim">{t('Opcional: foto de una falsa que hayas visto, para comparar.', 'Optional: a photo of a fake you have seen, for comparison.')}</p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

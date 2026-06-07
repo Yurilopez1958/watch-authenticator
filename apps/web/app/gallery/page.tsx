@@ -197,7 +197,9 @@ export default function GalleryPage() {
     } else {
       for (const part of GALLERY_PARTS) {
         const rows = await getPhotos(brandId, modelId, part.id);
-        next[part.id] = rows.map((r) => ({ id: r.id, src: r.dataUrl }));
+        // The gallery is the authentic-reference library; known-fake examples are
+        // managed from the authentication checklist, so exclude them here.
+        next[part.id] = rows.filter((r) => r.kind !== 'fake').map((r) => ({ id: r.id, src: r.dataUrl }));
       }
       const cnt = await countByModel(brandId, modelId);
       if (!alive()) return;

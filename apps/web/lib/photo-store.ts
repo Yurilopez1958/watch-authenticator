@@ -18,6 +18,9 @@ export type RefPhoto = {
   part: string;
   dataUrl: string;
   label?: string;
+  /** Whether this photo shows a genuine reference or a known-fake example.
+   *  Absent on legacy/gallery photos → treated as 'authentic'. */
+  kind?: 'authentic' | 'fake';
   createdAt: number;
 };
 
