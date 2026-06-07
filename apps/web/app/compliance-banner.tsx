@@ -8,7 +8,15 @@ import type { BrandRule } from '@/lib/compliance';
  * Conflict-of-interest banner shown when the selected brand is one the business
  * officially represents. 'warn' = amber alert; 'block' = red restriction.
  */
-export function ComplianceBanner({ brandName, rule }: { brandName: string; rule: BrandRule }) {
+export function ComplianceBanner({
+  brandName,
+  rule,
+  representedBrands = [],
+}: {
+  brandName: string;
+  rule: BrandRule;
+  representedBrands?: readonly string[];
+}) {
   const { t } = useLang();
   const isBlock = rule === 'block';
   return (
@@ -50,6 +58,12 @@ export function ComplianceBanner({ brandName, rule }: { brandName: string; rule:
           {t('Gestiónalo en', 'Manage this in')}{' '}
           <Link href="/settings" className="underline font-medium">{t('Ajustes de cumplimiento', 'Compliance settings')}</Link>.
         </p>
+        {representedBrands.length > 0 && (
+          <p className={`text-xs mt-2 ${isBlock ? 'text-red-100/70' : 'text-amber-100/70'}`}>
+            {t('Marcas que representas', 'Brands you represent')}:{' '}
+            <span className="font-semibold">{representedBrands.join(' · ')}</span>
+          </p>
+        )}
       </div>
     </div>
   );

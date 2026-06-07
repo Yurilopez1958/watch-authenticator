@@ -379,6 +379,7 @@ export default function AuthenticatePage() {
   const { config: complianceConfig } = useCompliance();
   const brandRule = ruleFor(brandId, complianceConfig);
   const brandBlocked = brandRule === 'block';
+  const representedBrands = ALL_BRANDS.filter((b) => ruleFor(b.id, complianceConfig)).map((b) => b.name);
 
   // Saved chronocomparator reading (shown in the verdict + included in the report).
   const [timing, setTiming] = useState<TimingReading | null>(null);
@@ -858,7 +859,7 @@ export default function AuthenticatePage() {
         <StepCard title={t('1. Identifica el reloj', '1. Watch identification')} subtitle={t('Dile a la app qué pieza estás revisando.', 'Tell the app which piece you are inspecting.')} status={stepStatuses[0]}>
           {brandRule && (
             <div className="mb-4">
-              <ComplianceBanner brandName={currentBrand.name} rule={brandRule} />
+              <ComplianceBanner brandName={currentBrand.name} rule={brandRule} representedBrands={representedBrands} />
             </div>
           )}
           <div className="mb-4 space-y-3">
