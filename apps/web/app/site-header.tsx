@@ -25,6 +25,7 @@ const LINKS: readonly NavLink[] = [
   { href: '/settings', es: 'Cumplimiento', en: 'Compliance', pro: true },
   { href: '/developer', es: 'API', en: 'API', pro: true },
   { href: '/admin', es: 'Admin', en: 'Admin', pro: true },
+  { href: '/setup', es: 'Setup', en: 'Setup', pro: true },
 ];
 
 export function SiteHeader() {
