@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useLang } from '@/lib/i18n';
 
 /**
  * Floating "Start scan" button shown on every page so the user can begin the
@@ -10,12 +11,13 @@ import { usePathname } from 'next/navigation';
  */
 export function StartScanFab() {
   const pathname = usePathname();
+  const { t } = useLang();
   if (pathname?.startsWith('/authenticate')) return null;
 
   return (
     <Link
       href="/authenticate"
-      aria-label="Start scan"
+      aria-label={t('Iniciar escaneo', 'Start scan')}
       className="fixed right-5 z-50 inline-flex items-center gap-2 rounded-full px-4 py-3 sm:px-5 sm:py-3.5 text-white font-semibold shadow-xl shadow-black/40 ring-1 ring-white/10 transition-transform hover:scale-105 active:scale-95"
       style={{
         bottom: 'calc(1.25rem + env(safe-area-inset-bottom))',
@@ -32,7 +34,7 @@ export function StartScanFab() {
         <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
         <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
       </svg>
-      <span className="hidden xs:inline">Start scan</span>
+      <span className="hidden xs:inline">{t('Escanear', 'Start scan')}</span>
     </Link>
   );
 }

@@ -431,7 +431,7 @@ export default function TimegrapherPage() {
         </div>
         <div className="px-4 py-2.5 border-b border-blue-500/15 space-y-1.5">
           <div className="flex items-center gap-2">
-            <span className="text-[0.6rem] uppercase tracking-widest text-blue-300/50 shrink-0">Signal</span>
+            <span className="text-[0.6rem] uppercase tracking-widest text-blue-300/50 shrink-0">{t('Señal', 'Signal')}</span>
             <div className="flex-1 h-2.5 rounded-full bg-blue-950/70 overflow-hidden">
               <div
                 className="h-full rounded-full"

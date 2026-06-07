@@ -2,25 +2,28 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { WatchPart } from '@watch-auth/core';
+import { useLang } from '@/lib/i18n';
 
-type PartOption = { id: WatchPart; label: string };
+type Bi = { es: string; en: string };
+type PartOption = { id: WatchPart; label: Bi };
 
 const PARTS: readonly PartOption[] = [
-  { id: 'movement', label: 'Movement' },
-  { id: 'hands', label: 'Hands' },
-  { id: 'logo', label: 'Logo / crown' },
-  { id: 'dial', label: 'Dial' },
-  { id: 'serial-number', label: 'Serial number' },
-  { id: 'case-back', label: 'Case back' },
-  { id: 'case-side', label: 'Case side' },
-  { id: 'bezel', label: 'Bezel' },
-  { id: 'bracelet-link', label: 'Bracelet' },
-  { id: 'clasp', label: 'Clasp' },
+  { id: 'movement', label: { es: 'Movimiento', en: 'Movement' } },
+  { id: 'hands', label: { es: 'Agujas', en: 'Hands' } },
+  { id: 'logo', label: { es: 'Logo / corona', en: 'Logo / crown' } },
+  { id: 'dial', label: { es: 'Esfera', en: 'Dial' } },
+  { id: 'serial-number', label: { es: 'Número de serie', en: 'Serial number' } },
+  { id: 'case-back', label: { es: 'Fondo de caja', en: 'Case back' } },
+  { id: 'case-side', label: { es: 'Canto de caja', en: 'Case side' } },
+  { id: 'bezel', label: { es: 'Bisel', en: 'Bezel' } },
+  { id: 'bracelet-link', label: { es: 'Brazalete', en: 'Bracelet' } },
+  { id: 'clasp', label: { es: 'Cierre', en: 'Clasp' } },
 ];
 
 type Side = 'examined' | 'reference';
 
 export default function PhotosPage() {
+  const { t, lang } = useLang();
   const [part, setPart] = useState<WatchPart>('movement');
   const [examined, setExamined] = useState<string | null>(null);
   const [reference, setReference] = useState<string | null>(null);
@@ -32,8 +35,11 @@ export default function PhotosPage() {
   const examinedFileRef = useRef<HTMLInputElement | null>(null);
   const referenceFileRef = useRef<HTMLInputElement | null>(null);
 
+  const currentPart = PARTS.find((p) => p.id === part);
+  const partLabel = currentPart?.label[lang] ?? '';
+
   const stopStream = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((tr) => tr.stop());
     streamRef.current = null;
   };
 
@@ -56,7 +62,12 @@ export default function PhotosPage() {
         }
       }, 50);
     } catch (err) {
-      alert(`Camera not available: ${(err as Error).message}. You can still upload an image with the "Upload" button.`);
+      alert(
+        t(
+          `Cámara no disponible: ${(err as Error).message}. Aún puedes subir una imagen con el botón "Subir".`,
+          `Camera not available: ${(err as Error).message}. You can still upload an image with the "Upload" button.`,
+        ),
+      );
     }
   };
 
@@ -103,15 +114,17 @@ export default function PhotosPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-3xl font-bold mb-2">Photo capture & compare</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('Captura y comparación de fotos', 'Photo capture & compare')}</h1>
         <p className="text-muted text-sm">
-          Capture or upload a photo of the watch part you want to examine and a reference
-          photo of the same part on an authentic piece. Compare them side-by-side or in split view.
+          {t(
+            'Captura o sube una foto de la parte del reloj que quieres examinar y una foto de referencia de la misma parte en una pieza auténtica. Compáralas lado a lado o en vista dividida.',
+            'Capture or upload a photo of the watch part you want to examine and a reference photo of the same part on an authentic piece. Compare them side-by-side or in split view.',
+          )}
         </p>
       </section>
 
       <section>
-        <div className="text-xs uppercase tracking-wide text-dim mb-2">Watch part</div>
+        <div className="text-xs uppercase tracking-wide text-dim mb-2">{t('Parte del reloj', 'Watch part')}</div>
         <div className="flex flex-wrap gap-2">
           {PARTS.map((p) => (
             <button
@@ -121,7 +134,7 @@ export default function PhotosPage() {
                 part === p.id ? '!bg-accent !text-white !border-transparent' : ''
               }`}
             >
-              {p.label}
+              {p.label[lang]}
             </button>
           ))}
         </div>
@@ -129,7 +142,7 @@ export default function PhotosPage() {
 
       <section className="grid md:grid-cols-2 gap-5">
         <PhotoPanel
-          title="Examined watch"
+          title={t('Reloj examinado', 'Examined watch')}
           tone="examined"
           dataUrl={examined}
           onCapture={() => openCamera('examined')}
@@ -137,7 +150,7 @@ export default function PhotosPage() {
           onReset={reset('examined')}
         />
         <PhotoPanel
-          title="Authentic reference"
+          title={t('Referencia auténtica', 'Authentic reference')}
           tone="reference"
           dataUrl={reference}
           onCapture={() => openCamera('reference')}
@@ -151,10 +164,10 @@ export default function PhotosPage() {
       {examined && reference && (
         <section className="flex items-center justify-between gap-3 flex-wrap">
           <div className="text-sm text-muted">
-            Comparing the <span className="text-accent-bright font-semibold">{PARTS.find((p) => p.id === part)?.label.toLowerCase()}</span>.
+            {t('Comparando', 'Comparing the')} <span className="text-accent-bright font-semibold">{partLabel.toLowerCase()}</span>.
           </div>
           <button onClick={() => setSplitView(true)} className="btn-primary">
-            Open split comparison
+            {t('Abrir comparación dividida', 'Open split comparison')}
           </button>
         </section>
       )}
@@ -164,9 +177,12 @@ export default function PhotosPage() {
           <div className="w-full max-w-3xl space-y-3">
             <div className="flex justify-between items-center">
               <div className="text-sm text-muted">
-                Capturing for <span className="text-accent-bright font-semibold">{liveSide === 'examined' ? 'examined watch' : 'authentic reference'}</span> · {PARTS.find((p) => p.id === part)?.label.toLowerCase()}
+                {t('Capturando para', 'Capturing for')}{' '}
+                <span className="text-accent-bright font-semibold">
+                  {liveSide === 'examined' ? t('reloj examinado', 'examined watch') : t('referencia auténtica', 'authentic reference')}
+                </span> · {partLabel.toLowerCase()}
               </div>
-              <button onClick={closeCamera} className="btn-ghost text-sm">Cancel</button>
+              <button onClick={closeCamera} className="btn-ghost text-sm">{t('Cancelar', 'Cancel')}</button>
             </div>
             <video
               ref={videoRef}
@@ -181,7 +197,7 @@ export default function PhotosPage() {
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                     <circle cx="12" cy="13" r="4" />
                   </svg>
-                  Take photo
+                  {t('Tomar foto', 'Take photo')}
                 </span>
               </button>
             </div>
@@ -193,18 +209,18 @@ export default function PhotosPage() {
         <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex flex-col p-4 fade-in">
           <div className="flex justify-between items-center mb-3">
             <div className="text-sm text-muted">
-              Split view · <span className="text-accent-bright">{PARTS.find((p) => p.id === part)?.label}</span>
+              {t('Vista dividida', 'Split view')} · <span className="text-accent-bright">{partLabel}</span>
             </div>
-            <button onClick={() => setSplitView(false)} className="btn-ghost text-sm">Close</button>
+            <button onClick={() => setSplitView(false)} className="btn-ghost text-sm">{t('Cerrar', 'Close')}</button>
           </div>
           <div className="flex-1 grid md:grid-cols-2 gap-3 min-h-0">
             <div className="relative bg-black rounded-xl overflow-hidden border border-soft">
-              <img src={examined} alt="Examined" className="w-full h-full object-contain" />
-              <div className="absolute top-2 left-2 chip">Examined</div>
+              <img src={examined} alt={t('Examinado', 'Examined')} className="w-full h-full object-contain" />
+              <div className="absolute top-2 left-2 chip">{t('Examinado', 'Examined')}</div>
             </div>
             <div className="relative bg-black rounded-xl overflow-hidden border border-soft">
-              <img src={reference} alt="Reference" className="w-full h-full object-contain" />
-              <div className="absolute top-2 left-2 chip">Reference</div>
+              <img src={reference} alt={t('Referencia', 'Reference')} className="w-full h-full object-contain" />
+              <div className="absolute top-2 left-2 chip">{t('Referencia', 'Reference')}</div>
             </div>
           </div>
         </div>
@@ -223,12 +239,13 @@ type PhotoPanelProps = {
 };
 
 function PhotoPanel({ title, tone, dataUrl, onCapture, onUploadClick, onReset }: PhotoPanelProps) {
+  const { t } = useLang();
   return (
     <div className="card p-4 flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">{title}</h3>
         <span className={`chip ${tone === 'examined' ? '' : '!bg-emerald-500/15 !text-emerald-300 !border-emerald-500/30'}`}>
-          {tone === 'examined' ? 'examined' : 'reference'}
+          {tone === 'examined' ? t('examinado', 'examined') : t('referencia', 'reference')}
         </span>
       </div>
 
@@ -241,7 +258,7 @@ function PhotoPanel({ title, tone, dataUrl, onCapture, onUploadClick, onReset }:
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
               <circle cx="12" cy="13" r="4" />
             </svg>
-            No photo yet. Use the camera or upload from your device.
+            {t('Aún no hay foto. Usa la cámara o sube una desde tu dispositivo.', 'No photo yet. Use the camera or upload from your device.')}
           </div>
         )}
       </div>
@@ -253,12 +270,12 @@ function PhotoPanel({ title, tone, dataUrl, onCapture, onUploadClick, onReset }:
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
               <circle cx="12" cy="13" r="4" />
             </svg>
-            {dataUrl ? 'Retake with camera' : 'Open camera'}
+            {dataUrl ? t('Volver a tomar', 'Retake with camera') : t('Abrir cámara', 'Open camera')}
           </span>
         </button>
-        <button onClick={onUploadClick} className="btn-ghost text-sm flex-1 min-w-[6rem]">Upload</button>
+        <button onClick={onUploadClick} className="btn-ghost text-sm flex-1 min-w-[6rem]">{t('Subir', 'Upload')}</button>
         {dataUrl && (
-          <button onClick={onReset} className="btn-ghost text-sm">Reset</button>
+          <button onClick={onReset} className="btn-ghost text-sm">{t('Quitar', 'Reset')}</button>
         )}
       </div>
     </div>

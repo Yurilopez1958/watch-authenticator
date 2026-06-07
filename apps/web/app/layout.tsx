@@ -4,6 +4,7 @@ import { LangProvider } from '@/lib/i18n';
 import { ProProvider } from '@/lib/pro';
 import { SiteHeader } from './site-header';
 import { SiteFooter } from './site-footer';
+import { SkipLink } from './skip-link';
 import { StartScanFab } from './start-scan-fab';
 import { PaywallSheet } from './paywall-sheet';
 
@@ -35,12 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen">
         <LangProvider>
           <ProProvider>
-          <a
-            href="#main"
-            className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
-          >
-            Skip to content
-          </a>
+          <SkipLink />
           <SiteHeader />
           {/* No `fade-in` here: its lingering transform would make <main> the
               containing block for position:fixed modals (camera, warnings),
