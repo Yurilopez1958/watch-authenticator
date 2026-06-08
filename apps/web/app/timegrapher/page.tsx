@@ -5,6 +5,7 @@ import { ALL_MODELS, getMovementForModelAcrossBrands } from '@watch-auth/core';
 import { saveTimingReading } from '@/lib/timing-store';
 import { useLang } from '@/lib/i18n';
 import { usePro } from '@/lib/pro';
+import { PaidGate } from '@/app/paid-gate';
 
 type Metrics = { rate: number; beatError: number | null; detectedBph: number; confidence: number; amplitude: number | null };
 
@@ -525,6 +526,13 @@ export default function TimegrapherPage() {
   const ampColor = metrics?.amplitude != null ? (metrics.amplitude >= 250 ? '#34d399' : metrics.amplitude >= 180 ? '#fbbf24' : '#f87171') : undefined;
 
   return (
+    <PaidGate
+      title={{ es: 'Cronocomparador', en: 'Timegrapher' }}
+      desc={{
+        es: 'Mide marcha, error de batido, frecuencia y amplitud con el micrófono.',
+        en: 'Measure rate, beat error, frequency and amplitude with the microphone.',
+      }}
+    >
     <div className="space-y-8">
       <section>
         <h1 className="text-3xl font-bold mb-2">{t('Cronocomparador acústico', 'Acoustic chronocomparator')}</h1>
@@ -714,6 +722,7 @@ export default function TimegrapherPage() {
         </p>
       </section>
     </div>
+    </PaidGate>
   );
 }
 

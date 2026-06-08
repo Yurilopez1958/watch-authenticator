@@ -5,20 +5,22 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useLang } from '@/lib/i18n';
 import { usePro } from '@/lib/pro';
+import { usePaidPlan } from '@/lib/use-plan';
 import { HelpButton } from './help-button';
 import { LangToggle } from './lang-toggle';
 import { ProToggle } from './pro-toggle';
 import { LogoutButton } from './logout-button';
 
-type NavLink = { href: string; es: string; en: string; primary?: boolean; pro?: boolean };
+type NavLink = { href: string; es: string; en: string; primary?: boolean; pro?: boolean; paidOnly?: boolean };
 
 // `pro: true` links only appear in Pro mode (advanced/technical screens).
+// `paidOnly: true` features require a paid plan — a lock is shown to free users.
 const LINKS: readonly NavLink[] = [
   { href: '/authenticate', es: 'Autenticar', en: 'Authenticate', primary: true },
-  { href: '/timegrapher', es: 'Cronocomparador', en: 'Timegrapher' },
+  { href: '/timegrapher', es: 'Cronocomparador', en: 'Timegrapher', paidOnly: true },
   { href: '/verify', es: 'Verificación rápida', en: 'Quick verify' },
   { href: '/gallery', es: 'Galería', en: 'Reference gallery' },
-  { href: '/market', es: 'Mercado', en: 'Market' },
+  { href: '/market', es: 'Mercado', en: 'Market', paidOnly: true },
   { href: '/billing', es: 'Planes', en: 'Plans' },
   { href: '/connect', es: 'Conectar Niton', en: 'Connect Niton', pro: true },
   { href: '/import', es: 'Importar CSV', en: 'Import CSV', pro: true },
@@ -46,12 +48,24 @@ function Logo({ onClick = () => {} }: { onClick?: () => void }) {
   );
 }
 
+function LockIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60 shrink-0" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { t, lang } = useLang();
   const { pro } = usePro();
+  const { paid, enabled, known } = usePaidPlan();
   const links = LINKS.filter((l) => pro || !l.pro);
+  // Show a lock on paid-only links once we know the user is on the free plan.
+  const locked = (l: NavLink) => !!l.paidOnly && enabled && known && !paid;
 
   // Close the mobile menu on Escape for keyboard users.
   useEffect(() => {
@@ -81,7 +95,7 @@ export function SiteHeader() {
                     : 'text-muted hover:bg-white/5 hover:text-foreground'
               }`}
             >
-              {l[lang]}
+              <span className="inline-flex items-center gap-1.5">{l[lang]}{locked(l) && <LockIcon />}</span>
             </Link>
           ))}
         </nav>
@@ -146,7 +160,7 @@ export function SiteHeader() {
                       : 'text-muted'
                 }`}
               >
-                {l[lang]}
+                <span className="inline-flex items-center gap-1.5">{l[lang]}{locked(l) && <LockIcon />}</span>
               </Link>
             ))}
           </nav>

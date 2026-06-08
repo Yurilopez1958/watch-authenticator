@@ -14,6 +14,7 @@ import { usePro } from '@/lib/pro';
 import { useBrandExpenses, computeBrandPricing } from '@/lib/brand-expenses';
 import { authedFetch } from '@/lib/billing-client';
 import { handlePaywall } from '@/lib/paywall';
+import { PaidGate } from '@/app/paid-gate';
 import { AdminExpenses } from './admin-expenses';
 
 const EUR_PER_USD = 0.92;
@@ -176,6 +177,13 @@ export default function MarketPage() {
   };
 
   return (
+    <PaidGate
+      title={{ es: 'Mercado', en: 'Market' }}
+      desc={{
+        es: 'Valoración de venta, mayorista y liquidez de cualquier reloj, con calculadora de oferta para dealer.',
+        en: 'Retail, wholesale and liquidity valuation for any watch, with a dealer offer calculator.',
+      }}
+    >
     <div className="space-y-8">
       <section className="flex items-start justify-between gap-3 flex-wrap">
         <div>
@@ -364,6 +372,7 @@ export default function MarketPage() {
 
       <p className="text-xs text-dim">{t('Las estimaciones son orientativas, no cotizaciones en vivo. Una fuente de mercado en tiempo real requiere una integración de pago — se puede conectar más adelante.', 'Estimates are orientative, not live quotes. A real-time market source requires a paid integration — it can be connected later.')}</p>
     </div>
+    </PaidGate>
   );
 }
 
