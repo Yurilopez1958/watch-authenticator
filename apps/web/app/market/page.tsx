@@ -99,10 +99,12 @@ export default function MarketPage() {
     if (!force && aiCache[key]) return;
     const seq = ++fetchSeqRef.current;
     const generic = t('La estimación no está disponible ahora mismo.', 'The estimate is not available right now.');
+    const needLogin = t('Inicia sesión (en Planes) para la valoración precisa.', 'Sign in (in Plans) for the precise valuation.');
     setAiBusy(true); setAiError(null);
     try {
       const res = await authedFetch('/api/market-estimate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (await handlePaywall(res)) return; // 402/429/403 → paywall sheet (finally clears busy)
+      if (res.status === 401) { if (seq === fetchSeqRef.current) setAiError(needLogin); return; } // not signed in
       // Parse defensively: a server/platform error can return an HTML page, not JSON.
       const raw = await res.text();
       let j: { error?: string; retail?: number } | null = null;
@@ -240,7 +242,7 @@ export default function MarketPage() {
         </section>
       )}
 
-      {aiError && <div className="card p-3 border-l-4 border-l-amber-500 text-sm text-amber-300">{aiError} {mode === 'catalog' && t('(mostrando estimación heurística en su lugar).', '(showing heuristic estimate instead).')}</div>}
+      {aiError && <div className="card p-3 border-l-4 border-l-amber-500 text-sm text-amber-300">{aiError} {mode === 'catalog' && t('Mientras, te mostramos una estimación aproximada.', 'Meanwhile, here is an approximate estimate.')}</div>}
 
       {/* Valuation */}
       {val && (
