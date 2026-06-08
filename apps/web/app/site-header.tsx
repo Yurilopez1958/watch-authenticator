@@ -24,7 +24,6 @@ const LINKS: readonly NavLink[] = [
   { href: '/import', es: 'Importar CSV', en: 'Import CSV', pro: true },
   { href: '/developer', es: 'API', en: 'API', pro: true },
   { href: '/admin', es: 'Admin', en: 'Admin', pro: true },
-  { href: '/setup', es: 'Setup', en: 'Setup', pro: true },
 ];
 
 function Logo({ onClick = () => {} }: { onClick?: () => void }) {
