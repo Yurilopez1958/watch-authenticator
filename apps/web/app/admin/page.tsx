@@ -33,6 +33,15 @@ export default function AdminPage() {
   const [payments, setPayments] = useState<{ list: Record<string, unknown>[]; totalCents: number }>({ list: [], totalCents: 0 });
   const [events, setEvents] = useState<Record<string, unknown>[]>([]);
 
+  // Create-account form (admin).
+  const [cMode, setCMode] = useState<'invite' | 'password'>('invite');
+  const [cEmail, setCEmail] = useState('');
+  const [cPass, setCPass] = useState('');
+  const [cPlan, setCPlan] = useState<'free' | 'pro' | 'business'>('free');
+  const [cRole, setCRole] = useState<'user' | 'admin'>('user');
+  const [creating, setCreating] = useState(false);
+  const [createMsg, setCreateMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
   const loadUsers = useCallback(async (q: string) => {
     const res = await authedFetch(`/api/admin/users?query=${encodeURIComponent(q)}`);
     if (res.status === 401 || res.status === 403) { setAuthz('denied'); return; }
@@ -66,6 +75,30 @@ export default function AdminPage() {
     setEvents(j?.events ?? []);
   };
 
+  const createAccount = async () => {
+    setCreating(true); setCreateMsg(null);
+    const res = await authedFetch('/api/admin/users', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: cEmail, mode: cMode, password: cPass, plan: cPlan, role: cRole }),
+    });
+    const j = await res.json().catch(() => null);
+    setCreating(false);
+    if (res.ok && j?.ok) {
+      setCreateMsg({
+        ok: true,
+        text: cMode === 'invite'
+          ? t(`Invitación enviada a ${cEmail}. Pondrá su propia contraseña desde el email.`, `Invitation sent to ${cEmail}. They'll set their own password from the email.`)
+          : t(`Cuenta creada para ${cEmail}. Pásale la contraseña temporal; podrá cambiarla luego.`, `Account created for ${cEmail}. Share the temporary password; they can change it later.`),
+      });
+      setCEmail(''); setCPass('');
+      await loadUsers(query);
+    } else {
+      const m = j?.message;
+      const text = (m && typeof m === 'object') ? t(m.es, m.en) : (typeof m === 'string' ? m : t('No se pudo crear la cuenta.', 'Could not create the account.'));
+      setCreateMsg({ ok: false, text });
+    }
+  };
+
   useEffect(() => { if (tab === 'payments') void loadPayments(); if (tab === 'security') void loadSecurity(); }, [tab]);
 
   if (authz === 'denied') {
@@ -90,7 +123,62 @@ export default function AdminPage() {
       </div>
 
       {tab === 'users' && (
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="space-y-5">
+          <section className="card p-4 space-y-3">
+            <div className="text-sm font-semibold">{t('Crear cuenta', 'Create account')}</div>
+            <div className="flex gap-2 flex-wrap">
+              {(['invite', 'password'] as const).map((m) => (
+                <button key={m} onClick={() => setCMode(m)} className={`chip cursor-pointer ${cMode === m ? '!bg-accent !text-white !border-transparent' : ''}`}>
+                  {m === 'invite' ? t('Invitar por email', 'Invite by email') : t('Con contraseña temporal', 'With temporary password')}
+                </button>
+              ))}
+            </div>
+            <div className="grid sm:grid-cols-2 gap-2">
+              <input type="email" value={cEmail} onChange={(e) => setCEmail(e.target.value)} placeholder={t('correo@ejemplo.com', 'email@example.com')} className="field text-sm" autoComplete="off" />
+              {cMode === 'password' && (
+                <input type="text" value={cPass} onChange={(e) => setCPass(e.target.value)} placeholder={t('Contraseña temporal (mín. 8)', 'Temporary password (min 8)')} className="field text-sm" autoComplete="off" />
+              )}
+            </div>
+            <div className="grid sm:grid-cols-2 gap-2">
+              <label className="block text-xs text-dim">
+                {t('Plan', 'Plan')}
+                <select value={cPlan} onChange={(e) => setCPlan(e.target.value as 'free' | 'pro' | 'business')} className="field text-sm mt-1">
+                  <option value="free">Free</option>
+                  <option value="pro">Pro</option>
+                  <option value="business">Business</option>
+                </select>
+              </label>
+              <label className="block text-xs text-dim">
+                {t('Rol', 'Role')}
+                <select value={cRole} onChange={(e) => setCRole(e.target.value as 'user' | 'admin')} className="field text-sm mt-1">
+                  <option value="user">{t('Usuario', 'User')}</option>
+                  <option value="admin">{t('Administrador', 'Admin')}</option>
+                </select>
+              </label>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={() => void createAccount()}
+                disabled={creating || !cEmail || (cMode === 'password' && cPass.length < 8)}
+                className="btn-primary text-sm disabled:opacity-50"
+              >
+                {creating ? t('Creando…', 'Creating…') : cMode === 'invite' ? t('Enviar invitación', 'Send invitation') : t('Crear cuenta', 'Create account')}
+              </button>
+              {cRole === 'admin' && <span className="text-[0.7rem] text-amber-300">{t('⚠ Será administrador (acceso total).', '⚠ Will be an admin (full access).')}</span>}
+            </div>
+            {createMsg && (
+              <div className={`text-xs rounded-lg p-2.5 border-l-4 ${createMsg.ok ? 'border-l-emerald-500 bg-emerald-500/10 text-emerald-200' : 'border-l-red-500 bg-red-500/10 text-red-200'}`}>
+                {createMsg.text}
+              </div>
+            )}
+            <p className="text-[0.7rem] text-dim">
+              {cMode === 'invite'
+                ? t('Le llega un email para poner su propia contraseña. Requiere el email configurado en Supabase.', 'They get an email to set their own password. Requires email configured in Supabase.')
+                : t('La cuenta queda activa al instante con esa contraseña. Compártela de forma segura.', 'The account is active immediately with that password. Share it securely.')}
+            </p>
+          </section>
+
+          <div className="grid md:grid-cols-2 gap-5">
           <section className="card p-4 space-y-3">
             <div className="flex gap-2">
               <input value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void loadUsers(query); }} placeholder={t('Buscar por correo…', 'Search by email…')} className="field text-sm" />
@@ -155,6 +243,7 @@ export default function AdminPage() {
               </div>
             )}
           </section>
+          </div>
         </div>
       )}
 
