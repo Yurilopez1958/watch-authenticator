@@ -6,9 +6,14 @@ import { saveTimingReading } from '@/lib/timing-store';
 import { useLang } from '@/lib/i18n';
 import { usePro } from '@/lib/pro';
 
-type Metrics = { rate: number; beatError: number | null; detectedBph: number; confidence: number };
+type Metrics = { rate: number; beatError: number | null; detectedBph: number; confidence: number; amplitude: number | null };
 
 const BPH_PRESETS = [18000, 19800, 21600, 25200, 28800, 36000];
+
+// Default balance lift angle (degrees) used to compute amplitude when the user
+// does not enter one. 52° is the modern Swiss lever-escapement standard; many
+// vintage / low-beat calibers are lower (38–48°), so the field can be edited.
+const DEFAULT_LIFT_ANGLE = 52;
 
 const ENV_HZ = 4000;            // envelope sample rate (must match the worklet)
 const ENV_BUF_SECONDS = 8;      // analysis window
@@ -80,6 +85,83 @@ function analyzeEnvelope(buf: Float64Array, envHz: number, bph: number): Detecti
   return { rate, detectedBph, beatError: null, confidence };
 }
 
+/**
+ * Estimates balance-wheel amplitude (degrees) from the rectified envelope.
+ *
+ * The faint intra-beat escapement sounds (unlock → impulse → drop) are buried in
+ * room noise on a single beat, so we PHASE-FOLD the envelope over the measured
+ * beat period: averaging dozens of beats lifts the repeating sounds out of the
+ * noise. After centring the loudest sound (the impulse), the unlock and drop show
+ * up as the two side peaks. The balance crosses the lift angle θL between them,
+ * and since θL ≪ amplitude the angular velocity there is ~constant, giving:
+ *
+ *     amplitude ≈ θL · T_beat / (π · Δt)          (Δt = unlock→drop interval)
+ *
+ * This is deliberately conservative: it returns null (→ the UI shows "—") unless
+ * two clear side peaks are found and the result lands in a plausible mechanical
+ * range. Showing nothing is better than a fabricated number in an auth tool.
+ */
+function estimateAmplitude(
+  env: Float64Array,
+  envHz: number,
+  beatPeriodSec: number,
+  liftAngleDeg: number,
+): number | null {
+  if (!(beatPeriodSec > 0) || !(liftAngleDeg > 0)) return null;
+  const P = beatPeriodSec * envHz;            // samples per beat (fractional)
+  const Pint = Math.round(P);
+  if (!(Pint > 16)) return null;
+  const beats = Math.floor((env.length - 1) / P);
+  if (beats < 10) return null;                // need enough beats to average down
+
+  // Phase-fold using the exact fractional period so phase doesn't drift/smear.
+  const fold = new Float64Array(Pint);
+  const cnt = new Float64Array(Pint);
+  for (let k = 0; k < beats; k++) {
+    const base = k * P;
+    for (let j = 0; j < Pint; j++) {
+      const idx = Math.round(base + j);
+      if (idx >= 0 && idx < env.length) { fold[j]! += env[idx]!; cnt[j]!++; }
+    }
+  }
+  for (let j = 0; j < Pint; j++) if (cnt[j]! > 0) fold[j]! /= cnt[j]!;
+
+  // Roll the loudest sample (the impulse) to the centre of the array.
+  let impIdx = 0, impVal = -Infinity;
+  for (let j = 0; j < Pint; j++) if (fold[j]! > impVal) { impVal = fold[j]!; impIdx = j; }
+  if (!(impVal > 0)) return null;
+  const c = Math.floor(Pint / 2);
+  const a = new Float64Array(Pint);
+  for (let j = 0; j < Pint; j++) a[j] = fold[(impIdx - c + j + Pint * 2) % Pint]!;
+
+  let sum = 0; for (let j = 0; j < Pint; j++) sum += a[j]!;
+  const mean = sum / Pint;
+
+  // Strongest local maximum on each side of the centred impulse.
+  const guard = Math.max(3, Math.round(Pint * 0.02));
+  const peakIn = (lo: number, hi: number): { idx: number; val: number } => {
+    let bi = -1, bv = -Infinity;
+    for (let j = lo; j <= hi; j++) {
+      const v = a[j]!;
+      if (v > bv && v >= a[j - 1]! && v >= a[j + 1]!) { bv = v; bi = j; }
+    }
+    return { idx: bi, val: bv };
+  };
+  const left = peakIn(1, c - guard);
+  const right = peakIn(c + guard, Pint - 2);
+  if (left.idx < 0 || right.idx < 0) return null;
+
+  // Both side sounds must clearly rise out of the averaged noise floor.
+  const qual = Math.max(mean * 1.6, impVal * 0.12);
+  if (left.val < qual || right.val < qual) return null;
+
+  const dt = (right.idx - left.idx) / envHz;  // unlock → drop interval (s)
+  if (!(dt > 0)) return null;
+  const amp = (liftAngleDeg * beatPeriodSec) / (Math.PI * dt);
+  if (!isFinite(amp) || amp < 130 || amp > 330) return null; // plausible range
+  return amp;
+}
+
 export default function TimegrapherPage() {
   const { t } = useLang();
   const { pro } = usePro();
@@ -91,6 +173,10 @@ export default function TimegrapherPage() {
   const [level, setLevel] = useState(0);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [modelId, setModelId] = useState<string>('');
+  // Manual lift-angle override (empty string = use the default). Drives amplitude.
+  const [liftAngleInput, setLiftAngleInput] = useState<string>('');
+  // Official vph of the currently selected caliber/model (null = none selected).
+  const [officialBph, setOfficialBph] = useState<number | null>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState<string>('');
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
@@ -341,6 +427,12 @@ export default function TimegrapherPage() {
     return out;
   };
 
+  // Resolved lift angle: the user's manual value when valid, else the default.
+  const liftNum = parseFloat(liftAngleInput);
+  const liftAngle = liftAngleInput.trim() !== '' && isFinite(liftNum) && liftNum > 0
+    ? liftNum
+    : DEFAULT_LIFT_ANGLE;
+
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(() => {
@@ -359,15 +451,22 @@ export default function TimegrapherPage() {
       const lockThreshold = Math.max(0.06, 0.34 - sensitivity * 0.025);
       if (!det || det.confidence < lockThreshold) { setMetrics(null); return; }
 
+      // Amplitude is derived from the SAME envelope using the measured beat period
+      // and the resolved lift angle. Null (→ "—") whenever the signal isn't clean.
+      const amplitude = env
+        ? estimateAmplitude(env, ENV_HZ, 3600 / det.detectedBph, liftAngle)
+        : null;
+
       setMetrics({
         rate: det.rate,
         beatError: det.beatError,
         detectedBph: det.detectedBph,
         confidence: conf,
+        amplitude,
       });
     }, 200);
     return () => window.clearInterval(id);
-  }, [running, expectedBph, sensitivity]);
+  }, [running, expectedBph, sensitivity, liftAngle]);
 
   // Draws the recent envelope as a waveform: regular spikes = a watch locked in;
   // random hash = just noise. Passing null/empty clears to the idle grid.
@@ -410,14 +509,20 @@ export default function TimegrapherPage() {
 
   const onPickModel = (id: string) => {
     setModelId(id);
-    if (!id) return;
+    if (!id) { setOfficialBph(null); return; }
     const mv = getMovementForModelAcrossBrands(id);
-    if (mv?.vph) setExpectedBph(mv.vph);
+    if (mv?.vph) { setExpectedBph(mv.vph); setOfficialBph(mv.vph); }
   };
 
   const bphMismatch = metrics && Math.abs(metrics.detectedBph - expectedBph) > expectedBph * 0.06;
+  // New (additive): when a caliber/model is selected, flag a measured frequency
+  // that differs from that caliber's OFFICIAL vph by more than 2%. Informational
+  // only — it never blocks the reading.
+  const freqInconsistent = officialBph != null && metrics != null
+    && Math.abs(metrics.detectedBph - officialBph) > officialBph * 0.02;
   const rateColor = metrics ? (Math.abs(metrics.rate) <= 10 ? '#34d399' : Math.abs(metrics.rate) <= 30 ? '#fbbf24' : '#f87171') : undefined;
   const beColor = metrics?.beatError != null ? (metrics.beatError <= 0.5 ? '#34d399' : metrics.beatError <= 1.0 ? '#fbbf24' : '#f87171') : undefined;
+  const ampColor = metrics?.amplitude != null ? (metrics.amplitude >= 250 ? '#34d399' : metrics.amplitude >= 180 ? '#fbbf24' : '#f87171') : undefined;
 
   return (
     <div className="space-y-8">
@@ -432,7 +537,7 @@ export default function TimegrapherPage() {
       <section className="rounded-2xl overflow-hidden border border-blue-500/30 shadow-xl shadow-blue-950/40" style={{ background: '#0a1024' }}>
         <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-blue-500/15 border-b border-blue-500/15">
           <Cell label={t('Marcha', 'Rate')} value={metrics ? `${metrics.rate >= 0 ? '+' : ''}${metrics.rate.toFixed(1)}` : '—'} unit={t('s / día', 's / day')} color={rateColor} big />
-          <Cell label={t('Amplitud', 'Amplitude')} value="—" unit={t('grados', 'degrees')} />
+          <Cell label={t('Amplitud', 'Amplitude')} value={metrics?.amplitude != null ? Math.round(metrics.amplitude).toString() : '—'} unit={t('grados', 'degrees')} color={ampColor} />
           <Cell label={t('Error de batido', 'Beat error')} value={metrics?.beatError != null ? metrics.beatError.toFixed(1) : '—'} unit="ms" color={beColor} />
           <Cell label={t('Frecuencia', 'Frequency')} value={metrics ? Math.round(metrics.detectedBph).toString() : '—'} unit="bph" />
         </div>
@@ -468,6 +573,17 @@ export default function TimegrapherPage() {
           {bphMismatch && <span className="text-amber-300">⚠ {t('Detectado ≠ frecuencia fijada — elige la bph correcta abajo.', 'Detected ≠ set frequency — choose the correct bph below.')}</span>}
         </div>
       </section>
+
+      {/* Frequency-consistency check vs the selected caliber's official vph.
+          Informational only — does not block the reading. */}
+      {freqInconsistent && (
+        <div className="text-sm text-amber-200 border-l-4 border-l-amber-500 bg-amber-500/10 rounded-lg p-3">
+          {t(
+            '⚠️ Frecuencia inconsistente con el calibre seleccionado. Posible error de lectura o movimiento no original.',
+            '⚠️ Frequency inconsistent with the selected caliber. Possible reading error or non-original movement.',
+          )}
+        </div>
+      )}
 
       {/* Controls */}
       <section className="card p-5 space-y-5">
@@ -548,6 +664,32 @@ export default function TimegrapherPage() {
           </select>
         </label>
 
+        {/* Manual lift angle → drives the amplitude estimate. Blank = default. */}
+        <label className="block">
+          <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Ángulo de alzada (lift angle) — para la amplitud', 'Lift angle — for amplitude')}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="number"
+              inputMode="decimal"
+              min={20}
+              max={90}
+              step={1}
+              value={liftAngleInput}
+              onChange={(e) => setLiftAngleInput(e.target.value)}
+              placeholder={`${DEFAULT_LIFT_ANGLE}`}
+              className="field max-w-[7rem]"
+              aria-label={t('Ángulo de alzada en grados', 'Lift angle in degrees')}
+            />
+            <span className="text-xs text-dim">{t(`grados — vacío usa ${DEFAULT_LIFT_ANGLE}° por defecto`, `degrees — blank uses ${DEFAULT_LIFT_ANGLE}° by default`)}</span>
+          </div>
+          <span className="block text-xs text-dim mt-1.5">
+            {t(
+              'Introduce el ángulo de alzada de tu calibre para una amplitud precisa. Típico 52° en relojes modernos; muchos calibres antiguos son menores (38–48°). Si lo dejas vacío se usa 52°.',
+              "Enter your caliber's lift angle for an accurate amplitude. Typically 52° on modern watches; many vintage calibers are lower (38–48°). Left blank, 52° is used.",
+            )}
+          </span>
+        </label>
+
         {pro && <div className="grid sm:grid-cols-2 gap-4">
           <label className="block">
             <span className="block text-xs uppercase tracking-wide text-dim mb-2">{t('Nivel de micro / ganancia', 'Mic level / gain')} ({gain}×)</span>
@@ -566,8 +708,8 @@ export default function TimegrapherPage() {
         <div className="font-semibold text-neutral-200">{t('Consejos y límites honestos', 'Tips & honest limits')}</div>
         <p className="leading-relaxed">
           {t(
-            'El micrófono interno del teléfono funciona sin más — sala en silencio, tapa trasera apoyada en el micro. La marcha y el error de batido se estabilizan tras ~15–30 segundos. La frecuencia detectada debe coincidir con el reloj: elige la bph correcta (o un modelo) arriba. Opcionalmente, un micrófono de contacto sujeto al movimiento da una señal aún más limpia. La amplitud todavía no se mide (necesita el ángulo de alzada y un timing limpio del sonido dentro del beat).',
-            'The phone’s built-in microphone works out of the box — quiet room, case back pressed to the mic. Rate and beat error stabilise after ~15–30 seconds. The detected frequency must match the watch — pick the right bph (or a model) above. Optionally, a watch contact microphone clamped to the movement gives an even cleaner signal. Amplitude is not measured yet (it needs the lift-angle plus clean intra-beat sound timing).',
+            'El micrófono interno del teléfono funciona sin más — sala en silencio, tapa trasera apoyada en el micro. La marcha y el error de batido se estabilizan tras ~15–30 segundos. La frecuencia detectada debe coincidir con el reloj: elige la bph correcta (o un modelo) arriba. Opcionalmente, un micrófono de contacto sujeto al movimiento da una señal aún más limpia. La amplitud se estima a partir del ángulo de alzada y del timing del sonido dentro del beat; es una función nueva: solo aparece cuando la señal está muy limpia (mejor con micro de contacto) y conviene contrastarla con tu cronocomparador de referencia.',
+            'The phone’s built-in microphone works out of the box — quiet room, case back pressed to the mic. Rate and beat error stabilise after ~15–30 seconds. The detected frequency must match the watch — pick the right bph (or a model) above. Optionally, a watch contact microphone clamped to the movement gives an even cleaner signal. Amplitude is estimated from the lift angle and the intra-beat sound timing; it’s a new feature — it only appears when the signal is very clean (best with a contact mic), so cross-check it against your reference timer.',
           )}
         </p>
       </section>
