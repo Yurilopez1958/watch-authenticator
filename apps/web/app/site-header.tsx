@@ -8,6 +8,7 @@ import { usePro } from '@/lib/pro';
 import { HelpButton } from './help-button';
 import { LangToggle } from './lang-toggle';
 import { ProToggle } from './pro-toggle';
+import { LogoutButton } from './logout-button';
 
 type NavLink = { href: string; es: string; en: string; primary?: boolean; pro?: boolean };
 
@@ -89,6 +90,7 @@ export function SiteHeader() {
           <ProToggle />
           <LangToggle />
           <HelpButton />
+          <LogoutButton />
         </div>
       </aside>
 
@@ -104,6 +106,7 @@ export function SiteHeader() {
             <ProToggle />
             <LangToggle />
             <HelpButton />
+            <LogoutButton />
 
             <button
               onClick={() => setOpen((v) => !v)}

@@ -7,6 +7,7 @@ import { SiteFooter } from './site-footer';
 import { SkipLink } from './skip-link';
 import { StartScanFab } from './start-scan-fab';
 import { PaywallSheet } from './paywall-sheet';
+import { AuthGate } from './auth-gate';
 
 export const metadata: Metadata = {
   title: 'Watch Authenticator',
@@ -36,18 +37,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen">
         <LangProvider>
           <ProProvider>
-          <SkipLink />
-          <SiteHeader />
-          {/* On desktop the nav is a fixed left sidebar (w-60), so the content
-              column is pushed right by the same amount (lg:pl-60). */}
-          <div className="lg:pl-60">
-            {/* No `fade-in` here: its lingering transform would make <main> the
-                containing block for position:fixed modals (camera, warnings),
-                clamping them to the content box instead of the viewport. */}
-            <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">{children}</main>
-            <SiteFooter />
-          </div>
-          <StartScanFab />
+          {/* AuthGate: when signed out, the whole shell below is replaced by the
+              login screen (except the /reset-password flow). */}
+          <AuthGate>
+            <SkipLink />
+            <SiteHeader />
+            {/* On desktop the nav is a fixed left sidebar (w-60), so the content
+                column is pushed right by the same amount (lg:pl-60). */}
+            <div className="lg:pl-60">
+              {/* No `fade-in` here: its lingering transform would make <main> the
+                  containing block for position:fixed modals (camera, warnings),
+                  clamping them to the content box instead of the viewport. */}
+              <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">{children}</main>
+              <SiteFooter />
+            </div>
+            <StartScanFab />
+          </AuthGate>
           <PaywallSheet />
           </ProProvider>
         </LangProvider>

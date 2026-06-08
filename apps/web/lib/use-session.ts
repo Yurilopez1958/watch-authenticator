@@ -9,7 +9,17 @@ export type SessionState = {
   loading: boolean;
   session: Session | null;
   email: string | null;
+  /** Passwordless magic-link sign-in (kept as a fallback). */
   signInWithEmail: (email: string, redirectPath?: string) => Promise<{ error: string | null }>;
+  /** Email + password sign-in. */
+  signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
+  /** Create an account with email + password. `needsConfirm` is true when the
+   *  project requires email confirmation before the session is active. */
+  signUpWithPassword: (email: string, password: string) => Promise<{ error: string | null; needsConfirm: boolean }>;
+  /** Send a password-reset email (lands on /reset-password). */
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
+  /** Set a new password for the currently-authenticated (recovery) session. */
+  updatePassword: (password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 };
 
@@ -50,6 +60,41 @@ export function useSession(): SessionState {
     return { error: error?.message ?? null };
   };
 
+  const signInWithPassword = async (email: string, password: string): Promise<{ error: string | null }> => {
+    const sb = getSupabase();
+    if (!sb) return { error: 'Auth is not configured.' };
+    const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
+    return { error: error?.message ?? null };
+  };
+
+  const signUpWithPassword = async (email: string, password: string): Promise<{ error: string | null; needsConfirm: boolean }> => {
+    const sb = getSupabase();
+    if (!sb) return { error: 'Auth is not configured.', needsConfirm: false };
+    const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/` : undefined;
+    const { data, error } = await sb.auth.signUp({
+      email: email.trim(),
+      password,
+      options: redirectTo ? { emailRedirectTo: redirectTo } : {},
+    });
+    // No session returned (and no error) → the project requires email confirmation.
+    return { error: error?.message ?? null, needsConfirm: !error && !data.session };
+  };
+
+  const resetPassword = async (email: string): Promise<{ error: string | null }> => {
+    const sb = getSupabase();
+    if (!sb) return { error: 'Auth is not configured.' };
+    const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined;
+    const { error } = await sb.auth.resetPasswordForEmail(email.trim(), redirectTo ? { redirectTo } : {});
+    return { error: error?.message ?? null };
+  };
+
+  const updatePassword = async (password: string): Promise<{ error: string | null }> => {
+    const sb = getSupabase();
+    if (!sb) return { error: 'Auth is not configured.' };
+    const { error } = await sb.auth.updateUser({ password });
+    return { error: error?.message ?? null };
+  };
+
   const signOut = async () => {
     const sb = getSupabase();
     try {
@@ -68,6 +113,10 @@ export function useSession(): SessionState {
     session,
     email: session?.user?.email ?? null,
     signInWithEmail,
+    signInWithPassword,
+    signUpWithPassword,
+    resetPassword,
+    updatePassword,
     signOut,
   };
 }
