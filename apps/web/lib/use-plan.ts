@@ -8,6 +8,10 @@ export type PaidPlanState = {
   plan: PlanId;
   /** True for any paid plan (Pro or Business). */
   paid: boolean;
+  /** True when the user's real role is admin (staff bypass). */
+  isAdmin: boolean;
+  /** Allowed to use paid features: a paid plan OR an admin. */
+  entitled: boolean;
   /** Auth/billing is configured, so gating can apply at all. */
   enabled: boolean;
   /** Still resolving the session or the plan. */
@@ -27,6 +31,7 @@ export type PaidPlanState = {
 export function usePaidPlan(): PaidPlanState {
   const { enabled, loading: sessionLoading, session } = useSession();
   const [plan, setPlan] = useState<PlanId>('free');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [known, setKnown] = useState(false);
   const [loading, setLoading] = useState(enabled);
 
@@ -34,17 +39,18 @@ export function usePaidPlan(): PaidPlanState {
     let cancelled = false;
     if (!enabled) { setLoading(false); setKnown(false); return; }
     if (sessionLoading) { setLoading(true); return; }
-    if (!session) { setLoading(false); setKnown(false); setPlan('free'); return; }
+    if (!session) { setLoading(false); setKnown(false); setPlan('free'); setIsAdmin(false); return; }
     setLoading(true);
     void getBillingMe().then((me) => {
       if (cancelled) return;
-      if (me) { setPlan(me.plan); setKnown(true); }
-      else { setPlan('free'); setKnown(false); }
+      if (me) { setPlan(me.plan); setIsAdmin(me.isAdmin); setKnown(true); }
+      else { setPlan('free'); setIsAdmin(false); setKnown(false); }
       setLoading(false);
     });
     return () => { cancelled = true; };
   }, [enabled, sessionLoading, session]);
 
   const paid = plan === 'pro' || plan === 'business';
-  return { plan, paid, enabled, loading, known };
+  const entitled = paid || isAdmin;
+  return { plan, paid, isAdmin, entitled, enabled, loading, known };
 }

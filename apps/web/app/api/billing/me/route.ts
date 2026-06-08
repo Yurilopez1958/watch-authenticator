@@ -12,6 +12,11 @@ export async function GET(req: Request) {
       .select('plan, status, current_period_end, cancel_at_period_end').eq('user_id', userId).single();
     const plan = (sub?.plan ?? 'free') as PlanId;
 
+    // Real admin role (from profiles.role) so staff can use paid features without
+    // a subscription. Based on the DB role only — never on the client "pro" toggle.
+    const { data: profile } = await admin.from('profiles').select('role').eq('id', userId).maybeSingle();
+    const isAdmin = profile?.role === 'admin';
+
     const period = new Date();
     period.setUTCDate(1); period.setUTCHours(0, 0, 0, 0);
     const { data: usage } = await admin.from('usage_counters')
@@ -21,6 +26,7 @@ export async function GET(req: Request) {
 
     return Response.json({
       plan,
+      isAdmin,
       status: sub?.status ?? 'active',
       currentPeriodEnd: sub?.current_period_end ?? null,
       cancelAtPeriodEnd: sub?.cancel_at_period_end ?? false,

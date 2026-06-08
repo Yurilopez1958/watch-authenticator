@@ -62,10 +62,11 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { t, lang } = useLang();
   const { pro } = usePro();
-  const { paid, enabled, known } = usePaidPlan();
+  const { entitled, enabled, known } = usePaidPlan();
   const links = LINKS.filter((l) => pro || !l.pro);
-  // Show a lock on paid-only links once we know the user is on the free plan.
-  const locked = (l: NavLink) => !!l.paidOnly && enabled && known && !paid;
+  // Show a lock on paid-only links only when the user has no access (free, not
+  // admin). Admins and paid plans see no lock.
+  const locked = (l: NavLink) => !!l.paidOnly && enabled && known && !entitled;
 
   // Close the mobile menu on Escape for keyboard users.
   useEffect(() => {

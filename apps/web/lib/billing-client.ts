@@ -34,6 +34,8 @@ export type BillingInterval = 'month' | 'year';
 
 export type BillingMe = {
   plan: PlanId;
+  /** True when the user's real role (profiles.role) is admin. */
+  isAdmin: boolean;
   status: string;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;

@@ -15,7 +15,7 @@ type Bi = { es: string; en: string };
  */
 export function PaidGate({ title, desc, children }: { title: Bi; desc?: Bi; children: React.ReactNode }) {
   const { t, lang } = useLang();
-  const { paid, enabled, loading, known } = usePaidPlan();
+  const { entitled, enabled, loading, known } = usePaidPlan();
 
   if (!enabled) return <>{children}</>;
 
@@ -27,7 +27,7 @@ export function PaidGate({ title, desc, children }: { title: Bi; desc?: Bi; chil
     );
   }
 
-  if (!known || paid) return <>{children}</>;
+  if (!known || entitled) return <>{children}</>;
 
   // Signed-in user on the free plan → upsell.
   return (
