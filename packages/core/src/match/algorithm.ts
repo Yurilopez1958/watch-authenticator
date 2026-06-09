@@ -209,7 +209,10 @@ export function bestProfileMatch(
     // it's expensive and hard to machine, so fakes use 316L (Ni ~12%) or cheaper
     // steel. A clear Cr/Ni match is therefore a strong authenticity indicator
     // even when Mo can't be read on this instrument.
-    if (cr >= 18.5 && cr <= 24 && ni >= 22 && ni <= 30) {
+    // Ni >= ~21 is the decisive marker (316L is ~10-14%); this precious-mode gun
+    // can over-read Ni (seen 28-32% on a genuine 904L), so the upper bound is
+    // generous while staying well clear of 316L.
+    if (cr >= 17 && cr <= 25 && ni >= 21 && ni <= 35) {
       return {
         profileId: 'detector-904l-signature',
         materialName: 'rolex-904l-oystersteel',
