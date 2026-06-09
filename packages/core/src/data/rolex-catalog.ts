@@ -242,6 +242,8 @@ export const ROLEX_MODELS: readonly Model[] = [
   // ---- Day-Date (modern + vintage, extra) ----
   { id: 'rolex-day-date-40-228239', brandId: 'rolex', collection: 'Day-Date 40', audience: 'men', name: 'Day-Date 40 228239 (white gold)', reference: '228239', yearStart: 2015, caliber: 'Cal. 3255', caseDiameterMm: 40 },
   { id: 'rolex-day-date-40-228396', brandId: 'rolex', collection: 'Day-Date 40', audience: 'men', name: 'Day-Date 40 228396 (platinum, diamond bezel)', reference: '228396TBR', yearStart: 2015, caliber: 'Cal. 3255', caseDiameterMm: 40 },
+  { id: 'rolex-day-date-40-228235', brandId: 'rolex', collection: 'Day-Date 40', audience: 'men', name: 'Day-Date 40 228235 (Everose gold)', reference: '228235', yearStart: 2015, caliber: 'Cal. 3255', caseDiameterMm: 40 },
+  { id: 'rolex-day-date-40-228238', brandId: 'rolex', collection: 'Day-Date 40', audience: 'men', name: 'Day-Date 40 228238 (yellow gold)', reference: '228238', yearStart: 2015, caliber: 'Cal. 3255', caseDiameterMm: 40 },
   { id: 'rolex-day-date-36-128239', brandId: 'rolex', collection: 'Day-Date 36', audience: 'unisex', name: 'Day-Date 36 128239 (white gold)', reference: '128239', yearStart: 2019, caliber: 'Cal. 3255', caseDiameterMm: 36 },
   { id: 'rolex-day-date-36-128206', brandId: 'rolex', collection: 'Day-Date 36', audience: 'unisex', name: 'Day-Date 36 128206 (platinum)', reference: '128206', yearStart: 2019, caliber: 'Cal. 3255', caseDiameterMm: 36 },
   { id: 'rolex-day-date-18039', brandId: 'rolex', collection: 'Day-Date 36', audience: 'men', name: 'Day-Date 18039 (white gold)', reference: '18039', yearStart: 1977, yearEnd: 1988, caliber: 'Cal. 3055', caseDiameterMm: 36 },
