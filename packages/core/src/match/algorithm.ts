@@ -185,13 +185,13 @@ export function bestProfileMatch(
   //     correct, plain explanation instead of "closest profile: platinum".
   if (au >= 5 && au < 70 && steelBase >= 8) {
     return {
-      profileId: 'detector-plating',
-      materialName: 'gold-plated (not solid)',
-      overallScore: Math.max(0, Math.min(35, Math.round(au * 0.4))),
-      verdict: 'likely-fake',
+      profileId: 'detector-gold-over-steel',
+      materialName: 'gold over steel (plating or beam overlap)',
+      overallScore: 50,
+      verdict: 'inconclusive',
       elementMatches: [],
       flags: [
-        `Gold-plating signature: Au ${au.toFixed(1)}% is far below solid 18k (~75%), and a base-metal (steel) substrate shows through (Fe+Cr+Ni ~${steelBase.toFixed(0)}%). This is GOLD PLATING over steel, not solid gold. Brands that use only solid gold (e.g. Rolex) → likely not genuine.`,
+        `Gold + steel together: Au ${au.toFixed(1)}% with a steel signature (Fe+Cr+Ni ~${steelBase.toFixed(0)}%). XRF alone cannot separate two cases: (1) GOLD PLATING over steel (fake), or (2) a SOLID gold part — e.g. a narrow fluted or gem-set bezel — where the beam also caught the steel case behind/around it. Decisive test: re-measure with the beam FULLY on the gold, on the flattest, widest spot. If Au climbs toward ~75% (18k) it's solid gold (genuine); if it stays low, it's likely plating.`,
       ],
     };
   }
