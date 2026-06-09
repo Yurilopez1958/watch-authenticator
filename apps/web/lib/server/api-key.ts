@@ -30,9 +30,9 @@ export async function requireApiKey(req: Request): Promise<Ctx> {
   // Best-effort last-used stamp (don't block the request on it).
   void admin.from('api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', data.id);
 
-  const { data: profile } = await admin.from('profiles').select('status').eq('id', data.user_id).single();
+  const { data: profile } = await admin.from('profiles').select('status, role').eq('id', data.user_id).single();
   if (profile?.status === 'blocked') throw ERRORS.accountBlocked();
 
   const { data: sub } = await admin.from('subscriptions').select('plan').eq('user_id', data.user_id).single();
-  return { userId: data.user_id, plan: (sub?.plan ?? 'free') as PlanId };
+  return { userId: data.user_id, plan: (sub?.plan ?? 'free') as PlanId, isAdmin: profile?.role === 'admin' };
 }

@@ -3,7 +3,7 @@ import { PLANS, SAAS_ENABLED, type PlanId } from '@/lib/plans';
 import { ERRORS, errorResponse } from './errors';
 import { sendEmail, biHtml } from './email';
 
-export type Ctx = { userId: string; plan: PlanId };
+export type Ctx = { userId: string; plan: PlanId; isAdmin: boolean };
 
 /**
  * Route helper: when SaaS is OFF returns null (proceed, no change in behaviour).
@@ -44,8 +44,9 @@ export async function requireActiveUser(req: Request): Promise<Ctx> {
   if (!userId) throw ERRORS.unauthorized();
   const admin = getAdmin();
 
-  const { data: profile } = await admin.from('profiles').select('status').eq('id', userId).single();
+  const { data: profile } = await admin.from('profiles').select('status, role').eq('id', userId).single();
   if (profile?.status === 'blocked') throw ERRORS.accountBlocked();
+  const isAdmin = profile?.role === 'admin';
 
   const { data: sub } = await admin.from('subscriptions')
     .select('plan, status, grace_until').eq('user_id', userId).single();
@@ -56,7 +57,7 @@ export async function requireActiveUser(req: Request): Promise<Ctx> {
     const inGrace = sub?.grace_until ? new Date(sub.grace_until) > new Date() : false;
     if (!ok && !inGrace) throw ERRORS.paymentRequired();
   }
-  return { userId, plan };
+  return { userId, plan, isAdmin };
 }
 
 /** Atomically consumes one unit of monthly quota for the given action. */
@@ -106,6 +107,10 @@ export async function enforceDevice(ctx: Ctx, req: Request) {
     { user_id: ctx.userId, device_id: deviceId, last_ip: ip, user_agent: ua, last_seen: new Date().toISOString(), revoked: false },
     { onConflict: 'user_id,device_id' },
   );
+
+  // Admins (staff) are never blocked by the device cap — they test and demo
+  // across many devices. The device is still registered above for visibility.
+  if (ctx.isAdmin) return;
 
   const since = new Date(Date.now() - 30 * 864e5).toISOString();
   const { data: list } = await admin.from('devices')
