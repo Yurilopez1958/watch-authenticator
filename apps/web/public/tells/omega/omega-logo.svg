@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Omega symbol: genuine symmetric vs replica uneven">
+  <defs><filter id="oblur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.4"/></filter></defs>
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <text x="105" y="40" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34d399">&#10003; simétrica / even</text>
+  <g fill="none" stroke="#e5e7eb" stroke-width="12" stroke-linecap="round">
+    <path d="M88 150 A38 38 0 1 1 122 150"/>
+    <line x1="88" y1="150" x2="73" y2="150"/>
+    <line x1="122" y1="150" x2="137" y2="150"/>
+  </g>
+
+  <text x="315" y="40" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#f87171">&#10007; irregular / uneven</text>
+  <g fill="none" stroke="#94a3b8" stroke-width="12" stroke-linecap="round" filter="url(#oblur)">
+    <path d="M300 150 A33 40 0 1 1 330 150"/>
+    <line x1="300" y1="150" x2="282" y2="150"/>
+    <line x1="330" y1="150" x2="343" y2="150"/>
+  </g>
+
+  <text x="210" y="212" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">&#937; symbol &#183; legs symmetric / patas simétricas</text>
+</svg>

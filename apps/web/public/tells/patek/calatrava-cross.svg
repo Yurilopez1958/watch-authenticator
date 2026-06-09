@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Calatrava cross: genuine symmetric vs replica lopsided">
+  <defs><filter id="cblur" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.3"/></filter></defs>
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <text x="105" y="38" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34d399">&#10003; simétrica / sharp</text>
+  <g fill="#e5e7eb">
+    <g transform="rotate(0 105 122)"><polygon points="105,122 98,96 112,96"/><circle cx="98" cy="94" r="4"/><circle cx="105" cy="90" r="4.5"/><circle cx="112" cy="94" r="4"/></g>
+    <g transform="rotate(90 105 122)"><polygon points="105,122 98,96 112,96"/><circle cx="98" cy="94" r="4"/><circle cx="105" cy="90" r="4.5"/><circle cx="112" cy="94" r="4"/></g>
+    <g transform="rotate(180 105 122)"><polygon points="105,122 98,96 112,96"/><circle cx="98" cy="94" r="4"/><circle cx="105" cy="90" r="4.5"/><circle cx="112" cy="94" r="4"/></g>
+    <g transform="rotate(270 105 122)"><polygon points="105,122 98,96 112,96"/><circle cx="98" cy="94" r="4"/><circle cx="105" cy="90" r="4.5"/><circle cx="112" cy="94" r="4"/></g>
+    <circle cx="105" cy="122" r="5"/>
+  </g>
+
+  <text x="315" y="38" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#f87171">&#10007; torcida / lopsided</text>
+  <g fill="#94a3b8" filter="url(#cblur)">
+    <g transform="rotate(6 315 122)"><polygon points="315,122 308,96 322,96"/><circle cx="308" cy="94" r="4"/><circle cx="315" cy="90" r="4.5"/><circle cx="322" cy="94" r="4"/></g>
+    <g transform="rotate(95 315 122)"><polygon points="315,122 308,96 322,96"/><circle cx="308" cy="94" r="3.5"/><circle cx="315" cy="90" r="5"/><circle cx="322" cy="94" r="4"/></g>
+    <g transform="rotate(184 315 122)"><polygon points="315,122 308,96 322,96"/><circle cx="308" cy="94" r="4"/><circle cx="315" cy="90" r="4"/><circle cx="322" cy="94" r="4.5"/></g>
+    <g transform="rotate(272 315 122)"><polygon points="315,122 308,96 322,96"/><circle cx="308" cy="94" r="4.5"/><circle cx="315" cy="90" r="4"/><circle cx="322" cy="94" r="3.5"/></g>
+    <circle cx="315" cy="122" r="5"/>
+  </g>
+
+  <text x="210" y="212" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">Calatrava cross / cruz (esquema)</text>
+</svg>

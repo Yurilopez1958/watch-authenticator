@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Cartier crown cabochon: genuine well-set blue gem vs replica off-centre with glue">
+  <defs>
+    <radialGradient id="gem" cx="40%" cy="35%" r="70%"><stop offset="0%" stop-color="#7db5ff"/><stop offset="60%" stop-color="#2563eb"/><stop offset="100%" stop-color="#13307a"/></radialGradient>
+    <filter id="cgblur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.3"/></filter>
+  </defs>
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <text x="105" y="36" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34d399">&#10003; centrado / clean</text>
+  <circle cx="105" cy="122" r="44" fill="#0b1b2e" stroke="#9aa6b8" stroke-width="2"/>
+  <g stroke="#5b6577" stroke-width="2">
+    <line x1="105" y1="78" x2="105" y2="86"/><line x1="136" y1="91" x2="130" y2="97"/><line x1="149" y1="122" x2="141" y2="122"/><line x1="136" y1="153" x2="130" y2="147"/><line x1="105" y1="166" x2="105" y2="158"/><line x1="74" y1="153" x2="80" y2="147"/><line x1="61" y1="122" x2="69" y2="122"/><line x1="74" y1="91" x2="80" y2="97"/>
+  </g>
+  <polygon points="105,104 121,116 115,134 95,134 89,116" fill="url(#gem)" stroke="#bcd6ff" stroke-width="1.3"/>
+  <g stroke="#bcd6ff" stroke-width="0.8" opacity="0.7"><line x1="105" y1="118" x2="105" y2="104"/><line x1="105" y1="118" x2="121" y2="116"/><line x1="105" y1="118" x2="115" y2="134"/><line x1="105" y1="118" x2="95" y2="134"/><line x1="105" y1="118" x2="89" y2="116"/></g>
+
+  <text x="315" y="36" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#f87171">&#10007; descentrado / glue</text>
+  <circle cx="315" cy="122" r="44" fill="#0b1b2e" stroke="#7f8a9c" stroke-width="2"/>
+  <g stroke="#4a5263" stroke-width="2"><line x1="315" y1="78" x2="315" y2="86"/><line x1="346" y1="91" x2="340" y2="97"/><line x1="359" y1="122" x2="351" y2="122"/><line x1="346" y1="153" x2="340" y2="147"/><line x1="315" y1="166" x2="315" y2="158"/><line x1="284" y1="153" x2="290" y2="147"/><line x1="271" y1="122" x2="279" y2="122"/><line x1="284" y1="91" x2="290" y2="97"/></g>
+  <ellipse cx="333" cy="132" rx="13" ry="8" fill="#5b6577" opacity="0.6"/>
+  <g filter="url(#cgblur)">
+    <polygon points="322,108 338,120 332,138 312,138 306,120" fill="url(#gem)" stroke="#9bbef0" stroke-width="1.3"/>
+  </g>
+
+  <text x="210" y="212" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">crown cabochon / cabujón azul de la corona</text>
+</svg>

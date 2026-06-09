@@ -17,6 +17,8 @@ const OMEGA_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'En modelos Co-Axial la esfera indica "Co-Axial" / "Master Chronometer" con tipografía y espaciado correctos para la época.', en: 'On Co-Axial models the dial reads "Co-Axial" / "Master Chronometer" with correct fonts and spacing for the era.' },
       { es: 'Sin erratas ni interletrado irregular — un delator clásico de réplica.', en: 'No spelling slips or uneven kerning — a classic replica giveaway.' },
     ],
+    image: '/tells/omega/omega-logo.svg',
+    imageCaption: { es: 'El símbolo Ω auténtico es simétrico y de patas uniformes. Réplica: irregular o mal espaciado.', en: 'The genuine Ω is symmetric with even legs. Replica: uneven or poorly spaced.' },
   },
   {
     id: 'omega-caseback',
@@ -54,6 +56,8 @@ const OMEGA_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Los índices aplicados tienen lume uniforme; la rueda de fecha (si la lleva) queda centrada en la ventanilla.', en: 'Applied indices have even lume; the date wheel (where present) aligns centrally in the window.' },
       { es: 'Las agujas tipo lollipop/broad-arrow corresponden al modelo y tienen lume coherente con los índices.', en: 'Lollipop/broad-arrow hands match the model and have lume consistent with the markers.' },
     ],
+    image: '/tells/omega/wave-dial.svg',
+    imageCaption: { es: 'Olas grabadas a láser (Diver 300M): líneas finas, parejas y nítidas. Réplica: gruesas, desiguales o borrosas.', en: 'Laser-engraved waves (Diver 300M): fine, even, sharp lines. Replica: thick, uneven or blurry.' },
   },
 ];
 
@@ -75,6 +79,8 @@ const PATEK_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Los índices aplicados y el texto "PATEK PHILIPPE GENEVE" son nitidísimos; numerales baton/Breguet correctos para el modelo.', en: 'Applied markers and "PATEK PHILIPPE GENEVE" text are razor-sharp; baton/Breguet numerals correct for the model.' },
       { es: 'Las esferas de guilloché y esmalte (si las lleva) muestran patrones impecables y uniformes — las réplicas emborronan el trabajo fino.', en: 'Guilloché and enamel dials (where fitted) show flawless, even patterns — replicas blur the fine work.' },
     ],
+    image: '/tells/patek/calatrava-cross.svg',
+    imageCaption: { es: 'Cruz de Calatrava de brazos simétricos y nítidos. Réplica: torcida, desigual o empastada.', en: 'Calatrava cross with symmetric, crisp arms. Replica: lopsided, uneven or mushy.' },
   },
   {
     id: 'patek-case-hallmarks',
@@ -93,6 +99,8 @@ const PATEK_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Los eslabones del brazalete integrado son macizos, con transiciones de satinado/pulido perfectamente alineadas.', en: 'Integrated bracelet links are solid with perfectly aligned brushing/polishing transitions.' },
       { es: 'El calibre coincide (p. ej. 26-330 S C en 5711/5167; 240 PS IRM C LU en 5712).', en: 'Caliber matches (e.g. 26-330 S C in 5711/5167; 240 PS IRM C LU in 5712).' },
     ],
+    image: '/tells/patek/nautilus-dial.svg',
+    imageCaption: { es: 'Esfera en relieve horizontal: surcos finos y regulares. Réplica: relieve tosco, desigual o emborronado.', en: 'Horizontally embossed dial: fine, even grooves. Replica: coarse, uneven or smeared relief.' },
   },
   {
     id: 'patek-bracelet-strap',
@@ -114,6 +122,8 @@ const AP_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Los índices horarios de oro blanco aplicados y el logo AP son nítidos, con lume uniforme.', en: 'Applied white-gold hour markers and AP logo are crisp with even lume.' },
       { es: 'Texto de la esfera y alineación del monograma "AP" correctos para el modelo/época.', en: 'Correct dial text and "AP" monogram alignment for the model/era.' },
     ],
+    image: '/tells/ap/tapisserie.svg',
+    imageCaption: { es: 'Guilloché "Tapisserie": pirámides cuadradas perfectas y nítidas. Réplica: emborronadas o desiguales.', en: '"Tapisserie" guilloché: perfect, crisp square pyramids. Replica: muddy or uneven.' },
   },
   {
     id: 'ap-octagonal-bezel',
@@ -122,6 +132,8 @@ const AP_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Los ocho tornillos hexagonales del bisel están perfectamente alineados (todas las ranuras en la misma dirección) y bien acabados.', en: 'The eight hexagonal screws on the bezel are perfectly aligned (all slots facing the same way) and finely finished.' },
       { es: 'Las aristas del octógono del bisel están nítidamente achaflanadas; cara superior satinada con biseles pulidos.', en: 'The bezel octagon edges are crisply chamfered; brushed top with polished bevels.' },
     ],
+    image: '/tells/ap/octagon-screws.svg',
+    imageCaption: { es: 'Los 8 tornillos hexagonales con las ranuras alineadas en la misma dirección. Réplica: ranuras al azar.', en: 'The 8 hex screws with slots aligned the same way. Replica: slots at random angles.' },
   },
   {
     id: 'ap-movement',
@@ -152,6 +164,8 @@ const CARTIER_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Esfera de numerales romanos: los numerales están impresos con precisión, el minutero tipo ferrocarril es nítido y las agujas espada de acero pavonado tienen un templado uniforme.', en: 'Roman-numeral dial: numerals are precisely printed, the railway minute track is crisp, and the blued-steel sword hands are evenly tempered.' },
       { es: 'En Santos/Tank, el logotipo "Cartier" y la impresión son nítidos con la tipografía correcta.', en: 'On Santos/Tank, the "Cartier" wordmark and printing are sharp with correct fonts.' },
     ],
+    image: '/tells/cartier/secret-signature.svg',
+    imageCaption: { es: 'Bajo lupa, "Cartier" aparece microimpreso dentro de un numeral romano. Réplica: no hay firma oculta.', en: 'Under a loupe, "Cartier" appears micro-printed inside a Roman numeral. Replica: no hidden signature.' },
   },
   {
     id: 'cartier-cabochon-crown',
@@ -160,6 +174,8 @@ const CARTIER_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'La corona de cuerda lleva un cabujón facetado de zafiro/espinela azul (sintético en modelos de acero) — bien engastado, uniforme y transparente.', en: 'The winding crown holds a faceted blue sapphire/spinel cabochon (synthetic on steel models) — well-set, even, and clear.' },
       { es: 'La acción de la corona es suave; el cabujón está centrado y sin restos de pegamento.', en: 'Crown action is smooth; the cabochon is centred with no glue residue.' },
     ],
+    image: '/tells/cartier/cabochon-crown.svg',
+    imageCaption: { es: 'Cabujón azul facetado, bien engastado y centrado. Réplica: descentrado, opaco o con restos de pegamento.', en: 'Faceted blue cabochon, well-set and centred. Replica: off-centre, dull or with glue residue.' },
   },
   {
     id: 'cartier-case-screws',

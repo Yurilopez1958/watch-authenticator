@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Tapisserie guilloche: genuine crisp even pyramids vs replica muddy">
+  <defs>
+    <pattern id="tapF" width="15" height="15" patternUnits="userSpaceOnUse">
+      <rect width="15" height="15" fill="#0b1b2e"/>
+      <polygon points="0,0 15,0 7.5,7.5" fill="#3f74ad"/>
+      <polygon points="15,0 15,15 7.5,7.5" fill="#16314f"/>
+      <polygon points="15,15 0,15 7.5,7.5" fill="#0c2238"/>
+      <polygon points="0,15 0,0 7.5,7.5" fill="#27517c"/>
+    </pattern>
+    <pattern id="tapC" width="24" height="24" patternUnits="userSpaceOnUse">
+      <rect width="24" height="24" fill="#101826"/>
+      <polygon points="0,0 24,0 12,12" fill="#33485f"/>
+      <polygon points="24,0 24,24 12,12" fill="#1b2735"/>
+      <polygon points="24,24 0,24 12,12" fill="#141d29"/>
+      <polygon points="0,24 0,0 12,12" fill="#2a3a4d"/>
+    </pattern>
+    <clipPath id="tL"><circle cx="105" cy="120" r="56"/></clipPath>
+    <clipPath id="tR"><circle cx="315" cy="120" r="56"/></clipPath>
+    <filter id="tblur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.7"/></filter>
+  </defs>
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <text x="105" y="36" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34d399">&#10003; nítida / crisp</text>
+  <rect x="49" y="64" width="112" height="112" clip-path="url(#tL)" fill="url(#tapF)"/>
+  <circle cx="105" cy="120" r="56" fill="none" stroke="#2b3658" stroke-width="2"/>
+
+  <text x="315" y="36" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#f87171">&#10007; emborronada / muddy</text>
+  <rect x="259" y="64" width="112" height="112" clip-path="url(#tR)" fill="url(#tapC)" filter="url(#tblur)"/>
+  <circle cx="315" cy="120" r="56" fill="none" stroke="#2b3658" stroke-width="2"/>
+
+  <text x="210" y="212" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">Tapisserie &#183; square pyramids / pirámides cuadradas</text>
+</svg>
