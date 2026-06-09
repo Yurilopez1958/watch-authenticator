@@ -28,6 +28,8 @@ const OMEGA_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Speedmaster Moonwatch: el grabado del fondo "FLIGHT-QUALIFIED BY NASA…" / "THE FIRST WATCH WORN ON THE MOON" es profundo y está estampado de forma uniforme.', en: 'Speedmaster Moonwatch: case back engraving "FLIGHT-QUALIFIED BY NASA…" / "THE FIRST WATCH WORN ON THE MOON" is deep and evenly stamped.' },
       { es: 'Los modelos con fondo de zafiro muestran movimientos bellamente acabados (ver comprobación del movimiento) — un movimiento turbio o tosco es señal de alarma.', en: 'Sapphire-back models show beautifully finished movements (see movement check) — a cloudy or rough movement is a red flag.' },
     ],
+    image: '/tells/omega/seahorse.svg',
+    imageCaption: { es: 'Medallón del caballito de mar (Seamaster), repujado con relieve nítido y profundo. Réplica: relieve plano, borroso o mal proporcionado.', en: 'Seamaster seahorse medallion, embossed with sharp, deep relief. Replica: flat, blurry or poorly proportioned.' },
   },
   {
     id: 'omega-movement',
@@ -47,6 +49,8 @@ const OMEGA_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Seamaster Diver 300M: la válvula de escape de helio a las 10 enrosca/funciona correctamente.', en: 'Seamaster Diver 300M: the helium escape valve at 10 o\'clock screws/operates correctly.' },
       { es: 'Eslabones y enganches macizos; el reloj tiene un peso sustancial y de calidad.', en: 'Solid end-links and links; the watch has a substantial, quality heft.' },
     ],
+    image: '/tells/omega/helium-valve.svg',
+    imageCaption: { es: 'Válvula de escape de helio a las 10 (Diver 300M), bien mecanizada y funcional. Réplica: ausente, plana o decorativa.', en: 'Helium escape valve at 10 (Diver 300M), well machined and functional. Replica: missing, flat or decorative.' },
   },
   {
     id: 'omega-bezel-dial',
@@ -70,6 +74,8 @@ const PATEK_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Movimiento acabado a mano: anglage (biselado y pulido de los cantos de los puentes), Côtes de Genève, grabados rellenos de oro, avellanados pulidos. Un acabado industrial/plano es una fuerte señal de falsificación.', en: 'Hand-finished movement: anglage (bevelled, polished bridge edges), Côtes de Genève, gold-filled engravings, polished countersinks. Industrial/flat finishing is a strong fake signal.' },
       { es: 'En modelos con fondo de zafiro, comprueba el rotor firmado (oro de 21K/22K) y el número de calibre.', en: 'On sapphire-back models inspect for the signed rotor (21K/22K gold) and the caliber number.' },
     ],
+    image: '/tells/patek/anglage.svg',
+    imageCaption: { es: 'Anglage: cantos de los puentes biselados y pulidos a espejo que captan la luz. Réplica: canto plano, estampado e industrial.', en: 'Anglage: bridge edges bevelled and mirror-polished, catching the light. Replica: flat, stamped, industrial edge.' },
   },
   {
     id: 'patek-dial-logo',
@@ -90,6 +96,8 @@ const PATEK_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Punzón de Ginebra / marcas Sigma en esferas antiguas cuando corresponda.', en: 'Geneva hallmark / Sigma marks on older dials where applicable.' },
       { es: 'Superficies pulidas/satinadas nítidas; en el Nautilus las "orejas" y el bisel tipo ojo de buey son perfectamente simétricos con un satinado limpio.', en: 'Sharp polished/satined surfaces; on the Nautilus the "ears" and porthole bezel are perfectly symmetric with crisp brushing.' },
     ],
+    image: '/tells/patek/hallmark.svg',
+    imageCaption: { es: 'Punzones de la caja profundos, nítidos y bien definidos. Réplica: superficiales, borrosos o de aspecto arenado.', en: 'Case hallmarks deep, crisp and well-defined. Replica: shallow, blurry or sandblasted-looking.' },
   },
   {
     id: 'patek-nautilus-aquanaut',
@@ -143,6 +151,8 @@ const AP_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'El calibre debe coincidir con la referencia (2121 en el 15202 vintage; 7121 en el 16202; 4302 en 15500/15510).', en: 'Caliber must match the reference (2121 in vintage 15202; 7121 in 16202; 4302 in 15500/15510).' },
       { es: 'Los movimientos de la familia 2121 son ultrafinos — un movimiento grueso en un "Jumbo" es incorrecto.', en: 'The 2121-family movements are ultra-thin — a thick movement in a "Jumbo" is wrong.' },
     ],
+    image: '/tells/ap/signed-rotor.svg',
+    imageCaption: { es: 'Côtes de Genève parejas y rotor de oro firmado, bien acabado. Réplica: rayado plano, rotor mate y acabado industrial.', en: 'Even Côtes de Genève and a signed gold rotor, well finished. Replica: flat striping, dull rotor, industrial finish.' },
   },
   {
     id: 'ap-bracelet',
@@ -152,6 +162,8 @@ const AP_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Cierre desplegable firmado AP con acción precisa; eslabones macizos y con peso.', en: 'AP-signed folding clasp with precise action; solid, heavy links.' },
       { es: 'Los grabados del fondo y del cierre (referencia, AP, punzones) son profundos y limpios.', en: 'Case-back and clasp engravings (reference, AP, hallmarks) are deep and clean.' },
     ],
+    image: '/tells/ap/tapered-bracelet.svg',
+    imageCaption: { es: 'Brazalete integrado: eslabones que se estrechan con transiciones satinado/pulido perfectamente alineadas. Réplica: biseles desalineados y turbios.', en: 'Integrated bracelet: tapering links with perfectly aligned brushed/polished transitions. Replica: misaligned, hazy bevels.' },
   },
 ];
 
@@ -185,6 +197,8 @@ const CARTIER_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Superficies satinadas/pulidas nítidas; en el Tank los brancards (laterales de la caja) son limpios y simétricos.', en: 'Crisp brushed/polished surfaces; on the Tank the brancards (case sides) are clean and symmetric.' },
       { es: 'Los grabados del fondo y de las asas (referencia, serial, "Swiss Made") son profundos y uniformes.', en: 'Case-back and lug engravings (reference, serial, "Swiss Made") are deep and even.' },
     ],
+    image: '/tells/cartier/santos-screws.svg',
+    imageCaption: { es: 'Santos: tornillos vistos reales con las ranuras alineadas en la misma dirección. Réplica: ranuras al azar o decorativas.', en: 'Santos: real exposed screws with slots aligned the same way. Replica: random or decorative slots.' },
   },
   {
     id: 'cartier-movement',
@@ -201,6 +215,8 @@ const CARTIER_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'El cambio de correa QuickSwitch y el ajuste SmartLink del Santos funcionan limpiamente; los eslabones son macizos.', en: 'Santos QuickSwitch strap-change and SmartLink adjustment operate cleanly; links are solid.' },
       { es: 'El cierre desplegable está firmado por Cartier, con acción precisa y buen peso.', en: 'Deployant/folding clasp is Cartier-signed with precise action and good heft.' },
     ],
+    image: '/tells/cartier/clasp.svg',
+    imageCaption: { es: 'Cierre desplegable con la firma "Cartier" grabada profunda y nítida. Réplica: grabado superficial o borroso.', en: 'Folding clasp with a deep, crisp "Cartier" signature. Replica: shallow or blurry engraving.' },
   },
 ];
 

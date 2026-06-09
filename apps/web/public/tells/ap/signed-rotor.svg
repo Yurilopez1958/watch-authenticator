@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Movement finishing: genuine Cotes de Geneve and signed gold rotor vs replica flat">
+  <defs>
+    <linearGradient id="gold2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e6c266"/><stop offset="55%" stop-color="#c19a3e"/><stop offset="100%" stop-color="#8a6f2c"/></linearGradient>
+    <clipPath id="cmL"><circle cx="105" cy="120" r="56"/></clipPath>
+    <clipPath id="cmR"><circle cx="315" cy="120" r="56"/></clipPath>
+    <clipPath id="rtL"><path d="M49 120 A56 56 0 0 1 161 120 Z"/></clipPath>
+    <filter id="rmblur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.5"/></filter>
+  </defs>
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <text x="105" y="34" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34d399">&#10003; acabado fino / fine</text>
+  <circle cx="105" cy="120" r="56" fill="#0a1322" stroke="#2b3658" stroke-width="2"/>
+  <g clip-path="url(#cmL)"><g transform="rotate(22 105 120)" stroke="#32466b" stroke-width="3">
+    <line x1="52" y1="58" x2="52" y2="182"/><line x1="61" y1="58" x2="61" y2="182"/><line x1="70" y1="58" x2="70" y2="182"/><line x1="79" y1="58" x2="79" y2="182"/><line x1="88" y1="58" x2="88" y2="182"/><line x1="97" y1="58" x2="97" y2="182"/><line x1="106" y1="58" x2="106" y2="182"/><line x1="115" y1="58" x2="115" y2="182"/><line x1="124" y1="58" x2="124" y2="182"/><line x1="133" y1="58" x2="133" y2="182"/><line x1="142" y1="58" x2="142" y2="182"/><line x1="151" y1="58" x2="151" y2="182"/><line x1="160" y1="58" x2="160" y2="182"/>
+  </g></g>
+  <path d="M49 120 A56 56 0 0 1 161 120 Z" fill="url(#gold2)" stroke="#6b531f" stroke-width="1.5"/>
+  <g clip-path="url(#rtL)" stroke="#9a7d33" stroke-width="1.2" fill="none"><path d="M61 120 A44 44 0 0 1 149 120"/><path d="M73 120 A32 32 0 0 1 137 120"/><path d="M85 120 A20 20 0 0 1 125 120"/></g>
+  <circle cx="105" cy="120" r="4" fill="#1a1407" stroke="#6b531f"/>
+
+  <text x="315" y="34" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#f87171">&#10007; plano / industrial</text>
+  <circle cx="315" cy="120" r="56" fill="#0a1322" stroke="#2b3658" stroke-width="2"/>
+  <g clip-path="url(#cmR)" filter="url(#rmblur)"><g stroke="#3a4456" stroke-width="3">
+    <line x1="266" y1="70" x2="364" y2="70"/><line x1="266" y1="86" x2="364" y2="86"/><line x1="266" y1="150" x2="364" y2="150"/><line x1="266" y1="166" x2="364" y2="166"/>
+  </g></g>
+  <path d="M259 120 A56 56 0 0 1 371 120 Z" fill="#5b6577" stroke="#46505f" stroke-width="1.5" filter="url(#rmblur)"/>
+  <circle cx="315" cy="120" r="4" fill="#2a3140" stroke="#46505f"/>
+
+  <text x="210" y="212" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">Côtes de Genève + signed gold rotor / rotor de oro firmado</text>
+</svg>
