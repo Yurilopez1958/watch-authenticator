@@ -22,6 +22,7 @@ export const ROLEX_MODELS: readonly Model[] = [
   { id: 'rolex-submariner-date-126610ln',  brandId: 'rolex', collection: 'Submariner',          audience: 'men',     name: 'Submariner Date',                     reference: '126610LN',   yearStart: 2020, caliber: 'Cal. 3235', caseDiameterMm: 41 },
   { id: 'rolex-submariner-date-126610lv',  brandId: 'rolex', collection: 'Submariner',          audience: 'men',     name: 'Submariner Date "Kermit"',            reference: '126610LV',   yearStart: 2020, caliber: 'Cal. 3235', caseDiameterMm: 41 },
   { id: 'rolex-submariner-date-116610ln',  brandId: 'rolex', collection: 'Submariner',          audience: 'men',     name: 'Submariner Date (previous gen)',      reference: '116610LN',   yearStart: 2010, yearEnd: 2020, caliber: 'Cal. 3135', caseDiameterMm: 40 },
+  { id: 'rolex-submariner-date-116610lv',  brandId: 'rolex', collection: 'Submariner',          audience: 'men',     name: 'Submariner Date "Hulk" (green)',      reference: '116610LV',   yearStart: 2010, yearEnd: 2020, caliber: 'Cal. 3135', caseDiameterMm: 40 },
   { id: 'rolex-submariner-date-126618ln',  brandId: 'rolex', collection: 'Submariner',          audience: 'men',     name: 'Submariner Date (yellow gold)',       reference: '126618LN',   yearStart: 2020, caliber: 'Cal. 3235', caseDiameterMm: 41 },
   { id: 'rolex-submariner-date-126613lb',  brandId: 'rolex', collection: 'Submariner',          audience: 'men',     name: 'Submariner Date (two-tone blue)',     reference: '126613LB',   yearStart: 2020, caliber: 'Cal. 3235', caseDiameterMm: 41 },
 
