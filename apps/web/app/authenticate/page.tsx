@@ -761,8 +761,13 @@ export default function AuthenticatePage() {
       }
       setReadingsByTarget((prev) => ({ ...prev, [target]: next }));
       setPhotoNotes(json.notes || t('Valores extraídos. Revisa y corrige los que parezcan erróneos antes de continuar.', 'Values extracted. Review and edit any that look wrong before continuing.'));
-    } catch (err) {
-      setPhotoError((err as Error).message);
+    } catch {
+      // Never surface a raw/cryptic error — the fields below are editable, so
+      // guide the user to type the values by hand.
+      setPhotoError(t(
+        'No se pudo leer la foto automáticamente. Escribe los valores a mano en las casillas de abajo.',
+        'Could not read the photo automatically. Type the values by hand in the fields below.',
+      ));
     } finally {
       setPhotoBusy(false);
     }

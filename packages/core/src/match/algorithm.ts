@@ -167,6 +167,51 @@ export function bestProfileMatch(
   candidateProfiles: readonly ReferenceProfile[],
 ): MatchResult | null {
   if (candidateProfiles.length === 0) return null;
+
+  // --- Composition-level pre-checks --------------------------------------
+  // Handle two real-world XRF realities that per-profile scoring explains
+  // badly (surfaced during live testing with a precious-metals analyzer):
+  const m = readingsByElement(measurement.readings);
+  const get = (e: ElementSymbol) => m.get(e) ?? 0;
+  const au = get('Au');
+  const steelBase = get('Fe') + get('Cr') + get('Ni');
+  const mo = get('Mo');
+
+  // (A) GOLD PLATING: some gold, but far below any solid karat, sitting over a
+  //     base-metal (steel) substrate the beam reads through. Brands that use
+  //     only SOLID gold (Rolex, Patek, AP, etc.) → not genuine. This gives the
+  //     correct, plain explanation instead of "closest profile: platinum".
+  if (au >= 5 && au < 70 && steelBase >= 8) {
+    return {
+      profileId: 'detector-plating',
+      materialName: 'gold-plated (not solid)',
+      overallScore: Math.max(0, Math.min(35, Math.round(au * 0.4))),
+      verdict: 'likely-fake',
+      elementMatches: [],
+      flags: [
+        `Gold-plating signature: Au ${au.toFixed(1)}% is far below solid 18k (~75%), and a base-metal (steel) substrate shows through (Fe+Cr+Ni ~${steelBase.toFixed(0)}%). This is GOLD PLATING over steel, not solid gold. Brands that use only solid gold (e.g. Rolex) → likely not genuine.`,
+      ],
+    };
+  }
+
+  // (B) STEEL measured WITHOUT molybdenum: Mo is the key discriminator between
+  //     316L / 904L and cheaper non-Mo steels. If it reads ~0 (commonly because
+  //     the XRF was in a precious-metals-only mode) the grade cannot be
+  //     confirmed → say so, rather than wrongly condemning a possibly-genuine
+  //     piece by matching it to the wrong steel grade.
+  if (steelBase >= 30 && au < 5 && mo < 0.3) {
+    return {
+      profileId: 'detector-steel-no-mo',
+      materialName: 'stainless steel (grade unconfirmed)',
+      overallScore: 55,
+      verdict: 'inconclusive',
+      elementMatches: [],
+      flags: [
+        `Stainless steel detected (Fe ${get('Fe').toFixed(0)}%, Cr ${get('Cr').toFixed(0)}%, Ni ${get('Ni').toFixed(0)}%) but molybdenum (Mo) reads ~0. Mo is essential to tell 316L/904L from a cheaper non-Mo steel — if the XRF was in precious-metals mode, re-measure in alloy / general-metals mode. Grade cannot be confirmed yet.`,
+      ],
+    };
+  }
+
   let best: MatchResult | null = null;
   for (const profile of candidateProfiles) {
     const result = matchMeasurementToProfile(measurement, profile);
