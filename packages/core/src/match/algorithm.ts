@@ -202,6 +202,25 @@ export function bestProfileMatch(
   //     confirmed → say so, rather than wrongly condemning a possibly-genuine
   //     piece by matching it to the wrong steel grade.
   if (steelBase >= 30 && au < 5 && mo < 0.3) {
+    const cr = get('Cr');
+    const ni = get('Ni');
+    // 904L Oystersteel has a DISTINCTIVE high-nickel super-austenitic signature
+    // (Cr ~19-23%, Ni ~23-28%) that counterfeits essentially never replicate —
+    // it's expensive and hard to machine, so fakes use 316L (Ni ~12%) or cheaper
+    // steel. A clear Cr/Ni match is therefore a strong authenticity indicator
+    // even when Mo can't be read on this instrument.
+    if (cr >= 18.5 && cr <= 24 && ni >= 22 && ni <= 30) {
+      return {
+        profileId: 'detector-904l-signature',
+        materialName: 'rolex-904l-oystersteel',
+        overallScore: 86,
+        verdict: 'likely-authentic',
+        elementMatches: [],
+        flags: [
+          `904L Oystersteel signature: Cr ${cr.toFixed(1)}%, Ni ${ni.toFixed(1)}% — the distinctive high-nickel super-austenitic steel Rolex uses, which counterfeits essentially never replicate (fakes use 316L, Ni ~12%). Molybdenum (Mo) wasn't measured by this precious-metals-mode instrument, but the Cr/Ni match is strong. For a full confirmation, read Mo in alloy mode (expect ~4-5%).`,
+        ],
+      };
+    }
     return {
       profileId: 'detector-steel-no-mo',
       materialName: 'stainless steel (grade unconfirmed)',
@@ -209,7 +228,7 @@ export function bestProfileMatch(
       verdict: 'inconclusive',
       elementMatches: [],
       flags: [
-        `Stainless steel detected (Fe ${get('Fe').toFixed(0)}%, Cr ${get('Cr').toFixed(0)}%, Ni ${get('Ni').toFixed(0)}%) but molybdenum (Mo) reads ~0. Mo is essential to tell 316L/904L from a cheaper non-Mo steel — if the XRF was in precious-metals mode, re-measure in alloy / general-metals mode. Grade cannot be confirmed yet.`,
+        `Stainless steel detected (Fe ${get('Fe').toFixed(0)}%, Cr ${cr.toFixed(0)}%, Ni ${ni.toFixed(0)}%) but molybdenum (Mo) reads ~0 and the Cr/Ni don't clearly match Rolex 904L. Mo is essential to tell 316L/904L from a cheaper non-Mo steel — if the XRF was in precious-metals mode, re-measure in alloy / general-metals mode. Grade cannot be confirmed yet.`,
       ],
     };
   }
