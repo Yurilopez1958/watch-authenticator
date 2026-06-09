@@ -106,6 +106,8 @@ export const ROLEX_AUTH_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Referencias modernas: serial en el rehaut. Los números deben ser nítidos, con un corte facetado que capta la luz, nunca con aspecto arenado/grabado al ácido.', en: 'Modern refs: serial on the rehaut. Numbers should be sharp with a faceted, light-catching cut, never sandblasted/etched-looking.' },
       { es: 'Coteja el serial con los años de producción de la referencia — un serial fuera de rango es una fuerte advertencia.', en: 'Cross-check the serial against the production years of the reference — an out-of-range serial is a strong warning.' },
     ],
+    image: '/tells/rolex/serial-engraving.svg',
+    imageCaption: { es: 'Auténtico: números tallados a diamante, facetados y que captan la luz, nítidos. Réplica: aspecto arenado/grabado al ácido, mate y borroso.', en: 'Genuine: diamond-cut, faceted, light-catching numbers, sharp. Replica: sandblasted/etched look, dull and blurry.' },
   },
   {
     id: 'bracelet-clasp',
@@ -115,6 +117,8 @@ export const ROLEX_AUTH_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Cierre estampado con la coronet más el código de cierre y el punzón del metal; la extensión Glidelock / Easylink (si la lleva) funciona con suavidad.', en: 'Clasp stamped with the coronet plus the clasp code and metal stamp; the Glidelock / Easylink extension (where fitted) operates smoothly.' },
       { es: 'Códigos de referencia y de cierre grabados limpiamente en el interior del cierre y coherentes con el modelo.', en: 'Reference and clasp codes engraved cleanly inside the clasp and consistent with the model.' },
     ],
+    image: '/tells/rolex/bracelet-clasp.svg',
+    imageCaption: { es: 'Eslabón macizo (corte lleno) → peso real. Réplica: eslabón hueco de chapa plegada (cavidad) → ligero.', en: 'Solid link (filled section) → real heft. Replica: hollow folded-sheet link (cavity) → light.' },
   },
   {
     id: 'weight-feel',

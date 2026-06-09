@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Bracelet link section: genuine solid vs replica hollow">
+  <defs>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d4dbe6"/><stop offset="45%" stop-color="#9aa6b8"/><stop offset="100%" stop-color="#5b6577"/></linearGradient>
+  </defs>
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <!-- GENUINE: solid link -->
+  <text x="105" y="36" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34d399">&#10003; macizo / solid</text>
+  <g fill="none" stroke="#6b7689" stroke-width="3">
+    <rect x="44" y="62" width="34" height="20" rx="9"/><rect x="74" y="62" width="34" height="20" rx="9"/><rect x="104" y="62" width="34" height="20" rx="9"/><rect x="134" y="62" width="22" height="20" rx="9"/>
+  </g>
+  <rect x="66" y="104" width="78" height="58" rx="14" fill="url(#metal)" stroke="#e2e8f0" stroke-width="2"/>
+  <ellipse cx="105" cy="120" rx="30" ry="9" fill="#ffffff" opacity="0.18"/>
+  <text x="105" y="184" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#9fb0c8">corte / section · lleno</text>
+
+  <!-- REPLICA: hollow link (folded sheet) -->
+  <text x="315" y="36" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#f87171">&#10007; hueco / hollow</text>
+  <g fill="none" stroke="#6b7689" stroke-width="3">
+    <rect x="254" y="62" width="34" height="20" rx="9"/><rect x="284" y="62" width="34" height="20" rx="9"/><rect x="314" y="62" width="34" height="20" rx="9"/><rect x="344" y="62" width="22" height="20" rx="9"/>
+  </g>
+  <rect x="276" y="104" width="78" height="58" rx="14" fill="#070d20" stroke="#9aa6b8" stroke-width="5"/>
+  <rect x="285" y="113" width="60" height="40" rx="8" fill="none" stroke="#3a4a6b" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <line x1="315" y1="104" x2="315" y2="116" stroke="#9aa6b8" stroke-width="2"/>
+  <text x="315" y="184" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#9fb0c8">corte / section · cavidad</text>
+
+  <text x="210" y="206" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">bracelet link section / corte del eslabón — peso real vs ligero</text>
+</svg>
