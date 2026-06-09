@@ -262,15 +262,30 @@ export function bestProfileMatch(
   //     pattern (Everose = high Cu + Pt; the Pt is Everose's hard-to-fake tell).
   if (au >= 55 && au < 74.5 && steelBase < 8) {
     const cu = get('Cu');
-    const isEverose = pt >= 1 && cu >= 12;
+    // Everose = solid gold + high copper + PLATINUM. The Pt is Rolex's patented,
+    // hard-to-fake Everose marker (a counterfeit rose gold has no platinum), so a
+    // clear Everose pattern is a strong authenticity signal — same logic as the
+    // 904L high-Ni steel signature.
+    if (pt >= 1.5 && cu >= 14) {
+      return {
+        profileId: 'detector-everose-signature',
+        materialName: 'rolex-18k-everose-gold',
+        overallScore: 85,
+        verdict: 'likely-authentic',
+        elementMatches: [],
+        flags: [
+          `Everose signature: solid gold (Au ${au.toFixed(0)}%, no base metal) with high copper (Cu ${cu.toFixed(0)}%) and platinum (Pt ${pt.toFixed(1)}%) — the patented Rolex Everose alloy, whose platinum is its hard-to-fake marker (a counterfeit rose gold has no Pt). This precious-mode gun under-reads gold, so the karat reads ~16k instead of 18k — the exact figure is approximate, but the alloy is consistent with genuine Everose.`,
+        ],
+      };
+    }
     return {
       profileId: 'detector-gold-karat-approx',
-      materialName: isEverose ? 'gold (Everose pattern, karat approx)' : 'solid gold (karat approx)',
+      materialName: 'solid gold (karat approx)',
       overallScore: 60,
       verdict: 'inconclusive',
       elementMatches: [],
       flags: [
-        `Solid gold (Au ${au.toFixed(0)}%, no base metal — not plated). This precious-metals-mode gun under-reads gold (it splits the gold peak into phantom neighbours like Ge), so a genuine 18k can read ~16k; the exact karat can't be confirmed here.${isEverose ? ` The alloy pattern — high copper (Cu ${cu.toFixed(0)}%) plus platinum (Pt ${pt.toFixed(1)}%) — matches Rolex Everose, and the platinum is Everose's signature (a fake rose gold has no Pt).` : ''} Re-verify exact karat against a known-genuine reference or a lab.`,
+        `Solid gold (Au ${au.toFixed(0)}%, no base metal — not plated). This precious-metals-mode gun under-reads gold (it splits the gold peak into phantom neighbours like Ge), so a genuine 18k can read ~16k; the exact karat can't be confirmed here. Re-verify exact karat against a known-genuine reference or a lab.`,
       ],
     };
   }
