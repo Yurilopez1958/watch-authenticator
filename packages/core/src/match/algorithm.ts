@@ -174,6 +174,8 @@ export function bestProfileMatch(
   const m = readingsByElement(measurement.readings);
   const get = (e: ElementSymbol) => m.get(e) ?? 0;
   const au = get('Au');
+  const pt = get('Pt');
+  const ru = get('Ru');
   const steelBase = get('Fe') + get('Cr') + get('Ni');
   const mo = get('Mo');
 
@@ -208,6 +210,25 @@ export function bestProfileMatch(
       elementMatches: [],
       flags: [
         `Stainless steel detected (Fe ${get('Fe').toFixed(0)}%, Cr ${get('Cr').toFixed(0)}%, Ni ${get('Ni').toFixed(0)}%) but molybdenum (Mo) reads ~0. Mo is essential to tell 316L/904L from a cheaper non-Mo steel — if the XRF was in precious-metals mode, re-measure in alloy / general-metals mode. Grade cannot be confirmed yet.`,
+      ],
+    };
+  }
+
+  // (C) PLATINUM on a precious-metals-only analyzer: Pt clearly dominates but
+  //     reads well below 950 because the gun mis-splits the platinum X-ray peak
+  //     into its spectral neighbours — Ir (9.17), Ga (9.25) and Au (9.71 keV)
+  //     all land on the Pt lines (9.44). Do NOT condemn a likely PtRu950 (e.g.
+  //     Rolex) as fake — flag it as unconfirmable on this instrument. (A clean
+  //     ~95% Pt reading skips this and is matched normally.)
+  if (pt >= 60 && pt < 94 && steelBase < 8) {
+    return {
+      profileId: 'detector-platinum-unconfirmed',
+      materialName: 'platinum (PtRu, purity unconfirmed)',
+      overallScore: 55,
+      verdict: 'inconclusive',
+      elementMatches: [],
+      flags: [
+        `Platinum detected (Pt ${pt.toFixed(0)}%${ru >= 1 ? `, Ru ${ru.toFixed(1)}%` : ''}). A precious-metals-only analyzer under-reports Pt by splitting its X-ray peak into neighbours (Ir/Au/Ga land right on the Pt lines), so exact purity can't be confirmed here. This is consistent with a PtRu alloy such as Rolex 950 platinum — not evidence of a fake. Re-verify against a KNOWN-genuine platinum on the same instrument, or a lab.`,
       ],
     };
   }
