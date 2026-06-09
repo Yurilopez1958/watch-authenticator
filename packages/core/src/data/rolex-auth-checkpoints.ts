@@ -39,6 +39,8 @@ export const ROLEX_AUTH_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'En la esfera, la coronet aplicada queda perfectamente centrada bajo las 12, con bordes nítidos y pulidos.', en: 'On the dial, the applied coronet sits dead-centre under 12 with crisp, polished edges.' },
       { es: 'En la corona de cuerda, la coronet está estampada con nitidez — las réplicas suelen mostrarla poco profunda, empastada o torcida.', en: 'On the winding crown, the coronet is sharply stamped — replicas often show a shallow, mushy, or lopsided crown.' },
     ],
+    image: '/tells/rolex/coronet.svg',
+    imageCaption: { es: 'Auténtica: cinco puntas simétricas y equiespaciadas, bordes nítidos. Réplica: torcida, puntas desiguales o empastadas.', en: 'Genuine: five symmetric, evenly spaced points with crisp edges. Replica: lopsided, uneven or mushy points.' },
   },
   {
     id: 'cyclops',
@@ -71,6 +73,8 @@ export const ROLEX_AUTH_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'El lume de las agujas coincide con el de los índices en color y envejecimiento — una discrepancia sugiere un servicio o una falsificación.', en: 'Lume on the hands matches the markers in colour and ageing — a mismatch suggests a service or a fake.' },
       { es: 'Cantos pulidos limpiamente; el segundero barre con suavidad y queda centrado sin oscilar.', en: 'Edges cleanly polished; the seconds hand sweeps smoothly and sits centred without wobble.' },
     ],
+    image: '/tells/rolex/mercedes-hands.svg',
+    imageCaption: { es: 'Aguja "Mercedes": círculo bien proporcionado y radios uniformes. Réplica: círculo desproporcionado o radios torcidos.', en: '"Mercedes" hand: well-proportioned circle and even spokes. Replica: off-proportion circle or crooked spokes.' },
   },
   {
     id: 'rehaut',
@@ -80,6 +84,8 @@ export const ROLEX_AUTH_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'El número de serie está grabado en el rehaut a las 6 y debe coincidir con el serial entre las asas / de la tarjeta de garantía.', en: 'The serial number is engraved on the rehaut at 6 o\'clock and must match the serial between the lugs / on the warranty card.' },
       { es: 'El grabado es uniforme, nítido y perfectamente alineado con los índices de la esfera — un texto torcido o poco profundo es señal de alarma.', en: 'Engraving is even, sharp and perfectly aligned with the dial markers — crooked or shallow text is a red flag.' },
     ],
+    image: '/tells/rolex/rehaut.svg',
+    imageCaption: { es: 'Grabado regular y nítido, con el serial a las 6 alineado con los índices. Réplica: grabado borroso y serial torcido/desalineado.', en: 'Even, sharp engraving with the serial at 6 aligned to the markers. Replica: blurry engraving and a crooked/misaligned serial.' },
   },
   {
     id: 'case-back',
@@ -89,6 +95,8 @@ export const ROLEX_AUTH_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Sin grabados externos en piezas auténticas (los fondos grabados suelen ser de posventa o falsos), salvo modelos concretos como algunos Sea-Dweller con texto del modelo.', en: 'No external engravings on genuine pieces (engraved backs are usually after-market or fake), except specific models like some Sea-Dwellers with model text.' },
       { es: 'Mecanizado fino y uniforme del estriado del canto donde agarra la herramienta de apertura.', en: 'Fine, even machining of the fluting on the edge that the case-opening tool grips.' },
     ],
+    image: '/tells/rolex/caseback.svg',
+    imageCaption: { es: 'Auténtico: fondo macizo y atornillado, sin cristal. Un fondo transparente que deja ver el movimiento es muy sospechoso en un Rolex estándar.', en: 'Genuine: solid, screwed-down back, no glass. A see-through back showing the movement is highly suspicious on a standard Rolex.' },
   },
   {
     id: 'serial-engraving',

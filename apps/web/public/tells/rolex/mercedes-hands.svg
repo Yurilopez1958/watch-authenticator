@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Mercedes hour hand: genuine even proportions vs replica off">
+  <defs>
+    <filter id="hblur" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceGraphic" stdDeviation="1.3"/></filter>
+  </defs>
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <!-- GENUINE Mercedes hand -->
+  <g stroke-linecap="round">
+    <text x="105" y="36" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34d399">&#10003; proporción / correct</text>
+    <circle cx="105" cy="172" r="5" fill="#cbd5e1"/>
+    <line x1="105" y1="170" x2="105" y2="98" stroke="#cbd5e1" stroke-width="10"/>
+    <circle cx="105" cy="92" r="15" fill="#070d20" stroke="#cbd5e1" stroke-width="3"/>
+    <g stroke="#cbd5e1" stroke-width="3"><line x1="105" y1="92" x2="105" y2="79"/><line x1="105" y1="92" x2="94" y2="98"/><line x1="105" y1="92" x2="116" y2="98"/></g>
+  </g>
+
+  <!-- REPLICA: oversized circle, uneven spokes, blurred -->
+  <g stroke-linecap="round" filter="url(#hblur)">
+    <text x="315" y="36" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#f87171" filter="none">&#10007; desproporción / off</text>
+    <circle cx="315" cy="172" r="5" fill="#94a3b8"/>
+    <line x1="315" y1="170" x2="315" y2="100" stroke="#94a3b8" stroke-width="10"/>
+    <circle cx="315" cy="90" r="20" fill="#070d20" stroke="#94a3b8" stroke-width="3"/>
+    <g stroke="#94a3b8" stroke-width="3"><line x1="315" y1="90" x2="313" y2="73"/><line x1="315" y1="90" x2="300" y2="99"/><line x1="315" y1="90" x2="329" y2="95"/></g>
+  </g>
+
+  <text x="210" y="212" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">Mercedes hand / aguja de horas (esquema)</text>
+</svg>

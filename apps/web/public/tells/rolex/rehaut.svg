@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Rehaut: genuine even engraving and aligned serial vs replica crooked">
+  <defs>
+    <filter id="rhblur" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceGraphic" stdDeviation="1.5"/></filter>
+  </defs>
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <!-- GENUINE: even engraving, serial aligned at 6 -->
+  <g font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif">
+    <text x="105" y="36" text-anchor="middle" font-size="15" font-weight="700" fill="#34d399">&#10003; alineado / aligned</text>
+    <circle cx="105" cy="120" r="58" fill="none" stroke="#2b3658" stroke-width="2"/>
+    <circle cx="105" cy="120" r="46" fill="none" stroke="#7dd3fc" stroke-width="4" stroke-dasharray="6 6"/>
+    <circle cx="105" cy="120" r="34" fill="#070d20" stroke="#2b3658" stroke-width="2"/>
+    <rect x="103" y="152" width="4" height="9" fill="#cbd5e1"/>
+    <rect x="92" y="162" width="26" height="11" rx="2" fill="none" stroke="#34d399" stroke-width="2"/>
+  </g>
+
+  <!-- REPLICA: blurred engraving, serial crooked/offset -->
+  <g font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif">
+    <text x="315" y="36" text-anchor="middle" font-size="15" font-weight="700" fill="#f87171">&#10007; torcido / crooked</text>
+    <circle cx="315" cy="120" r="58" fill="none" stroke="#2b3658" stroke-width="2"/>
+    <circle cx="315" cy="120" r="46" fill="none" stroke="#64748b" stroke-width="4" stroke-dasharray="5 7" filter="url(#rhblur)"/>
+    <circle cx="315" cy="120" r="34" fill="#070d20" stroke="#2b3658" stroke-width="2"/>
+    <rect x="322" y="152" width="4" height="9" fill="#94a3b8"/>
+    <g transform="rotate(13 315 167)"><rect x="302" y="162" width="26" height="11" rx="2" fill="none" stroke="#f87171" stroke-width="2"/></g>
+  </g>
+
+  <text x="210" y="212" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">rehaut &#183; engraving + serial @6 / grabado + serie</text>
+</svg>

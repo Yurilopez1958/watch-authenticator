@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Coronet: genuine symmetric 5-point crown vs replica lopsided">
+  <defs>
+    <filter id="mushy" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceGraphic" stdDeviation="1.4"/></filter>
+  </defs>
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <!-- GENUINE coronet (schematic) -->
+  <g stroke-linecap="round">
+    <text x="105" y="38" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34d399">&#10003; simétrica / sharp</text>
+    <rect x="74" y="146" width="62" height="12" rx="3" fill="#cbd5e1"/>
+    <g stroke="#cbd5e1" stroke-width="6">
+      <line x1="80" y1="148" x2="74" y2="102"/><line x1="92" y1="148" x2="91" y2="92"/><line x1="105" y1="148" x2="105" y2="88"/><line x1="118" y1="148" x2="119" y2="92"/><line x1="130" y1="148" x2="136" y2="102"/>
+    </g>
+    <g fill="#e5e7eb"><circle cx="74" cy="100" r="8"/><circle cx="91" cy="88" r="8"/><circle cx="105" cy="84" r="8"/><circle cx="119" cy="88" r="8"/><circle cx="136" cy="100" r="8"/></g>
+  </g>
+
+  <!-- REPLICA coronet: lopsided + mushy -->
+  <g stroke-linecap="round" filter="url(#mushy)">
+    <text x="315" y="38" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#f87171" filter="none">&#10007; torcida / mushy</text>
+    <rect x="286" y="148" width="60" height="12" rx="3" fill="#94a3b8"/>
+    <g stroke="#94a3b8" stroke-width="6">
+      <line x1="292" y1="150" x2="286" y2="106"/><line x1="303" y1="150" x2="299" y2="94"/><line x1="316" y1="150" x2="316" y2="90"/><line x1="329" y1="150" x2="335" y2="96"/><line x1="340" y1="150" x2="349" y2="110"/>
+    </g>
+    <g fill="#cbd5e1"><circle cx="286" cy="104" r="8"/><circle cx="299" cy="92" r="6.5"/><circle cx="316" cy="88" r="8"/><circle cx="335" cy="93" r="6"/><circle cx="349" cy="108" r="9"/></g>
+  </g>
+
+  <text x="210" y="212" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">coronet &#183; 5 points / 5 puntas (esquema)</text>
+</svg>
