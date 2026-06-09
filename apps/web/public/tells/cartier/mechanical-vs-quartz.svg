@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Cartier movement: genuine mechanical rotor vs a quartz battery in a watch sold as automatic">
+  <defs>
+    <linearGradient id="gold3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e6c266"/><stop offset="100%" stop-color="#8a6f2c"/></linearGradient>
+    <clipPath id="mvL"><circle cx="105" cy="116" r="56"/></clipPath>
+  </defs>
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <!-- GENUINE: mechanical / automatic -->
+  <text x="105" y="34" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34d399">&#10003; mecánico / automatic</text>
+  <circle cx="105" cy="116" r="56" fill="#0a1322" stroke="#2b3658" stroke-width="2"/>
+  <g clip-path="url(#mvL)">
+    <path d="M49 116 A56 56 0 0 1 161 116 Z" fill="url(#gold3)" stroke="#6b531f"/>
+    <circle cx="105" cy="116" r="4" fill="#1a1407" stroke="#6b531f"/>
+  </g>
+  <g fill="none" stroke="#8aa0c0" stroke-width="2">
+    <circle cx="88" cy="140" r="12"/><circle cx="120" cy="146" r="9"/>
+  </g>
+  <g stroke="#6f86a8" stroke-width="1.4"><line x1="88" y1="128" x2="88" y2="152"/><line x1="76" y1="140" x2="100" y2="140"/><line x1="120" y1="137" x2="120" y2="155"/></g>
+
+  <!-- REPLICA: quartz (battery) -->
+  <text x="315" y="34" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#f87171">&#10007; cuarzo / quartz (pila)</text>
+  <circle cx="315" cy="116" r="56" fill="#0a1322" stroke="#2b3658" stroke-width="2"/>
+  <circle cx="300" cy="110" r="22" fill="#c9d2df" stroke="#7f8a9c" stroke-width="2"/>
+  <text x="300" y="116" text-anchor="middle" font-family="system-ui,Arial,sans-serif" font-size="18" font-weight="700" fill="#0b1b2e">+</text>
+  <rect x="326" y="124" width="34" height="22" rx="3" fill="#143524" stroke="#2e7d52"/>
+  <g stroke="#52c98a" stroke-width="1.2"><line x1="330" y1="130" x2="356" y2="130"/><line x1="330" y1="136" x2="350" y2="136"/><line x1="330" y1="142" x2="356" y2="142"/></g>
+  <rect x="296" y="138" width="20" height="14" rx="2" fill="none" stroke="#7f8a9c" stroke-width="1.5"/>
+
+  <text x="210" y="206" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">sold as automatic → must be mechanical / si es "automático", una pila delata</text>
+</svg>

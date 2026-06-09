@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Weight: genuine dense alloys feel heavy vs a light replica">
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+
+  <text x="96" y="36" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34d399">&#10003; pesado / heavy</text>
+  <text x="324" y="36" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#f87171">&#10007; ligero / light</text>
+
+  <!-- stand + post + beam -->
+  <polygon points="196,170 224,170 217,152 203,152" fill="#2b3658" stroke="#46557d"/>
+  <line x1="210" y1="152" x2="210" y2="90" stroke="#9aa6b8" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="210" cy="88" r="4" fill="#cbd5e1"/>
+  <line x1="96" y1="106" x2="324" y2="70" stroke="#cbd5e1" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- left (heavy) pan, lower -->
+  <line x1="96" y1="106" x2="84" y2="140" stroke="#6b7689" stroke-width="2"/>
+  <line x1="96" y1="106" x2="108" y2="140" stroke="#6b7689" stroke-width="2"/>
+  <path d="M80 140 Q96 158 112 140" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
+  <circle cx="96" cy="129" r="14" fill="#0b1b2e" stroke="#34d399" stroke-width="2.5"/>
+  <circle cx="96" cy="129" r="5" fill="none" stroke="#34d399" stroke-width="1.5"/>
+
+  <!-- right (light) pan, higher -->
+  <line x1="324" y1="70" x2="312" y2="104" stroke="#6b7689" stroke-width="2"/>
+  <line x1="324" y1="70" x2="336" y2="104" stroke="#6b7689" stroke-width="2"/>
+  <path d="M308 104 Q324 122 340 104" fill="none" stroke="#94a3b8" stroke-width="2.5"/>
+  <circle cx="324" cy="93" r="12" fill="#0b1b2e" stroke="#f87171" stroke-width="2.5"/>
+
+  <text x="210" y="206" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">dense alloys (904L / gold / Pt) → real heft / aleaciones densas = peso real</text>
+</svg>

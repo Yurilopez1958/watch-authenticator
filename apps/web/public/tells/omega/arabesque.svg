@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Omega Arabesque Cotes de Geneve: genuine fine even radial waves vs replica coarse">
+  <defs>
+    <clipPath id="arL"><circle cx="105" cy="118" r="56"/></clipPath>
+    <clipPath id="arR"><circle cx="315" cy="118" r="56"/></clipPath>
+    <filter id="arblur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.6"/></filter>
+  </defs>
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <text x="105" y="34" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34d399">&#10003; fino / fine</text>
+  <circle cx="105" cy="118" r="56" fill="#0a1322" stroke="#2b3658" stroke-width="2"/>
+  <g clip-path="url(#arL)" fill="none" stroke="#33547e" stroke-width="2">
+    <circle cx="105" cy="186" r="40"/><circle cx="105" cy="186" r="48"/><circle cx="105" cy="186" r="56"/><circle cx="105" cy="186" r="64"/><circle cx="105" cy="186" r="72"/><circle cx="105" cy="186" r="80"/><circle cx="105" cy="186" r="88"/><circle cx="105" cy="186" r="96"/><circle cx="105" cy="186" r="104"/><circle cx="105" cy="186" r="112"/>
+  </g>
+
+  <text x="315" y="34" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#f87171">&#10007; tosco / coarse</text>
+  <circle cx="315" cy="118" r="56" fill="#0a1322" stroke="#2b3658" stroke-width="2"/>
+  <g clip-path="url(#arR)" fill="none" stroke="#5b6577" stroke-width="4.5" filter="url(#arblur)">
+    <circle cx="315" cy="186" r="44"/><circle cx="315" cy="186" r="62"/><circle cx="315" cy="186" r="82"/><circle cx="315" cy="186" r="104"/>
+  </g>
+
+  <text x="210" y="212" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">Côtes de Genève "Arabesque" (radial) · Co-Axial / Master Chronometer</text>
+</svg>

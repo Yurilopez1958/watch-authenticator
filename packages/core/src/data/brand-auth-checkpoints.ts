@@ -40,6 +40,8 @@ const OMEGA_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Los movimientos Master Chronometer son antimagnéticos hasta 15.000 gauss (METAS) — un listón más alto que el COSC; el rotor y los puentes están grabados limpiamente.', en: 'Master Chronometer movements are anti-magnetic to 15,000 gauss (METAS) — a higher bar than COSC; the rotor and bridges are cleanly engraved.' },
       { es: 'El número de calibre debe coincidir con la referencia (p. ej. 3861 Moonwatch, 8800/8900 hora-fecha, 9300/9900 cronógrafo).', en: 'Caliber number should match the reference (e.g. 3861 Moonwatch, 8800/8900 time-date, 9300/9900 chronograph).' },
     ],
+    image: '/tells/omega/arabesque.svg',
+    imageCaption: { es: 'Côtes de Genève "Arabesque" radial, fina y pareja, en los calibres Co-Axial. Réplica: rayado tosco, desigual o plano.', en: 'Radial "Arabesque" Côtes de Genève, fine and even, on Co-Axial calibers. Replica: coarse, uneven or flat striping.' },
   },
   {
     id: 'omega-bracelet',
@@ -118,6 +120,8 @@ const PATEK_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'La correa de composite "Tropical" del Aquanaut tiene un patrón en relieve nítido que combina con la esfera.', en: 'Aquanaut "Tropical" composite strap has a crisp embossed pattern matching the dial.' },
       { es: 'Peso general sustancial en las referencias de metal precioso.', en: 'Overall substantial weight for precious-metal references.' },
     ],
+    image: '/tells/patek/tropical-strap.svg',
+    imageCaption: { es: 'Correa "Tropical" del Aquanaut: patrón en relieve nítido que combina con la esfera. Réplica: relieve superficial o que no encaja.', en: 'Aquanaut "Tropical" strap: crisp embossed pattern that matches the dial. Replica: shallow or mismatched relief.' },
   },
 ];
 
@@ -207,6 +211,8 @@ const CARTIER_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Calibres de manufactura Cartier "MC" (1847 MC, 1904 MC, 430 MC, etc.) — acabado con Côtes de Genève y rotor firmado en los automáticos.', en: 'Manufacture Cartier "MC" calibers (1847 MC, 1904 MC, 430 MC, etc.) — finishing with Côtes de Genève and a signed rotor on automatics.' },
       { es: 'El calibre debe coincidir con la referencia y ser mecánico cuando así se anuncia (un movimiento de cuarzo en un reloj vendido como automático es un delator obvio).', en: 'Caliber should match the reference and be mechanical where claimed (a quartz movement in a watch sold as automatic is an obvious tell).' },
     ],
+    image: '/tells/cartier/mechanical-vs-quartz.svg',
+    imageCaption: { es: 'Si se vende como automático, debe ser mecánico (rotor + tren de ruedas). Un módulo de cuarzo (pila) es un delator obvio.', en: 'If sold as automatic, it must be mechanical (rotor + gear train). A quartz module (battery) is an obvious tell.' },
   },
   {
     id: 'cartier-bracelet',

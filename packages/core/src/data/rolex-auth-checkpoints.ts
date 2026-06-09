@@ -128,6 +128,8 @@ export const ROLEX_AUTH_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Las superficies satinadas y pulidas se encuentran en aristas perfectamente nítidas; sin transiciones redondeadas ni difusas.', en: 'Brushed and polished surfaces meet at perfectly crisp edges; no rounded or hazy transitions.' },
       { es: 'La acción del bisel (si gira) es firme y con clics precisos; la rosca de la corona atornillada engrana con suavidad.', en: 'Bezel action (where rotating) is firm with precise clicks; screw-down crown threads engage smoothly.' },
     ],
+    image: '/tells/rolex/weight-feel.svg',
+    imageCaption: { es: 'Las aleaciones densas (acero 904L, oro 18k, Pt950) dan un peso notable para su tamaño. Una réplica se siente ligera.', en: 'Dense alloys (904L steel, 18k gold, Pt950) give a notable heft for the size. A replica feels light.' },
   },
 ];
 
