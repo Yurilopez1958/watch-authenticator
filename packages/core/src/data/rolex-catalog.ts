@@ -235,14 +235,12 @@ export const ROLEX_MODELS: readonly Model[] = [
   { id: 'rolex-datejust-16203', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 16203 (two-tone)', reference: '16203', yearStart: 1988, yearEnd: 2009, caliber: 'Cal. 3135', caseDiameterMm: 36 },
   { id: 'rolex-datejust-16223', brandId: 'rolex', collection: 'Datejust 36', audience: 'unisex', name: 'Datejust 16223 (two-tone, engine-turned)', reference: '16223', yearStart: 1988, yearEnd: 2009, caliber: 'Cal. 3135', caseDiameterMm: 36 },
 
-  // ---- Lady-Datejust 26 (vintage 69xxx) ----
+  // ---- Lady-Datejust 26 (vintage) ----
   { id: 'rolex-lady-datejust-26-69173', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 69173 (two-tone yellow)', reference: '69173', yearStart: 1988, yearEnd: 2001, caliber: 'Cal. 2135', caseDiameterMm: 26 },
-  { id: 'rolex-lady-datejust-26-69176', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 69176 (platinum)', reference: '69176', yearStart: 1988, yearEnd: 2001, caliber: 'Cal. 2135', caseDiameterMm: 26 },
-  { id: 'rolex-lady-datejust-26-69178', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 69178 (18k yellow gold)', reference: '69178', yearStart: 1988, yearEnd: 2001, caliber: 'Cal. 2135', caseDiameterMm: 26 },
-  { id: 'rolex-lady-datejust-26-69179', brandId: 'rolex', collection: 'Lady-Datejust 26', audience: 'women', name: 'Lady-Datejust 26 69179 (18k white gold)', reference: '69179', yearStart: 1988, yearEnd: 2001, caliber: 'Cal. 2135', caseDiameterMm: 26 },
 
   // ---- Day-Date (modern + vintage, extra) ----
   { id: 'rolex-day-date-40-228239', brandId: 'rolex', collection: 'Day-Date 40', audience: 'men', name: 'Day-Date 40 228239 (white gold)', reference: '228239', yearStart: 2015, caliber: 'Cal. 3255', caseDiameterMm: 40 },
+  { id: 'rolex-day-date-40-228396', brandId: 'rolex', collection: 'Day-Date 40', audience: 'men', name: 'Day-Date 40 228396 (platinum, diamond bezel)', reference: '228396TBR', yearStart: 2015, caliber: 'Cal. 3255', caseDiameterMm: 40 },
   { id: 'rolex-day-date-36-128239', brandId: 'rolex', collection: 'Day-Date 36', audience: 'unisex', name: 'Day-Date 36 128239 (white gold)', reference: '128239', yearStart: 2019, caliber: 'Cal. 3255', caseDiameterMm: 36 },
   { id: 'rolex-day-date-36-128206', brandId: 'rolex', collection: 'Day-Date 36', audience: 'unisex', name: 'Day-Date 36 128206 (platinum)', reference: '128206', yearStart: 2019, caliber: 'Cal. 3255', caseDiameterMm: 36 },
   { id: 'rolex-day-date-18039', brandId: 'rolex', collection: 'Day-Date 36', audience: 'men', name: 'Day-Date 18039 (white gold)', reference: '18039', yearStart: 1977, yearEnd: 1988, caliber: 'Cal. 3055', caseDiameterMm: 36 },
