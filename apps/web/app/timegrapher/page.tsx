@@ -163,12 +163,12 @@ function estimateAmplitude(
   return amp;
 }
 
-export default function TimegrapherPage() {
+export function ChronocomparatorPanel({ embedded = false, expectedBph: expectedBphProp, onSaved }: { embedded?: boolean; expectedBph?: number; onSaved?: () => void }) {
   const { t } = useLang();
   const { pro } = usePro();
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expectedBph, setExpectedBph] = useState(28800);
+  const [expectedBph, setExpectedBph] = useState(expectedBphProp ?? 28800);
   const [sensitivity, setSensitivity] = useState(6);
   const [gain, setGain] = useState(5);
   const [level, setLevel] = useState(0);
@@ -177,7 +177,8 @@ export default function TimegrapherPage() {
   // Manual lift-angle override (empty string = use the default). Drives amplitude.
   const [liftAngleInput, setLiftAngleInput] = useState<string>('');
   // Official vph of the currently selected caliber/model (null = none selected).
-  const [officialBph, setOfficialBph] = useState<number | null>(null);
+  // Pre-seeded from the caliber when embedded in the authentication flow.
+  const [officialBph, setOfficialBph] = useState<number | null>(expectedBphProp ?? null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState<string>('');
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
@@ -295,6 +296,7 @@ export default function TimegrapherPage() {
       at: Date.now(),
     });
     setSavedMsg(t('Guardado — aparecerá en el informe de autenticación del reloj.', 'Saved — it will appear in the watch authentication report.'));
+    onSaved?.();
   };
 
   const start = async (forceDeviceId?: string) => {
@@ -534,12 +536,14 @@ export default function TimegrapherPage() {
       }}
     >
     <div className="space-y-8">
+      {!embedded && (
       <section>
         <h1 className="text-3xl font-bold mb-2">{t('Cronocomparador acústico', 'Acoustic chronocomparator')}</h1>
         <p className="text-muted text-sm max-w-2xl">
           {t('Mide la marcha de un reloj mecánico con el', 'Time a mechanical watch using your')} <span className="text-accent-bright">{t('micrófono del teléfono', "phone's microphone")}</span> — {t('sin hardware extra. Pulsa Empezar y apoya el micro del teléfono en la tapa trasera, en una sala en silencio. Mide marcha (s/día), error de batido y la frecuencia detectada.', 'no extra hardware needed. Press Start and hold the phone’s mic to the case back in a quiet room. Measures rate (s/day), beat error and the detected frequency.')}
         </p>
       </section>
+      )}
 
       {/* Witschi-style timing instrument */}
       <section className="rounded-2xl overflow-hidden border border-blue-500/30 shadow-xl shadow-blue-950/40" style={{ background: '#0a1024' }}>
@@ -739,4 +743,9 @@ function Cell({ label, value, unit, color, big }: { label: string; value: string
       <div className="text-[0.6rem] uppercase tracking-wider text-blue-300/40">{unit}</div>
     </div>
   );
+}
+
+/** Standalone /timegrapher route — the reusable panel with full page chrome. */
+export default function TimegrapherPage() {
+  return <ChronocomparatorPanel />;
 }

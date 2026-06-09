@@ -28,6 +28,7 @@ import { authHeaders } from '@/lib/billing-client';
 import { handlePaywall } from '@/lib/paywall';
 import { MetalModeBanner } from '@/app/metal-mode-banner';
 import { getTimingReading, type TimingReading } from '@/lib/timing-store';
+import { ChronocomparatorPanel } from '@/app/timegrapher/page';
 
 /** Bilingual string pair. */
 type Bi = { es: string; en: string };
@@ -978,6 +979,10 @@ export default function AuthenticatePage() {
     return false;
   };
 
+  // Timing doubt flag: the measured beat rate differs from the caliber's official
+  // frequency by > 3% → possible misread or a non-original movement.
+  const freqDoubt = !!(timing && expectedMovement?.vph && Math.abs(timing.detectedBph - expectedMovement.vph) > expectedMovement.vph * 0.03);
+
   return (
     <div className="space-y-8">
       <section>
@@ -1662,26 +1667,23 @@ export default function AuthenticatePage() {
       {step === 4 && (
         <StepCard title={t('5. Cronocomparador (marcha)', '5. Timing (chronocomparator)')} subtitle={t('Mide la marcha del movimiento — un reloj auténtico corre dentro de especificación. Paso opcional.', 'Time the movement — a genuine watch runs within spec. Optional step.')} status={stepStatuses[4]}>
           <div className="space-y-4">
-            <p className="text-sm text-muted">
-              {t('Abre el cronocomparador, apoya el micrófono en el reloj, mide y pulsa "Guardar lectura para el informe". La marcha aparecerá aquí y en el veredicto. (También está en el menú para usarlo por separado.)', 'Open the chronocomparator, rest the mic on the watch, measure, and tap "Save reading for report". The timing shows here and in the verdict. (It is also in the menu for standalone use.)')}
-            </p>
-            <a href="/timegrapher" target="_blank" rel="noopener noreferrer" className="btn-primary inline-flex items-center gap-2">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" />
-              </svg>
-              {t('Abrir cronocomparador', 'Open chronocomparator')}
-            </a>
-            {timing ? (
-              <div className="card p-4 space-y-1 text-sm border-l-4 border-l-accent">
-                <div className="text-xs uppercase tracking-wide text-dim mb-1">{t('Última lectura guardada', 'Last saved reading')}</div>
-                <div><span className="text-dim">{t('Marcha', 'Rate')}:</span> <span className="font-mono">{timing.rate >= 0 ? '+' : ''}{timing.rate.toFixed(1)} s/{t('día', 'day')}</span></div>
-                {timing.beatError != null && <div><span className="text-dim">{t('Error de batido', 'Beat error')}:</span> <span className="font-mono">{timing.beatError.toFixed(1)} ms</span></div>}
-                <div><span className="text-dim">{t('Frecuencia', 'Frequency')}:</span> <span className="font-mono">{Math.round(timing.detectedBph)} bph</span></div>
-                {expectedMovement?.vph ? <div><span className="text-dim">{t('Esperada (calibre)', 'Expected (caliber)')}:</span> <span className="font-mono">{expectedMovement.vph} bph</span></div> : null}
+            {expectedMovement?.vph ? (
+              <div className="text-xs text-dim">{t('Frecuencia oficial del calibre', "Caliber's official frequency")} {expectedMovement.caliber}: <span className="font-mono text-foreground">{expectedMovement.vph} bph</span></div>
+            ) : null}
+
+            {/* Embedded chronocomparator — the same instrument as the standalone
+                page. Saving a reading flows it into the verdict + report. */}
+            <ChronocomparatorPanel embedded {...(expectedMovement?.vph ? { expectedBph: expectedMovement.vph } : {})} onSaved={() => setTiming(getTimingReading())} />
+
+            {freqDoubt && (
+              <div className="text-sm text-amber-200 border-l-4 border-l-amber-500 bg-amber-500/10 rounded-lg p-3">
+                ⚠️ {t('La frecuencia medida no coincide con la de la ficha técnica del calibre — posible error de lectura o movimiento no original. Re-mide en una sala en silencio para confirmar.', 'The measured frequency does not match the caliber spec — possible reading error or a non-original movement. Re-measure in a quiet room to confirm.')}
               </div>
-            ) : (
-              <p className="text-sm text-dim">{t('Aún no hay lectura guardada (opcional — puedes continuar al veredicto).', 'No reading saved yet (optional — continue to the verdict).')}</p>
             )}
+
+            <button onClick={goNext} className="btn-primary inline-flex items-center gap-2">
+              {t('Ejecutar análisis', 'Run analysis')} →
+            </button>
           </div>
         </StepCard>
       )}
@@ -1773,10 +1775,11 @@ export default function AuthenticatePage() {
                 <div className="space-y-1 text-sm">
                   <div><span className="text-dim">{t('Marcha', 'Rate')}:</span> <span className="font-mono">{timing.rate >= 0 ? '+' : ''}{timing.rate.toFixed(1)} s/{t('día', 'day')}</span></div>
                   {timing.beatError != null && <div><span className="text-dim">{t('Error de batido', 'Beat error')}:</span> <span className="font-mono">{timing.beatError.toFixed(1)} ms</span></div>}
-                  <div><span className="text-dim">{t('Frecuencia', 'Frequency')}:</span> <span className="font-mono">{Math.round(timing.detectedBph)} bph</span></div>
+                  <div><span className="text-dim">{t('Frecuencia', 'Frequency')}:</span> <span className="font-mono">{Math.round(timing.detectedBph)} bph</span>{expectedMovement?.vph ? <span className="text-dim"> / {expectedMovement.vph} {t('esperada', 'expected')}</span> : null}</div>
+                  {freqDoubt && <div className="text-amber-300 text-xs mt-1">⚠️ {t('No coincide con la frecuencia del calibre — duda sobre el movimiento.', "Doesn't match the caliber frequency — doubt about the movement.")}</div>}
                 </div>
               ) : (
-                <div className="text-sm text-dim">{t('No hay marcha guardada. Mídela en', 'No timing saved. Measure it in')} <Link href="/timegrapher" className="text-accent-bright hover:underline">{t('Cronocomparador', 'Timegrapher')}</Link> {t('y pulsa "Guardar lectura para el informe".', 'and tap "Save reading for report".')}</div>
+                <div className="text-sm text-dim">{t('No hay marcha guardada. Mídela en el paso 5 (Cronocomparador).', 'No timing saved. Measure it in step 5 (Chronocomparator).')}</div>
               )}
             </SummaryBlock>
 
