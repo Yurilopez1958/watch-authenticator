@@ -140,12 +140,13 @@ async function imageFileToDataUrl(file: File, max = 1600): Promise<string> {
   }
 }
 
-type Step = 0 | 1 | 2 | 3 | 4;
+type Step = 0 | 1 | 2 | 3 | 4 | 5;
 const STEP_LABELS: readonly Bi[] = [
   { es: 'Reloj', en: 'Watch' },
   { es: 'Medición XRF', en: 'XRF measurement' },
   { es: 'Movimiento', en: 'Movement' },
   { es: 'Evidencia visual', en: 'Visual evidence' },
+  { es: 'Cronocomparador', en: 'Timing' },
   { es: 'Veredicto', en: 'Verdict' },
 ];
 
@@ -497,7 +498,15 @@ export default function AuthenticatePage() {
 
   // Saved chronocomparator reading (shown in the verdict + included in the report).
   const [timing, setTiming] = useState<TimingReading | null>(null);
-  useEffect(() => { if (step === 4) setTiming(getTimingReading()); }, [step]);
+  // On the timing/verdict steps, load the saved reading — and refresh it when the
+  // user returns to this tab (e.g. after measuring in the chronocomparator tab).
+  useEffect(() => {
+    if (step !== 4 && step !== 5) return;
+    const refresh = () => setTiming(getTimingReading());
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [step]);
 
   // Native share availability (client-only to avoid hydration mismatch).
   const [canShare, setCanShare] = useState(false);
@@ -563,7 +572,7 @@ export default function AuthenticatePage() {
 
   // Status flag per step: 'pass' (green) | 'fail' (red) | 'warn' (amber) | 'pending' (grey)
   const stepStatuses = useMemo<StepStatus[]>(() => {
-    const s: StepStatus[] = ['pending', 'pending', 'pending', 'pending', 'pending'];
+    const s: StepStatus[] = ['pending', 'pending', 'pending', 'pending', 'pending', 'pending'];
 
     // Step 1 — watch identification: complete once a model + year are chosen
     s[0] = modelId && year ? 'pass' : 'pending';
@@ -592,9 +601,12 @@ export default function AuthenticatePage() {
     // Step 4 — Visual: no automatic exam yet; mark captured if both photos present
     s[3] = examined && reference ? 'pass' : 'pending';
 
-    // Step 5 — Combined verdict: worst of the evaluated exams
+    // Step 5 — Timing (chronocomparator): pass once a reading is saved (optional)
+    s[4] = timing ? 'pass' : 'pending';
+
+    // Step 6 — Combined verdict: worst of the evaluated exams
     const evaluated = [s[1], s[2]].filter((x) => x !== 'pending');
-    s[4] = evaluated.includes('fail')
+    s[5] = evaluated.includes('fail')
       ? 'fail'
       : evaluated.includes('warn')
         ? 'warn'
@@ -603,7 +615,7 @@ export default function AuthenticatePage() {
           : 'pending';
 
     return s;
-  }, [modelId, year, xrfMode, liveXrfByTarget, observedCaliber, livePreview, examined, reference]);
+  }, [modelId, year, xrfMode, liveXrfByTarget, observedCaliber, livePreview, examined, reference, timing]);
 
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -933,8 +945,8 @@ export default function AuthenticatePage() {
   };
 
   const advance = () => {
-    if (step === 3) runAnalysis();
-    setStep(((step + 1) % 5) as Step);
+    if (step === 4) runAnalysis(); // snapshot the verdict before showing it
+    setStep(((step + 1) % 6) as Step);
   };
 
   const goNext = () => {
@@ -962,6 +974,7 @@ export default function AuthenticatePage() {
     }
     if (step === 2) return true; // movement step is optional
     if (step === 3) return true;
+    if (step === 4) return true; // timing step is optional
     return false;
   };
 
@@ -971,8 +984,8 @@ export default function AuthenticatePage() {
         <h1 className="text-3xl font-bold mb-2">{t('Autenticación guiada', 'Guided authentication')}</h1>
         <p className="text-muted text-sm">
           {t(
-            'Un asistente de 5 pasos: identifica el reloj, mide el metal, comprueba el calibre del movimiento, reúne evidencia visual y lee el veredicto final.',
-            'A five-step wizard: identify the watch, capture the XRF reading, cross-check the movement caliber, gather visual evidence, and read the combined verdict.',
+            'Un asistente de 6 pasos: identifica el reloj, mide el metal, comprueba el calibre del movimiento, reúne evidencia visual, mide la marcha con el cronocomparador y lee el veredicto final.',
+            'A six-step wizard: identify the watch, capture the XRF reading, cross-check the movement caliber, gather visual evidence, time the movement with the chronocomparator, and read the combined verdict.',
           )}
         </p>
       </section>
@@ -1647,7 +1660,34 @@ export default function AuthenticatePage() {
       )}
 
       {step === 4 && (
-        <StepCard title={t('5. Veredicto final', '5. Combined verdict')} subtitle={t(`Resultado de ${currentModel.name} (ref. ${currentModel.reference}), año declarado ${year}.`, `Result for ${currentModel.name} (ref. ${currentModel.reference}), declared year ${year}.`)} status={stepStatuses[4]}>
+        <StepCard title={t('5. Cronocomparador (marcha)', '5. Timing (chronocomparator)')} subtitle={t('Mide la marcha del movimiento — un reloj auténtico corre dentro de especificación. Paso opcional.', 'Time the movement — a genuine watch runs within spec. Optional step.')} status={stepStatuses[4]}>
+          <div className="space-y-4">
+            <p className="text-sm text-muted">
+              {t('Abre el cronocomparador, apoya el micrófono en el reloj, mide y pulsa "Guardar lectura para el informe". La marcha aparecerá aquí y en el veredicto. (También está en el menú para usarlo por separado.)', 'Open the chronocomparator, rest the mic on the watch, measure, and tap "Save reading for report". The timing shows here and in the verdict. (It is also in the menu for standalone use.)')}
+            </p>
+            <a href="/timegrapher" target="_blank" rel="noopener noreferrer" className="btn-primary inline-flex items-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" />
+              </svg>
+              {t('Abrir cronocomparador', 'Open chronocomparator')}
+            </a>
+            {timing ? (
+              <div className="card p-4 space-y-1 text-sm border-l-4 border-l-accent">
+                <div className="text-xs uppercase tracking-wide text-dim mb-1">{t('Última lectura guardada', 'Last saved reading')}</div>
+                <div><span className="text-dim">{t('Marcha', 'Rate')}:</span> <span className="font-mono">{timing.rate >= 0 ? '+' : ''}{timing.rate.toFixed(1)} s/{t('día', 'day')}</span></div>
+                {timing.beatError != null && <div><span className="text-dim">{t('Error de batido', 'Beat error')}:</span> <span className="font-mono">{timing.beatError.toFixed(1)} ms</span></div>}
+                <div><span className="text-dim">{t('Frecuencia', 'Frequency')}:</span> <span className="font-mono">{Math.round(timing.detectedBph)} bph</span></div>
+                {expectedMovement?.vph ? <div><span className="text-dim">{t('Esperada (calibre)', 'Expected (caliber)')}:</span> <span className="font-mono">{expectedMovement.vph} bph</span></div> : null}
+              </div>
+            ) : (
+              <p className="text-sm text-dim">{t('Aún no hay lectura guardada (opcional — puedes continuar al veredicto).', 'No reading saved yet (optional — continue to the verdict).')}</p>
+            )}
+          </div>
+        </StepCard>
+      )}
+
+      {step === 5 && (
+        <StepCard title={t('6. Veredicto final', '6. Combined verdict')} subtitle={t(`Resultado de ${currentModel.name} (ref. ${currentModel.reference}), año declarado ${year}.`, `Result for ${currentModel.name} (ref. ${currentModel.reference}), declared year ${year}.`)} status={stepStatuses[5]}>
           <div className="space-y-6">
             <SummaryBlock title={t('Identificación', 'Identification')}>
               <div className="grid md:grid-cols-2 gap-2 text-sm">
@@ -1807,9 +1847,9 @@ export default function AuthenticatePage() {
         <button onClick={goBack} disabled={step === 0} className="btn-ghost text-sm disabled:opacity-30 disabled:cursor-not-allowed">
           ← {t('Atrás', 'Back')}
         </button>
-        {step < 4 && (
+        {step < 5 && (
           <button onClick={goNext} disabled={!canAdvance()} className="btn-primary text-sm">
-            {step === 3 ? t('Analizar →', 'Run analysis →') : t('Continuar →', 'Continue →')}
+            {step === 4 ? t('Analizar →', 'Run analysis →') : t('Continuar →', 'Continue →')}
           </button>
         )}
       </div>
