@@ -18,6 +18,15 @@ export type AuthCheckpoint = {
   label: Bilingual;
   /** Concrete things to verify on a genuine piece. */
   points: readonly Bilingual[];
+  /**
+   * Optional built-in reference visual for this tell — served from /public, e.g.
+   * '/tells/rolex/cyclops.svg'. Prefer copyright-free schematic DIAGRAMS, or a
+   * verified photo you own. This ships WITH the product (separate from the
+   * user-uploaded authentic/fake reference photos).
+   */
+  image?: string;
+  /** Optional caption describing what the reference visual shows. */
+  imageCaption?: Bilingual;
 };
 
 /** Brand-wide checkpoints that apply to (almost) every modern Rolex. */
@@ -39,6 +48,8 @@ export const ROLEX_AUTH_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'La fecha queda centrada bajo la lupa, sin desplazarse a izquierda o derecha.', en: 'The date is centred under the lens, not shifted left/right.' },
       { es: 'El tratamiento antirreflejos (en referencias modernas) hace que la lupa se vea casi invisible de frente.', en: 'Anti-reflective coating (on modern refs) makes the lens look almost invisible straight-on.' },
     ],
+    image: '/tells/rolex/cyclops.svg',
+    imageCaption: { es: 'Auténtica: la lupa amplía ~2,5× y la fecha llena la burbuja. Réplica: ~1,5×, la fecha se ve pequeña.', en: 'Genuine: the lens magnifies ~2.5× and the date fills the bubble. Replica: ~1.5×, the date looks small.' },
   },
   {
     id: 'dial-printing',
@@ -49,6 +60,8 @@ export const ROLEX_AUTH_CHECKPOINTS: readonly AuthCheckpoint[] = [
       { es: 'Los índices horarios aplicados son de metal macizo con lume uniforme; la separación entre el índice y el lume es regular.', en: 'Applied hour markers are solid metal with even lume; gaps between marker and lume are uniform.' },
       { es: 'Tipografía y profundidad del texto correctas para el modelo/época (p. ej. esferas gilt antiguas vs. mate modernas).', en: 'Correct font and depth-of-text for the model/era (e.g. older gilt dials vs modern matte).' },
     ],
+    image: '/tells/rolex/dial-printing.svg',
+    imageCaption: { es: 'Auténtica: impresión nítida de bordes limpios. Réplica: bordes borrosos y sangrado de tinta bajo lupa.', en: 'Genuine: crisp printing with clean edges. Replica: fuzzy edges and ink bleed under a loupe.' },
   },
   {
     id: 'hands',

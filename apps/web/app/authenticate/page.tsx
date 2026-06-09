@@ -1585,6 +1585,14 @@ export default function AuthenticatePage() {
                         <li key={i} className="flex gap-2"><span className="text-accent-bright shrink-0">·</span><span>{pt[lang]}</span></li>
                       ))}
                     </ul>
+                    {cp.image && (
+                      <div className="mt-3">
+                        <div className="text-[0.7rem] uppercase tracking-wide text-dim mb-1.5">{t('Referencia visual', 'Visual reference')}</div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={cp.image} alt={cp.label[lang]} loading="lazy" className="w-full rounded-lg border border-soft" />
+                        {cp.imageCaption && <p className="text-[0.7rem] text-dim mt-1.5">{cp.imageCaption[lang]}</p>}
+                      </div>
+                    )}
                     {part && (
                       <div className="mt-3 pt-3 border-t border-soft space-y-3">
                         {/* Authentic reference */}

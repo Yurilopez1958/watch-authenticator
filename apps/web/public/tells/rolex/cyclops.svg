@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220" width="420" height="220" role="img" aria-label="Cyclops magnification: genuine 2.5x fills the bubble vs replica 1.5x">
+  <rect x="1" y="1" width="418" height="218" rx="14" fill="#0e1530" stroke="#27314f"/>
+  <line x1="210" y1="22" x2="210" y2="198" stroke="#27314f" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <!-- GENUINE -->
+  <g font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif">
+    <text x="105" y="38" text-anchor="middle" font-size="16" font-weight="700" fill="#34d399">&#10003; 2.5&#215;</text>
+    <rect x="42" y="74" width="126" height="96" rx="12" fill="#070d20" stroke="#2b3658"/>
+    <rect x="80" y="110" width="50" height="38" rx="4" fill="#f4f4f5" stroke="#9ca3af"/>
+    <circle cx="105" cy="129" r="37" fill="#7dd3fc" fill-opacity="0.16" stroke="#7dd3fc" stroke-width="2.5"/>
+    <text x="105" y="142" text-anchor="middle" font-size="40" font-weight="700" fill="#e5e7eb">28</text>
+  </g>
+
+  <!-- REPLICA -->
+  <g font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif">
+    <text x="315" y="38" text-anchor="middle" font-size="16" font-weight="700" fill="#f87171">&#10007; ~1.5&#215;</text>
+    <rect x="252" y="74" width="126" height="96" rx="12" fill="#070d20" stroke="#2b3658"/>
+    <rect x="290" y="110" width="50" height="38" rx="4" fill="#f4f4f5" stroke="#9ca3af"/>
+    <circle cx="315" cy="129" r="37" fill="#64748b" fill-opacity="0.10" stroke="#64748b" stroke-width="2.5"/>
+    <text x="315" y="138" text-anchor="middle" font-size="24" font-weight="700" fill="#9ca3af">28</text>
+  </g>
+
+  <text x="210" y="212" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" font-size="11" fill="#64748b">Cyclops &#183; magnification / aumento</text>
+</svg>
