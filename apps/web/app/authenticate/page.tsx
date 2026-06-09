@@ -152,9 +152,11 @@ const STEP_LABELS: readonly Bi[] = [
 type XrfMode = 'manual' | 'connected' | 'photo' | 'skip';
 
 /** Independently-measured metal targets on the watch. Each keeps its own reading. */
-type XrfTarget = 'case' | 'bracelet' | 'case-back';
+type XrfTarget = 'case' | 'bezel' | 'crown' | 'bracelet' | 'case-back';
 const XRF_TARGETS: readonly { id: XrfTarget; label: Bi; hint: Bi }[] = [
   { id: 'case', label: { es: 'Caja', en: 'Case' }, hint: { es: 'cuerpo de la caja / asas', en: 'main case body / lugs' } },
+  { id: 'bezel', label: { es: 'Bisel', en: 'Bezel' }, hint: { es: 'el bisel (en two-tone suele ser oro 18k)', en: 'the bezel (often 18k gold on two-tone)' } },
+  { id: 'crown', label: { es: 'Corona', en: 'Crown' }, hint: { es: 'la corona de cuerda (oro en two-tone)', en: 'the winding crown (gold on two-tone)' } },
   { id: 'bracelet', label: { es: 'Brazalete', en: 'Bracelet' }, hint: { es: 'un eslabón del brazalete o el cierre', en: 'a metal bracelet link or the clasp' } },
   { id: 'case-back', label: { es: 'Tapa trasera', en: 'Case back' }, hint: { es: 'la tapa roscada', en: 'the screw-down back' } },
 ];
@@ -338,10 +340,10 @@ export default function AuthenticatePage() {
   const [xrfMode, setXrfMode] = useState<XrfMode>('manual');
   const [activeTarget, setActiveTarget] = useState<XrfTarget>('case');
   const [readingsByTarget, setReadingsByTarget] = useState<Record<XrfTarget, Record<string, string>>>({
-    case: {}, bracelet: {}, 'case-back': {},
+    case: {}, bezel: {}, crown: {}, bracelet: {}, 'case-back': {},
   });
   const [csvByTarget, setCsvByTarget] = useState<Record<XrfTarget, string>>({
-    case: '', bracelet: '', 'case-back': '',
+    case: '', bezel: '', crown: '', bracelet: '', 'case-back': '',
   });
   // Active-target accessors so the existing input UI keeps working unchanged.
   const readings = readingsByTarget[activeTarget];
@@ -381,7 +383,7 @@ export default function AuthenticatePage() {
 
   // Step 5 — results (XRF result kept per measured target)
   const [xrfResultByTarget, setXrfResultByTarget] = useState<Record<XrfTarget, MatchResult | null>>({
-    case: null, bracelet: null, 'case-back': null,
+    case: null, bezel: null, crown: null, bracelet: null, 'case-back': null,
   });
   const [movementResult, setMovementResult] = useState<MovementCheck | null>(null);
 
@@ -400,12 +402,12 @@ export default function AuthenticatePage() {
   useEffect(() => {
     if (prevIdentity.current === identityKey) return;
     prevIdentity.current = identityKey;
-    setReadingsByTarget({ case: {}, bracelet: {}, 'case-back': {} });
-    setCsvByTarget({ case: '', bracelet: '', 'case-back': '' });
+    setReadingsByTarget({ case: {}, bezel: {}, crown: {}, bracelet: {}, 'case-back': {} });
+    setCsvByTarget({ case: '', bezel: '', crown: '', bracelet: '', 'case-back': '' });
     setObservedCaliber('');
     setExamined(null);
     setReference(null);
-    setXrfResultByTarget({ case: null, bracelet: null, 'case-back': null });
+    setXrfResultByTarget({ case: null, bezel: null, crown: null, bracelet: null, 'case-back': null });
     setMovementResult(null);
     setPhotoPreview(null);
     setPhotoNotes(null);
@@ -543,6 +545,8 @@ export default function AuthenticatePage() {
 
   const liveXrfByTarget = useMemo<Record<XrfTarget, MatchResult | null>>(() => ({
     case: computeXrf(readingsByTarget.case, csvByTarget.case),
+    bezel: computeXrf(readingsByTarget.bezel, csvByTarget.bezel),
+    crown: computeXrf(readingsByTarget.crown, csvByTarget.crown),
     bracelet: computeXrf(readingsByTarget.bracelet, csvByTarget.bracelet),
     'case-back': computeXrf(readingsByTarget['case-back'], csvByTarget['case-back']),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -768,6 +772,8 @@ export default function AuthenticatePage() {
     // Snapshot the live per-target XRF results as the final verdict.
     setXrfResultByTarget({
       case: liveXrfByTarget.case,
+      bezel: liveXrfByTarget.bezel,
+      crown: liveXrfByTarget.crown,
       bracelet: liveXrfByTarget.bracelet,
       'case-back': liveXrfByTarget['case-back'],
     });
@@ -1247,7 +1253,7 @@ export default function AuthenticatePage() {
                     </label>
                   ))}
                 </div>
-                <div className="text-xs text-dim mt-3">{t('Introduce al menos un elemento > 0 para avanzar.', 'Enter at least one element > 0 to advance.')}</div>
+                <div className="text-xs text-dim mt-3">{t('Escribe el % de al menos un elemento para ver el veredicto.', 'Type at least one element’s % to see the verdict.')}</div>
               </div>
             </div>
           )}
@@ -1773,14 +1779,14 @@ export default function AuthenticatePage() {
               <button
                 onClick={() => {
                   setStep(0);
-                  setReadingsByTarget({ case: {}, bracelet: {}, 'case-back': {} });
-                  setCsvByTarget({ case: '', bracelet: '', 'case-back': '' });
+                  setReadingsByTarget({ case: {}, bezel: {}, crown: {}, bracelet: {}, 'case-back': {} });
+                  setCsvByTarget({ case: '', bezel: '', crown: '', bracelet: '', 'case-back': '' });
                   setActiveTarget('case');
                   setExamined(null); setReference(null);
                   setSerial(''); setNotes(''); setObservedCaliber('');
                   setCustomMode(false); setCustomName(''); setCustomRef('');
                   setCustomBrand(false); setCustomBrandName('');
-                  setXrfResultByTarget({ case: null, bracelet: null, 'case-back': null });
+                  setXrfResultByTarget({ case: null, bezel: null, crown: null, bracelet: null, 'case-back': null });
                   setMovementResult(null);
                 }}
                 className="btn-ghost text-sm ml-auto"
