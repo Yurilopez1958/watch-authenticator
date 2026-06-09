@@ -117,11 +117,6 @@ export function SiteHeader() {
           <Logo onClick={() => setOpen(false)} />
 
           <div className="flex items-center gap-2 shrink-0">
-            <ProToggle />
-            <LangToggle />
-            <HelpButton />
-            <LogoutButton />
-
             <button
               onClick={() => setOpen((v) => !v)}
               aria-label={open ? t('Cerrar menú', 'Close menu') : t('Abrir menú', 'Open menu')}
@@ -164,6 +159,14 @@ export function SiteHeader() {
                 <span className="inline-flex items-center gap-1.5">{l[lang]}{locked(l) && <LockIcon />}</span>
               </Link>
             ))}
+            {/* Secondary controls live inside the menu on mobile so the top bar
+                never overflows and the hamburger is always reachable. */}
+            <div className="flex flex-wrap items-center gap-2 pt-3 mt-2 border-t border-[var(--border)]">
+              <ProToggle />
+              <LangToggle />
+              <HelpButton />
+              <LogoutButton />
+            </div>
           </nav>
         )}
       </header>
