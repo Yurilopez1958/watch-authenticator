@@ -255,6 +255,26 @@ export function bestProfileMatch(
     };
   }
 
+  // (D) SOLID GOLD that reads below 18k on a precious-metals-only gun: the gun
+  //     under-reports Au (it splits the gold peak into phantom neighbours such as
+  //     Ge/Ga), so a genuine 18k can read ~16k. With NO base metal (not plated),
+  //     don't condemn it — flag the karat as approximate and note the alloy
+  //     pattern (Everose = high Cu + Pt; the Pt is Everose's hard-to-fake tell).
+  if (au >= 55 && au < 74.5 && steelBase < 8) {
+    const cu = get('Cu');
+    const isEverose = pt >= 1 && cu >= 12;
+    return {
+      profileId: 'detector-gold-karat-approx',
+      materialName: isEverose ? 'gold (Everose pattern, karat approx)' : 'solid gold (karat approx)',
+      overallScore: 60,
+      verdict: 'inconclusive',
+      elementMatches: [],
+      flags: [
+        `Solid gold (Au ${au.toFixed(0)}%, no base metal — not plated). This precious-metals-mode gun under-reads gold (it splits the gold peak into phantom neighbours like Ge), so a genuine 18k can read ~16k; the exact karat can't be confirmed here.${isEverose ? ` The alloy pattern — high copper (Cu ${cu.toFixed(0)}%) plus platinum (Pt ${pt.toFixed(1)}%) — matches Rolex Everose, and the platinum is Everose's signature (a fake rose gold has no Pt).` : ''} Re-verify exact karat against a known-genuine reference or a lab.`,
+      ],
+    };
+  }
+
   let best: MatchResult | null = null;
   for (const profile of candidateProfiles) {
     const result = matchMeasurementToProfile(measurement, profile);
