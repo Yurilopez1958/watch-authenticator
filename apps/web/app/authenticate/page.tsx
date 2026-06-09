@@ -499,12 +499,16 @@ export default function AuthenticatePage() {
 
   // Saved chronocomparator reading (shown in the verdict + included in the report).
   const [timing, setTiming] = useState<TimingReading | null>(null);
+  // True once the user pressed Stop on the embedded chronocomparator (step 5) —
+  // then we surface the "Run analysis" call-to-action.
+  const [timingStopped, setTimingStopped] = useState(false);
   // On the timing/verdict steps, load the saved reading — and refresh it when the
   // user returns to this tab (e.g. after measuring in the chronocomparator tab).
   useEffect(() => {
     if (step !== 4 && step !== 5) return;
     const refresh = () => setTiming(getTimingReading());
     refresh();
+    if (step === 4) setTimingStopped(false); // reset the CTA when (re)entering the step
     window.addEventListener('focus', refresh);
     return () => window.removeEventListener('focus', refresh);
   }, [step]);
@@ -1671,9 +1675,16 @@ export default function AuthenticatePage() {
               <div className="text-xs text-dim">{t('Frecuencia oficial del calibre', "Caliber's official frequency")} {expectedMovement.caliber}: <span className="font-mono text-foreground">{expectedMovement.vph} bph</span></div>
             ) : null}
 
-            {/* Embedded chronocomparator — the same instrument as the standalone
-                page. Saving a reading flows it into the verdict + report. */}
-            <ChronocomparatorPanel embedded {...(expectedMovement?.vph ? { expectedBph: expectedMovement.vph } : {})} onSaved={() => setTiming(getTimingReading())} />
+            {/* Embedded chronocomparator. Auto-starts on arrival; pressing Stop
+                saves the reading and surfaces the "Run analysis" CTA below.
+                Flows into the verdict + report. */}
+            <ChronocomparatorPanel
+              embedded
+              autoStart
+              {...(expectedMovement?.vph ? { expectedBph: expectedMovement.vph } : {})}
+              onSaved={() => setTiming(getTimingReading())}
+              onUserStop={() => setTimingStopped(true)}
+            />
 
             {freqDoubt && (
               <div className="text-sm text-amber-200 border-l-4 border-l-amber-500 bg-amber-500/10 rounded-lg p-3">
@@ -1681,9 +1692,18 @@ export default function AuthenticatePage() {
               </div>
             )}
 
-            <button onClick={goNext} className="btn-primary inline-flex items-center gap-2">
-              {t('Ejecutar análisis', 'Run analysis')} →
-            </button>
+            {timingStopped ? (
+              <div className="card p-4 border-l-4 border-l-emerald-500 bg-emerald-500/10 space-y-3">
+                <div className="text-sm text-emerald-200">✅ {t('Medición detenida y guardada. ¿Pasamos al veredicto?', 'Measurement stopped and saved. Ready for the verdict?')}</div>
+                <button onClick={goNext} className="btn-primary inline-flex items-center gap-2">
+                  {t('Ejecutar análisis', 'Run analysis')} →
+                </button>
+              </div>
+            ) : (
+              <button onClick={goNext} className="btn-ghost text-sm inline-flex items-center gap-2">
+                {t('Saltar al análisis (sin medir la marcha)', 'Skip to analysis (without timing)')} →
+              </button>
+            )}
           </div>
         </StepCard>
       )}
